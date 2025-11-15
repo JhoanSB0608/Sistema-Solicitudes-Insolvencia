@@ -30,7 +30,7 @@ app.use(
   cors({
     origin: [
       process.env.FRONTEND_URL,
-      'http://localhost:3000'
+      'https://systemlex.vercel.app.com'
     ],
     credentials: true,
     exposedHeaders: ['Content-Disposition', 'Content-Length', 'Content-Type'],

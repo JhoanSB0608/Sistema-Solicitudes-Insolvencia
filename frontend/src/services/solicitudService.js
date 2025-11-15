@@ -2,7 +2,7 @@
 import axios from 'axios';
 import { saveAs } from 'file-saver';
 
-const API_URL = 'http://localhost:5000/api/solicitudes';
+const API_URL = 'https://sistema-solicitudes-insolvencia.onrender.com/api/solicitudes';
 
 const getToken = () => {
   const userInfo = localStorage.getItem('userInfo');

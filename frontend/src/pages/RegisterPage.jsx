@@ -546,7 +546,7 @@ const RegisterPage = () => {
 
         <Button
           component="a"
-          href="http://localhost:5000/api/auth/google"
+          href="https://sistema-solicitudes-insolvencia.onrender.com/api/auth/google"
           fullWidth
           variant="outlined"
           startIcon={<GoogleIcon />}
