@@ -28,7 +28,10 @@ const port = process.env.PORT || 5000;
 
 app.use(
   cors({
-    origin: 'http://localhost:3000', // cambia por el dominio del front
+    origin: [
+      process.env.FRONTEND_URL,
+      'http://localhost:3000'
+    ],
     credentials: true,
     exposedHeaders: ['Content-Disposition', 'Content-Length', 'Content-Type'],
   })
@@ -54,6 +57,6 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 
-app.listen(port, () => {
-    console.log(`Server is running on port: ${port}`);
+app.listen(port, '0.0.0.0', () => {
+  console.log(`Server running on port ${port}`);
 });
