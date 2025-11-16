@@ -19,7 +19,6 @@ const authRoutes = require('./routes/authRoutes');
 // Passport config
 require('./config/passport')(passport);
 
-
 // Conectar a la base de datos
 connectDB();
 
