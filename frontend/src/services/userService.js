@@ -26,7 +26,16 @@ export const logout = () => {
 };
 
 export const getMe = async () => {
-  const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+  const userInfoString = localStorage.getItem('userInfo');
+  if (!userInfoString) {
+    return Promise.reject(new Error('No user info found in local storage'));
+  }
+
+  const userInfo = JSON.parse(userInfoString);
+  if (!userInfo || !userInfo.token) {
+    return Promise.reject(new Error('Invalid user info found in local storage'));
+  }
+
   const config = {
     headers: {
       Authorization: `Bearer ${userInfo.token}`,
