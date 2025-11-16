@@ -18,10 +18,10 @@ router.get('/google', passport.authenticate('google', { scope: ['profile', 'emai
 // @route   GET /api/auth/google/callback
 router.get(
   '/google/callback',
-  passport.authenticate('google', { failureRedirect: 'https://systemlex.vercel.app/login', session: false }),
+  passport.authenticate('google', { failureRedirect: `${process.env.FRONTEND_URL}/login`, session: false }),
   (req, res) => {
     const token = generateToken(req.user._id);
-    res.redirect(`https://sistema-solicitudes-insolvencia.onrender.com/auth/redirect?token=${token}`);
+    res.redirect(`${process.env.FRONTEND_URL}/auth/redirect?token=${token}`);
   }
 );
 

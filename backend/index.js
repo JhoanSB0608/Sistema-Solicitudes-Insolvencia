@@ -28,10 +28,7 @@ const port = process.env.PORT || 5000;
 
 app.use(
   cors({
-    origin: [
-      process.env.FRONTEND_URL,
-      'https://systemlex.vercel.app.com'
-    ],
+    origin: process.env.FRONTEND_URL,
     credentials: true,
     exposedHeaders: ['Content-Disposition', 'Content-Length', 'Content-Type'],
   })

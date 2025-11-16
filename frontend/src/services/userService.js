@@ -1,6 +1,9 @@
 import axios from 'axios';
 
-const API_URL = 'https://sistema-solicitudes-insolvencia.onrender.com/api/users';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
+const API_URL = `${API_BASE_URL}/api/users`;
+const AUTH_URL = `${API_BASE_URL}/api/auth`;
 
 export const login = async (email, password) => {
   const response = await axios.post(`${API_URL}/login`, { email, password });
@@ -29,7 +32,7 @@ export const getMe = async () => {
       Authorization: `Bearer ${userInfo.token}`,
     },
   };
-  const response = await axios.get('https://sistema-solicitudes-insolvencia.onrender.com/api/auth/me', config);
+  const response = await axios.get(`${AUTH_URL}/me`, config);
   // The /me route returns the user object, but the app stores user object + token.
   // So, we merge them.
   const user = { ...response.data, token: userInfo.token };
