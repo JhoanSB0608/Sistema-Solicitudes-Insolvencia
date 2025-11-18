@@ -26,6 +26,7 @@ const app = express();
 app.set('trust proxy', 1); // Trust proxy for correct protocol detection
 const port = process.env.PORT;
 
+console.log(`CORS origin configured for: ${process.env.FRONTEND_URL}`);
 app.use(
   cors({
     origin: process.env.FRONTEND_URL,
