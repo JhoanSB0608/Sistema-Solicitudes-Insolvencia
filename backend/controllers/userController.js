@@ -10,10 +10,16 @@ const generateToken = (id) => {
 
 // Helper function to send verification email
 const sendVerificationEmail = async (user) => {
+  console.log('Attempting to send email with the following configuration:');
+  console.log(`EMAIL_HOST: ${process.env.EMAIL_HOST}`);
+  console.log(`EMAIL_PORT: ${process.env.EMAIL_PORT}`);
+  console.log(`EMAIL_USER: ${process.env.EMAIL_USER}`);
+  console.log(`EMAIL_SECURE: ${process.env.EMAIL_SECURE}`);
+
   const transporter = nodemailer.createTransport({
     host: process.env.EMAIL_HOST,
     port: process.env.EMAIL_PORT,
-    secure: false, // true for 465, false for other ports
+    secure: process.env.EMAIL_SECURE === 'true', // true for 465, false for other ports
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
