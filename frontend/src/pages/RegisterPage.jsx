@@ -36,18 +36,23 @@ const RegisterPage = () => {
 
   const onSubmit = async (data) => {
     if (data.password !== data.confirmPassword) {
+      console.log('Passwords do not match');
       return;
     }
     
+    console.log('Submitting registration with data:', data);
     setIsSubmitting(true);
     try {
+      console.log('Calling authRegister...');
       await authRegister(data.name, data.email, data.password);
+      console.log('authRegister call successful');
       setRegistrationSuccess(true); // Set success state
     } catch (error) {
       // Handle registration error, e.g., display an alert
-      console.error("Registration error:", error);
+      console.error("Registration error in onSubmit:", error);
       setRegistrationSuccess(false); // Ensure it's false on error
     } finally {
+      console.log('Executing finally block, setting isSubmitting to false');
       setIsSubmitting(false);
     }
   };
