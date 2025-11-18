@@ -172,16 +172,25 @@ const authUser = async (req, res) => {
 // @route   POST /api/users
 // @access  Public
 const registerUser = async (req, res) => {
-  const { name, email, password } = req.body;
-
-  const userExists = await User.findOne({ email });
-
-  if (userExists) {
-    res.status(400);
-    throw new Error('User already exists');
-  }
-
   try {
+    const { name, email, password } = req.body;
+
+    // Validate input
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: 'Por favor, complete todos los campos' });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ message: 'Por favor, ingrese un correo electrónico válido' });
+    }
+
+    const userExists = await User.findOne({ email });
+
+    if (userExists) {
+      return res.status(400).json({ message: 'El usuario ya existe' });
+    }
+
     const user = new User({
       name,
       email,
@@ -190,29 +199,28 @@ const registerUser = async (req, res) => {
       isVerified: false, // New users are not verified by default
     });
 
-    // Generate verification token
+    // Generate verification token and save user
     user.generateVerificationToken();
-    console.log('Generated verification token:', user.verificationToken);
-    console.log('Token expires at:', new Date(user.verificationTokenExpires));
-
-    const createdUser = await user.save();
-    console.log('User saved with token:', createdUser.verificationToken);
+    await user.save();
 
     // Send verification email
-    await sendVerificationEmail(createdUser);
+    await sendVerificationEmail(user);
   
-    if (createdUser) {
-      res.status(201).json({
-        message: 'Registro exitoso. Por favor, verifica tu correo electrónico para activar tu cuenta.',
-        userId: createdUser._id,
-      });
-    } else {
-      res.status(400);
-      throw new Error('Datos de usuario inválidos');
-    }
+    res.status(201).json({
+      message: 'Registro exitoso. Por favor, verifica tu correo electrónico para activar tu cuenta.',
+      userId: user._id,
+    });
+
   } catch (error) {
     console.error('Error al crear usuario:', error);
-    res.status(400).json({ message: error.message });
+    
+    // Provide more specific feedback for common errors
+    if (error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT') {
+      return res.status(500).json({ message: 'Error de conexión al enviar el correo de verificación. Por favor, revise la configuración del servidor de correo.' });
+    }
+    
+    // Generic error for other cases
+    return res.status(400).json({ message: error.message || 'Datos de usuario inválidos' });
   }
 };
 
