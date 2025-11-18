@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { AuthContext } from '../App'; // Importar el contexto de autenticación
 import GoogleIcon from '@mui/icons-material/Google';
 import { CheckCircle } from '@mui/icons-material';
+import { API_BASE_URL } from '../services/userService';
 
 const RegisterPage = () => {
   const { register, handleSubmit, watch, formState: { errors } } = useForm();
@@ -546,7 +547,7 @@ const RegisterPage = () => {
 
         <Button
           component="a"
-          href={`${process.env.REACT_APP_API_URL}/api/auth/google`}
+          href={`${API_BASE_URL}/api/auth/google`}
           fullWidth
           variant="outlined"
           startIcon={<GoogleIcon />}

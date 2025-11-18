@@ -3,6 +3,7 @@ import { TextField, Button, Typography, Box, Paper, Divider } from '@mui/materia
 import { useForm } from 'react-hook-form';
 import { AuthContext } from '../App'; // Importar el contexto de autenticación
 import GoogleIcon from '@mui/icons-material/Google';
+import { API_BASE_URL } from '../services/userService';
 
 const LoginPage = () => {
   const { register, handleSubmit, formState: { errors } } = useForm();
@@ -356,7 +357,7 @@ const LoginPage = () => {
 
         <Button
           component="a"
-          href={`${process.env.REACT_APP_API_URL}/api/auth/google`}
+          href={`${API_BASE_URL}/api/auth/google`}
           fullWidth
           variant="outlined"
           startIcon={<GoogleIcon />}
