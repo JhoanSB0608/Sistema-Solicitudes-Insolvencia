@@ -175,52 +175,59 @@ const registerUser = async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
-    // Validate input
+    // 1. Validate input
     if (!name || !email || !password) {
       return res.status(400).json({ message: 'Por favor, complete todos los campos' });
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    // Use a simple regex that doesn't allow spaces
+    const emailRegex = /^\S+@\S+$/;
     if (!emailRegex.test(email)) {
-      return res.status(400).json({ message: 'Por favor, ingrese un correo electrónico válido' });
+      return res.status(400).json({ message: 'Por favor, ingrese un correo electrónico válido (sin espacios)' });
     }
 
+    // 2. Check if user exists
     const userExists = await User.findOne({ email });
-
     if (userExists) {
-      return res.status(400).json({ message: 'El usuario ya existe' });
+      return res.status(400).json({ message: 'El correo electrónico ya está registrado' });
     }
 
+    // 3. Create user instance (in memory)
     const user = new User({
       name,
       email,
       password,
       isAdmin: true, // All new users are admins as per request
-      isVerified: false, // New users are not verified by default
+      isVerified: false,
     });
 
-    // Generate verification token and save user
+    // 4. Generate token
     user.generateVerificationToken();
-    await user.save();
 
-    // Send verification email
+    // 5. Send verification email FIRST
     await sendVerificationEmail(user);
+
+    // 6. If email is sent successfully, THEN save the user
+    await user.save();
   
+    // 7. Send success response
     res.status(201).json({
       message: 'Registro exitoso. Por favor, verifica tu correo electrónico para activar tu cuenta.',
       userId: user._id,
     });
 
   } catch (error) {
-    console.error('Error al crear usuario:', error);
+    console.error('Error en el registro:', error);
     
-    // Provide more specific feedback for common errors
     if (error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT') {
-      return res.status(500).json({ message: 'Error de conexión al enviar el correo de verificación. Por favor, revise la configuración del servidor de correo.' });
+      return res.status(500).json({ message: 'Error de conexión al enviar el correo de verificación. Por favor, revise la configuración del servidor de correo y vuelva a intentarlo.' });
     }
     
-    // Generic error for other cases
-    return res.status(400).json({ message: error.message || 'Datos de usuario inválidos' });
+    if (error.name === 'ValidationError') {
+        return res.status(400).json({ message: error.message });
+    }
+
+    return res.status(500).json({ message: 'Ha ocurrido un error interno en el servidor.' });
   }
 };
 
