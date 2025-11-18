@@ -24,7 +24,7 @@ connectDB();
 
 const app = express();
 app.set('trust proxy', 1); // Trust proxy for correct protocol detection
-const port = process.env.PORT || 5000;
+const port = process.env.PORT;
 
 app.use(
   cors({
