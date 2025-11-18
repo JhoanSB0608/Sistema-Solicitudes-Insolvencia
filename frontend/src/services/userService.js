@@ -1,8 +1,6 @@
 import axios from 'axios';
 
-export const API_BASE_URL = process.env.NODE_ENV === 'production'
-  ? 'https://sistema-solicitudes-insolvencia.onrender.com'
-  : 'http://localhost:5000';
+export const API_BASE_URL = 'https://sistema-solicitudes-insolvencia.onrender.com'
 
 const API_URL = `${API_BASE_URL}/api/users`;
 const AUTH_URL = `${API_BASE_URL}/api/auth`;
