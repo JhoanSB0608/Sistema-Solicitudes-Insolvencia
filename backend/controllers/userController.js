@@ -1,6 +1,8 @@
 const User = require('../models/userModel.js');
 const jwt = require('jsonwebtoken');
-const nodemailer = require('nodemailer'); // Import nodemailer
+const { Resend } = require('resend');
+const fs = require('fs').promises;
+const path = require('path');
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET || 'your_jwt_secret', {
@@ -8,28 +10,17 @@ const generateToken = (id) => {
   });
 };
 
-// Helper function to send verification email
+// Helper function to send verification email using Resend
 const sendVerificationEmail = async (user) => {
-  console.log('Attempting to send email with the following configuration:');
-  console.log(`EMAIL_HOST: ${process.env.EMAIL_HOST}`);
-  console.log(`EMAIL_PORT: ${process.env.EMAIL_PORT}`);
-  console.log(`EMAIL_USER: ${process.env.EMAIL_USER}`);
-  console.log(`EMAIL_SECURE: ${process.env.EMAIL_SECURE}`);
-
-  const transporter = nodemailer.createTransport({
-    host: process.env.EMAIL_HOST,
-    port: process.env.EMAIL_PORT,
-    secure: process.env.EMAIL_SECURE === 'true', // true for 465, false for other ports
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-  });
-
+  const resend = new Resend(process.env.RESEND_API_KEY);
   const verificationLink = `${process.env.BACKEND_URL}/api/users/verify/${user.verificationToken}`;
 
+  // Read the image file for the attachment
+  const imagePath = path.join(__dirname, '..', 'public', 'logoPrincipal.png');
+  const imageBuffer = await fs.readFile(imagePath);
+
   const mailOptions = {
-    from: `"SystemLex" <${process.env.EMAIL_USER}>`,
+    from: 'SystemLex <onboarding@resend.dev>', // Resend requires a verified domain, using default for now
     to: user.email,
     subject: 'Verifica tu correo electrónico - SystemLex',
     html: `
@@ -137,13 +128,13 @@ const sendVerificationEmail = async (user) => {
     attachments: [
       {
         filename: 'logoPrincipal.png',
-        path: './public/logoPrincipal.png', // Ruta relativa desde donde se ejecuta el script
-        cid: 'logo' // Identificador para usar en el HTML con src="cid:logo"
-      }
-    ]
+        content: imageBuffer,
+        cid: 'logo',
+      },
+    ],
   };
 
-  await transporter.sendMail(mailOptions);
+  await resend.emails.send(mailOptions);
 };
 
 // @desc    Auth user & get token
