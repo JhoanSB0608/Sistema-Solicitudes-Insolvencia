@@ -1,3 +1,5 @@
+import React, { useContext, useState } from 'react';
+import { TextField, Button, Typography, Box, Paper, LinearProgress, Divider, Alert } from '@mui/material';
 import { useForm } from 'react-hook-form';
 import { AuthContext } from '../App'; // Importar el contexto de autenticación
 import GoogleIcon from '@mui/icons-material/Google';
@@ -7,8 +9,39 @@ import { handleAxiosError, showSuccess } from '../utils/alert';
 
 const RegisterPage = () => {
   const { register, handleSubmit, watch, formState: { errors } } = useForm();
-// ...
-// ...
+  const { register: authRegister } = useContext(AuthContext);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState(0);
+  const [registrationSuccess, setRegistrationSuccess] = useState(false); // New state for success message
+
+  const password = watch('password');
+  const confirmPassword = watch('confirmPassword');
+
+  // Función para calcular la fuerza de la contraseña
+  const calculatePasswordStrength = (pwd) => {
+    if (!pwd) return 0;
+    let strength = 0;
+    
+    if (pwd.length >= 8) strength += 25;
+    if (pwd.match(/[a-z]/)) strength += 25;
+    if (pwd.match(/[A-Z]/)) strength += 25;
+    if (pwd.match(/[0-9]/)) strength += 25;
+    
+    return strength;
+  };
+
+  // Actualizar la fuerza de la contraseña cuando cambie
+  React.useEffect(() => {
+    setPasswordStrength(calculatePasswordStrength(password));
+  }, [password]);
+
+  const onSubmit = async (data) => {
+    if (data.password !== data.confirmPassword) {
+      console.log('Passwords do not match');
+      return;
+    }
+    
+    console.log('Submitting registration with data:', data);
     setIsSubmitting(true);
     try {
       console.log('Calling authRegister...');

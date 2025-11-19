@@ -8,8 +8,9 @@ import { handleAxiosError } from '../utils/alert';
 
 const LoginPage = () => {
   const { register, handleSubmit, formState: { errors } } = useForm();
-// ...
-// ...
+  const { login } = useContext(AuthContext);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const onSubmit = async (data) => {
     setIsSubmitting(true);
     try {
