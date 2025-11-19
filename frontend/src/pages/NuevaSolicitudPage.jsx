@@ -38,10 +38,7 @@ import {
   AutoAwesome as AutoAwesomeIcon
 } from '@mui/icons-material';
 import InsolvenciaForm from '../components/forms/InsolvenciaForm';
-import AlimentosForm from '../components/forms/AlimentosForm';
-import UnionMaritalForm from '../components/forms/UnionMaritalForm';
-import AlimentosConyugeForm from '../components/forms/AlimentosConyugeForm';
-import ConciliacionExtrajudicialForm from '../components/forms/ConciliacionExtrajudicialForm';
+import ConciliacionUnificadaForm from '../components/forms/ConciliacionUnificadaForm';
 import { createSolicitud, downloadSolicitudDocument } from '../services/solicitudService';
 import { toast } from 'react-toastify';
 import { handleAxiosError, showSuccess } from '../utils/alert';
@@ -108,29 +105,8 @@ const tiposDeSolicitud = [
     color: '#f44336',
   },
   {
-    value: 'Solicitud de Conciliación Extrajudicial en Derecho – Fijación Cuota de Alimentos',
-    label: 'Conciliación Extrajudicial - Alimentos',
-    shortLabel: 'Alimentos',
-    icon: '🤝',
-    color: '#2196f3',
-  },
-  {
-    value: 'Solicitud Declaración de Unión Marital de Hecho - Fijación Cuota de Alimentos',
-    label: 'Unión Marital de Hecho',
-    shortLabel: 'Unión Marital',
-    icon: '💑',
-    color: '#9c27b0',
-  },
-  {
-    value: 'Solicitud Audiencia de Conciliación Extrajudicial en Derecho – Fijación Cuota de Alimentos (como cónyuge)',
-    label: 'Alimentos como Cónyuge',
-    shortLabel: 'Alimentos Cónyuge',
-    icon: '👥',
-    color: '#ff9800',
-  },
-  {
-    value: 'Solicitud Audiencia de Conciliación Extrajudicial en Derecho – Fijación Cuota de Alimentos',
-    label: 'Conciliación Extrajudicial',
+    value: 'Solicitud de Conciliación Unificada',
+    label: 'Conciliación Unificada (Varios Asuntos)',
     shortLabel: 'Conciliación',
     icon: '⚖️',
     color: '#4caf50',
@@ -140,10 +116,7 @@ const tiposDeSolicitud = [
 // Mapa para renderizar el formulario correcto
 const formComponentMap = {
   'Solicitud de Insolvencia Económica de Persona Natural No Comerciante': <InsolvenciaForm />,
-  'Solicitud de Conciliación Extrajudicial en Derecho – Fijación Cuota de Alimentos': <AlimentosForm />,
-  'Solicitud Declaración de Unión Marital de Hecho - Fijación Cuota de Alimentos': <UnionMaritalForm />,
-  'Solicitud Audiencia de Conciliación Extrajudicial en Derecho – Fijación Cuota de Alimentos (como cónyuge)': <AlimentosConyugeForm />,
-  'Solicitud Audiencia de Conciliación Extrajudicial en Derecho – Fijación Cuota de Alimentos': <ConciliacionExtrajudicialForm />
+  'Solicitud de Conciliación Unificada': <ConciliacionUnificadaForm />
 };
 
 const NuevaSolicitudPage = () => {
