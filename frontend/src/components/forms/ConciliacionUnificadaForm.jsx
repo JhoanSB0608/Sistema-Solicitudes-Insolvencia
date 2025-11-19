@@ -76,13 +76,13 @@ const GlassSelect = ({ control, name, label, options, rules, error, ...props }) 
                 name={name}
                 control={control}
                 rules={rules}
-                sx={{minWidth: 500}}
                 defaultValue=""
                 render={({ field }) => (
                     <Select
                         {...field}
                         label={label}
                         sx={{
+                            minWidth: 300,
                             borderRadius: '12px',
                             background: 'rgba(255, 255, 255, 0.08)',
                             backdropFilter: 'blur(10px)',
