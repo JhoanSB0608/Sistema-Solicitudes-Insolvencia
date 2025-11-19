@@ -43,6 +43,8 @@ import UnionMaritalForm from '../components/forms/UnionMaritalForm';
 import AlimentosConyugeForm from '../components/forms/AlimentosConyugeForm';
 import ConciliacionExtrajudicialForm from '../components/forms/ConciliacionExtrajudicialForm';
 import { createSolicitud, downloadSolicitudDocument } from '../services/solicitudService';
+import { toast } from 'react-toastify';
+import { handleAxiosError, showSuccess } from '../utils/alert';
 
 // Glassmorphism Card Component
 const GlassCard = React.forwardRef(({ children, sx = {}, hover = true, ...props }, ref) => {
@@ -166,46 +168,56 @@ const NuevaSolicitudPage = () => {
   };
 
   const handleFormSubmit = async (data) => {
-  try {
-    setError('');
-    setSuccess('');
-    setCreatedSolicitudId(null);
+    try {
+      setError('');
+      setSuccess('');
+      setCreatedSolicitudId(null);
 
-    let formData;
-    if (data instanceof FormData) {
-      formData = data;
-    } else {
-      formData = new FormData();
-      formData.append('solicitudData', JSON.stringify(data));
+      let formData;
+      if (data instanceof FormData) {
+        formData = data;
+      } else {
+        formData = new FormData();
+        formData.append('solicitudData', JSON.stringify(data));
+      }
+
+      formData.append('tipoSolicitud', tipoSeleccionado);
+
+      const createdSolicitud = await createSolicitud(formData);
+      showSuccess('¡Éxito! La solicitud ha sido guardada correctamente.');
+      setCreatedSolicitudId(createdSolicitud._id);
+      setFormResetToken(Date.now());
+      setSuccess('¡Éxito! La solicitud ha sido guardada correctamente.'); // Keep to show download buttons
+    } catch (err) {
+      handleAxiosError(err, 'No se pudo guardar la solicitud. Intente de nuevo.');
+      setError(err.message || 'No se pudo guardar la solicitud. Intente de nuevo.'); // Keep for local error display if needed
     }
-
-    formData.append('tipoSolicitud', tipoSeleccionado);
-
-    const createdSolicitud = await createSolicitud(formData);
-    setSuccess('¡Éxito! La solicitud ha sido guardada correctamente.');
-    setCreatedSolicitudId(createdSolicitud._id);
-    setFormResetToken(Date.now());
-  } catch (err) {
-    console.error('Error al guardar la solicitud:', err);
-    setError(err.message || err?.message || 'No se pudo guardar la solicitud. Intente de nuevo.');
-  }
-};
+  };
 
 
   const handleDownload = async (format) => {
-  if (!createdSolicitudId) return;
-  setIsDownloading(prev => ({ ...prev, [format]: true }));
-  try {
-    await downloadSolicitudDocument(createdSolicitudId, format);
-  } catch (err) {
-    console.error('Error descargando documento', err);
-    setError(err.message || (err?.message) || 'Error al descargar el documento');
-  } finally {
-    setTimeout(() => {
-      setIsDownloading(prev => ({ ...prev, [format]: false }));
-    }, 1000);
-  }
-};
+    if (!createdSolicitudId) return;
+    
+    setIsDownloading(prev => ({ ...prev, [format]: true }));
+    const toastId = toast.loading(`Descargando documento ${format.toUpperCase()}, por favor espere...`);
+
+    try {
+      await downloadSolicitudDocument(createdSolicitudId, format);
+      toast.update(toastId, { 
+        render: "¡Descarga iniciada!", 
+        type: "success", 
+        isLoading: false, 
+        autoClose: 5000 
+      });
+    } catch (err) {
+      toast.dismiss(toastId);
+      handleAxiosError(err, 'Error al descargar el documento');
+    } finally {
+      setTimeout(() => {
+        setIsDownloading(prev => ({ ...prev, [format]: false }));
+      }, 1000);
+    }
+  };
 
 
   const renderForm = () => {

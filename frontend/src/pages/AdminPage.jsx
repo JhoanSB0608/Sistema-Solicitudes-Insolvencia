@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getAdminStats, getAdminSolicitudes } from '../services/adminService';
 import { downloadSolicitudDocument } from '../services/solicitudService';
+import { toast } from 'react-toastify';
+import { handleAxiosError } from '../utils/alert';
 import {
   useReactTable,
   getCoreRowModel,
@@ -479,7 +481,7 @@ const EnhancedAreaChart = ({ data }) => {
   );
 };
 
-const EnhancedTable = ({ table, isLoading, solicitudesData, navigate }) => {
+const EnhancedTable = ({ table, isLoading, solicitudesData, navigate, onDownload }) => {
   const theme = useTheme();
 
   const ActionButton = ({ onClick, icon: Icon, tooltip, color = 'primary' }) => (
@@ -609,13 +611,13 @@ const EnhancedTable = ({ table, isLoading, solicitudesData, navigate }) => {
                             />
                           )}
                           <ActionButton
-                            onClick={() => downloadSolicitudDocument(row.original._id, 'pdf')}
+                            onClick={() => onDownload(row.original._id, 'pdf')}
                             icon={PictureAsPdf}
                             tooltip="Descargar PDF"
                             color="error"
                           />
                           <ActionButton
-                            onClick={() => downloadSolicitudDocument(row.original._id, 'docx')}
+                            onClick={() => onDownload(row.original._id, 'docx')}
                             icon={Description}
                             tooltip="Descargar DOCX"
                             color="info"
@@ -692,6 +694,22 @@ const AdminPage = () => {
   const [localFilters, setLocalFilters] = useState({ tipoSolicitud: '', user: '' });
   const [refreshKey, setRefreshKey] = useState(0);
   const debouncedLocalFilters = useDebounce(localFilters, 500);
+
+  const handleDownload = async (solicitudId, format) => {
+    const toastId = toast.loading(`Descargando documento ${format.toUpperCase()}, por favor espere...`);
+    try {
+      await downloadSolicitudDocument(solicitudId, format);
+      toast.update(toastId, { 
+        render: "¡Descarga iniciada!", 
+        type: "success", 
+        isLoading: false, 
+        autoClose: 5000 
+      });
+    } catch (error) {
+      toast.dismiss(toastId);
+      handleAxiosError(error, `Error al descargar el documento ${format.toUpperCase()}.`);
+    }
+  };
 
   useEffect(() => {
     const filters = Object.entries(debouncedLocalFilters)
@@ -1088,6 +1106,7 @@ const AdminPage = () => {
                 isLoading={isLoadingSolicitudes} 
                 solicitudesData={solicitudesData}
                 navigate={navigate}
+                onDownload={handleDownload}
               />
 
               {isErrorSolicitudes && (

@@ -1,7 +1,6 @@
 // solicitudService.js (actualizado)
 import axios from 'axios';
 import { saveAs } from 'file-saver';
-import { handleAxiosError } from '../utils/alert';
 
 const API_URL = 'https://sistema-solicitudes-insolvencia.onrender.com/api/solicitudes';
 
@@ -28,7 +27,6 @@ export const createSolicitud = async (payload) => {
     const response = await axios.post(API_URL, payload, config);
     return response.data;
   } catch (err) {
-    handleAxiosError(err, 'Error al crear la solicitud.');
     console.error('Error creating solicitud:', err.response?.data || err.message || err);
     // Normalize error for frontend
     throw err.response?.data || { message: err.message || 'Error creando la solicitud' };
@@ -58,7 +56,6 @@ export const downloadSolicitudDocument = async (solicitudId, format = 'pdf') => 
     saveAs(response.data, filename);
     return true;
   } catch (error) {
-    handleAxiosError(error, 'Error al descargar el documento.');
     console.error('Error al descargar el documento', error);
     // lanzar objeto consistente
     throw error.response?.data || { message: error.message || 'Error descargando el documento' };
@@ -71,7 +68,6 @@ export const getSolicitudById = async (solicitudId) => {
     const response = await axios.get(`${API_URL}/${solicitudId}`, config);
     return response.data;
   } catch (err) {
-    handleAxiosError(err, 'Error al obtener los detalles de la solicitud.');
     console.error('Error fetching solicitud:', err.response?.data || err.message || err);
     throw err.response?.data || { message: err.message || 'Error obteniendo la solicitud' };
   }
@@ -86,12 +82,10 @@ export const updateSolicitud = async (solicitudId, payload) => {
     const response = await axios.put(`${API_URL}/${solicitudId}`, payload, config);
     return response.data;
   } catch (err) {
-    handleAxiosError(err, 'Error al actualizar la solicitud.');
     console.error('Error updating solicitud:', err.response?.data || err.message || err);
     throw err.response?.data || { message: err.message || 'Error actualizando la solicitud' };
   }
 };
-
 
 const solicitudService = { createSolicitud, downloadSolicitudDocument, getSolicitudById, updateSolicitud };
 export default solicitudService;
