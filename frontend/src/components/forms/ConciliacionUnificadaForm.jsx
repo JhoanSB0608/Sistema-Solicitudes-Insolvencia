@@ -76,6 +76,7 @@ const GlassSelect = ({ control, name, label, options, rules, error, ...props }) 
                 name={name}
                 control={control}
                 rules={rules}
+                sx={{minWidth: 500}}
                 defaultValue=""
                 render={({ field }) => (
                     <Select
