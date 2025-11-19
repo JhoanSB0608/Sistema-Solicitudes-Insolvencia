@@ -12,8 +12,6 @@ const {
   BorderStyle,
   VerticalAlign,
   PageBreak,
-  PageSize,
-  PageMargin,
 } = require('docx');
 const moment = require('moment');
 const { Unidades } = require('./numeroALetras');
@@ -595,8 +593,8 @@ async function generateSolicitudDocx(solicitud = {}) {
     sections: [{
       properties: {
         pageSize: {
-          width: PageSize.LEGAL.width,
-          height: PageSize.LEGAL.height,
+          width: 12240,
+          height: 20160,
         },
         page: {
           margin: {
