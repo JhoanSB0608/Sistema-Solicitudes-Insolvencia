@@ -17,6 +17,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import useIdleTimeout from './hooks/useIdleTimeout';
 import SessionTimeoutModal from './components/common/SessionTimeoutModal';
 import EditarInsolvenciaPage from './pages/EditarInsolvenciaPage';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 export const AuthContext = createContext(null);
 
@@ -119,6 +121,18 @@ const AuthProvider = ({ children }) => {
   return (
     <AuthContext.Provider value={contextValue}>
       <Header />
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+      />
       <SessionTimeoutModal
         open={showIdleModal}
         onLogout={logout}

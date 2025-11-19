@@ -148,7 +148,7 @@ const getSolicitudDocumento = async (req, res) => {
     }
 
     // Security check: User can only access their own documents unless they are an admin
-    if (solicitud.user._id.toString() !== req.user._id.toString() && !req.user.isAdmin) {
+    if (!solicitud.user || (solicitud.user._id.toString() !== req.user._id.toString() && !req.user.isAdmin)) {
         return res.status(401).json({ message: 'No autorizado para ver este documento' });
     }
 
@@ -172,7 +172,7 @@ if (format === 'pdf') {
       return res.end(buffer);
     } catch (err) {
       console.error('Error generando PDF de Insolvencia:', err);
-      return res.status(500).json({ message: 'Error generando el documento PDF', error: err.message });
+      return res.status(500).json({ message: 'Error generando el documento PDF', error: err.message, stack: err.stack });
     }
   } else {
     // si generateGenericPdf devuelve buffer en lugar de escribir en res, deberías hacer lo mismo:
@@ -194,7 +194,7 @@ if (format === 'pdf') {
     console.error('Error al generar el documento:', error);
     // This outer catch handles errors like the solicitud not being found or database issues.
     if (!res.headersSent) {
-      res.status(500).json({ message: 'Error en el servidor al generar el documento.', error: error.message });
+      res.status(500).json({ message: 'Error en el servidor al generar el documento.', error: error.message, stack: error.stack });
     }
   }
 };

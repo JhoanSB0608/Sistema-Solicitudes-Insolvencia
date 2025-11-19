@@ -4,16 +4,18 @@ import { useForm } from 'react-hook-form';
 import { AuthContext } from '../App'; // Importar el contexto de autenticación
 import GoogleIcon from '@mui/icons-material/Google';
 import { API_BASE_URL } from '../services/userService';
+import { handleAxiosError } from '../utils/alert';
 
 const LoginPage = () => {
   const { register, handleSubmit, formState: { errors } } = useForm();
-  const { login } = useContext(AuthContext);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
+// ...
+// ...
   const onSubmit = async (data) => {
     setIsSubmitting(true);
     try {
       await login(data.email, data.password);
+    } catch (error) {
+      handleAxiosError(error, 'Email o contraseña incorrectos.');
     } finally {
       setIsSubmitting(false);
     }
