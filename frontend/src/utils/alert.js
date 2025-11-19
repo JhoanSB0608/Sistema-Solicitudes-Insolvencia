@@ -1,8 +1,10 @@
+import React from 'react';
 import { toast } from 'react-toastify';
+import { resendVerificationEmail } from '../services/userService';
 
 /**
  * Shows a toast notification.
- * @param {string} message The message to display.
+ * @param {string | React.ReactNode} message The message to display.
  * @param {'info' | 'success' | 'warning' | 'error'} type The type of the toast.
  */
 const showAlert = (message, type = 'info') => {
@@ -19,7 +21,7 @@ export const showSuccess = (message) => {
 
 /**
  * Shows an error toast notification.
- * @param {string} message The message to display.
+ * @param {string | React.ReactNode} message The message to display.
  */
 export const showError = (message) => {
   showAlert(message, 'error');
@@ -33,6 +35,41 @@ export const showWarning = (message) => {
   showAlert(message, 'warning');
 };
 
+
+const ResendVerificationToast = ({ email, message }) => {
+  const handleResend = async () => {
+    try {
+      const res = await resendVerificationEmail(email);
+      showSuccess(res.message || 'Correo de verificación reenviado con éxito.');
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || 'Error al reenviar el correo.';
+      showError(errorMessage);
+    }
+  };
+
+  return (
+    <div>
+      {message}
+      <br />
+      <button 
+        onClick={handleResend} 
+        style={{ 
+          marginTop: '10px', 
+          padding: '5px 10px', 
+          border: 'none', 
+          borderRadius: '4px', 
+          backgroundColor: '#007bff', 
+          color: 'white', 
+          cursor: 'pointer' 
+        }}
+      >
+        Reenviar Correo
+      </button>
+    </div>
+  );
+};
+
+
 /**
  * A utility to handle and display errors from API calls or other promises.
  * It checks for specific error message formats from Axios and the backend.
@@ -42,6 +79,26 @@ export const showWarning = (message) => {
 export const handleAxiosError = (error, defaultMessage = 'Ha ocurrido un error inesperado.') => {
   let message = defaultMessage;
   if (error.response) {
+    // Handle specific error code for unverified account
+    if (error.response.data?.code === 'ACCOUNT_NOT_VERIFIED') {
+      const email = error.config.data ? JSON.parse(error.config.data).email : null;
+      if (email) {
+        showError(
+          <ResendVerificationToast 
+            email={email} 
+            message={error.response.data.message} 
+          />
+        );
+        return;
+      }
+    }
+
+    // Handle specific error code for existing but unverified account during registration
+    if (error.response.data?.code === 'ACCOUNT_EXISTS_NOT_VERIFIED') {
+      showWarning(error.response.data.message);
+      return;
+    }
+
     // The request was made and the server responded with a status code
     // that falls out of the range of 2xx
     if (error.response.data && error.response.data.message) {

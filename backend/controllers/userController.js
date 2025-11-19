@@ -148,8 +148,10 @@ const authUser = async (req, res) => {
   if (user && (await user.matchPassword(password))) {
     // Check if user is verified
     if (!user.isVerified) {
-      res.status(401);
-      throw new Error('Tu cuenta no ha sido verificada. Por favor, revisa tu correo electrónico.');
+      return res.status(401).json({
+        message: 'Tu cuenta no ha sido verificada. Por favor, revisa tu correo electrónico.',
+        code: 'ACCOUNT_NOT_VERIFIED',
+      });
     }
 
     res.json({
@@ -186,7 +188,19 @@ const registerUser = async (req, res) => {
     // 2. Check if user exists
     const userExists = await User.findOne({ email });
     if (userExists) {
-      return res.status(400).json({ message: 'El correo electrónico ya está registrado' });
+      if (!userExists.isVerified) {
+        // If user exists but is not verified, resend verification email
+        userExists.generateVerificationToken();
+        await sendVerificationEmail(userExists);
+        await userExists.save();
+        return res.status(409).json({ 
+          message: 'Este correo ya está registrado pero no ha sido verificado. Se ha enviado un nuevo correo de verificación.',
+          code: 'ACCOUNT_EXISTS_NOT_VERIFIED'
+        });
+      } else {
+        // If user exists and is verified, it's a conflict
+        return res.status(400).json({ message: 'El correo electrónico ya está registrado' });
+      }
     }
 
     // 3. Create user instance (in memory)
@@ -260,4 +274,37 @@ const verifyEmail = async (req, res) => {
   }
 };
 
-module.exports = { authUser, registerUser, verifyEmail };
+// @desc    Resend verification email
+// @route   POST /api/users/resend-verification
+// @access  Public
+const resendVerificationEmail = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ message: 'El correo electrónico es requerido.' });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      // Don't reveal that the user doesn't exist for security reasons
+      return res.status(200).json({ message: 'Si existe una cuenta con este correo, se ha enviado un nuevo enlace de verificación.' });
+    }
+
+    if (user.isVerified) {
+      return res.status(400).json({ message: 'Esta cuenta ya ha sido verificada.' });
+    }
+
+    // Regenerate token and send email
+    user.generateVerificationToken();
+    await sendVerificationEmail(user);
+    await user.save();
+
+    res.status(200).json({ message: 'Se ha enviado un nuevo enlace de verificación a tu correo electrónico.' });
+
+  } catch (error) {
+    console.error('Error al reenviar el correo de verificación:', error);
+    res.status(500).json({ message: 'Ha ocurrido un error interno al intentar reenviar el correo.' });
+  }
+};
+
+module.exports = { authUser, registerUser, verifyEmail, resendVerificationEmail };

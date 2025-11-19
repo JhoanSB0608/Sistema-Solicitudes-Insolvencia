@@ -48,3 +48,8 @@ export const getMe = async () => {
   localStorage.setItem('userInfo', JSON.stringify(user));
   return user;
 };
+
+export const resendVerificationEmail = async (email) => {
+  const response = await axios.post(`${API_URL}/resend-verification`, { email });
+  return response.data;
+};
