@@ -1,5 +1,6 @@
 const Solicitud = require('../models/solicitudModel');
 const { generateSolicitudPdf } = require('../utils/documentGenerator');
+const { generateSolicitudDocx } = require('../utils/docxGenerator');
 
 const getSolicitudById = async (req, res) => {
   try {
@@ -153,43 +154,32 @@ const getSolicitudDocumento = async (req, res) => {
     }
 
     const format = req.query.format || 'pdf';
-    const { tipoSolicitud } = solicitud;
 
-if (format === 'pdf') {
-    try {
-      const buffer = await generateSolicitudPdf(solicitud);
-      // Diagnóstico
-      const bufLen = buffer && (buffer.length || buffer.byteLength) ? (buffer.length || buffer.byteLength) : Buffer.byteLength(Buffer.from(buffer || []));
-
-      if (!buffer || bufLen === 0) {
-        return res.status(500).json({ message: 'No se generó el contenido del PDF' });
+    if (format === 'pdf') {
+      try {
+        const buffer = await generateSolicitudPdf(solicitud);
+        const filename = `solicitud-${solicitud._id}.pdf`;
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`);
+        res.send(buffer);
+      } catch (err) {
+        console.error('Error generando PDF de Insolvencia:', err);
+        return res.status(500).json({ message: 'Error generando el documento PDF', error: err.message, stack: err.stack });
       }
-
-      const filename = `solicitud-${solicitud._id}.pdf`;
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`);
-      res.setHeader('Content-Length', String(bufLen));
-      return res.end(buffer);
-    } catch (err) {
-      console.error('Error generando PDF de Insolvencia:', err);
-      return res.status(500).json({ message: 'Error generando el documento PDF', error: err.message, stack: err.stack });
-    }
-  } else {
-    // si generateGenericPdf devuelve buffer en lugar de escribir en res, deberías hacer lo mismo:
-    if (genericPdfMap[tipoSolicitud]) {
-      // Si generateGenericPdf ya escribe en `res`, no lo cambies. Si devuelve buffer, asegúrate de enviar buffer y headers.
-      res.setHeader('Content-Type', 'application/pdf');
-      const filename = `solicitud-${solicitud._id}.pdf`;
-      res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`);
-      // Si generateGenericPdf escribe en res: llamar y retornar. Si devuelve buffer, enviar buffer.
-      return generateGenericPdf(solicitud, genericPdfMap[tipoSolicitud], res);
+    } else if (format === 'docx') {
+      try {
+        const buffer = await generateSolicitudDocx(solicitud);
+        const filename = `solicitud-${solicitud._id}.docx`;
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+        res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`);
+        res.send(buffer);
+      } catch (err) {
+        console.error('Error generando DOCX de Insolvencia:', err);
+        return res.status(500).json({ message: 'Error generando el documento DOCX', error: err.message, stack: err.stack });
+      }
     } else {
-      return res.status(400).json({ message: 'Tipo de solicitud no tiene un generador de PDF.' });
+      return res.status(400).json({ message: `Formato de documento no soportado: ${format}` });
     }
-  }
-
-
-
   } catch (error) {
     console.error('Error al generar el documento:', error);
     // This outer catch handles errors like the solicitud not being found or database issues.
