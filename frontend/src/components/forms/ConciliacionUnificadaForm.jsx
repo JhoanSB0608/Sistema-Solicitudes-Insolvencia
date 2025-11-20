@@ -155,10 +155,10 @@ const PartyMemberFields = ({ partyType, index, control, errors, register, watch,
                 </>
             )}
             
-            <LocationSelector control={control} errors={errors} watch={watch} setValue={setValue} showDepartment={true} showCity={true} departmentFieldName={`${partyType}.${index}.departamentoExpedicion`} cityFieldName={`${partyType}.${index}.ciudadExpedicion`} departmentLabel="Departamento de Expedición" cityLabel="Ciudad de Expedición" departmentGridProps={{ xs: 12, sm: 6 }} cityGridProps={{ xs: 12, sm: 6 }} />
+            <LocationSelector control={control} errors={errors} watch={watch} setValue={setValue} showDepartment={true} showCity={true} departmentFieldName={`${partyType}.${index}.departamentoExpedicion`} cityFieldName={`${partyType}.${index}.ciudadExpedicion`} departmentLabel="Departamento de Expedición" cityLabel="Ciudad de Expedición" departmentGridProps={{ xs: 12, sm: 6 }} cityGridProps={{ xs: 12, sm: 6 }} departmentRules={{ required: 'Campo requerido' }} cityRules={{ required: 'Campo requerido' }} />
             <Grid item xs={12} sm={6}><GlassTextField {...register(`${partyType}.${index}.telefono`, { required: 'Campo requerido' })} label="Teléfono" fullWidth error={errors[partyType]?.[index]?.telefono} helperText={errors[partyType]?.[index]?.telefono?.message} /></Grid>
-            <Grid item xs={12} sm={6}><GlassTextField {...register(`${partyType}.${index}.email`, { required: 'Campo requerido' })} label="Email" type="email" fullWidth error={errors[partyType]?.[index]?.email} helperText={errors[partyType]?.[index]?.email?.message} /></Grid>
-            <LocationSelector control={control} errors={errors} watch={watch} setValue={setValue} showCountry={true} countryFieldName={`${partyType}.${index}.paisOrigen`} countryLabel="País de Origen" countryGridProps={{ xs: 12, sm: 6 }} />
+            <Grid item xs={12} sm={6}><GlassTextField {...register(`${partyType}.${index}.email`, { required: 'Campo requerido', pattern: { value: /^\S+@\S+$/i, message: "Email inválido" } })} label="Email" type="email" fullWidth error={errors[partyType]?.[index]?.email} helperText={errors[partyType]?.[index]?.email?.message} /></Grid>
+            <LocationSelector control={control} errors={errors} watch={watch} setValue={setValue} showCountry={true} countryFieldName={`${partyType}.${index}.paisOrigen`} countryLabel="País de Origen" countryGridProps={{ xs: 12, sm: 6 }} countryRules={{ required: 'Campo requerido' }} />
             
             {tipoInvolucrado === 'Persona Natural' && (
                 <>
@@ -168,7 +168,7 @@ const PartyMemberFields = ({ partyType, index, control, errors, register, watch,
                 </>
             )}
 
-            <LocationSelector control={control} errors={errors} watch={watch} setValue={setValue} showDepartment={true} showCity={true} departmentFieldName={`${partyType}.${index}.departamento`} cityFieldName={`${partyType}.${index}.ciudad`} departmentLabel="Departamento de Domicilio" cityLabel="Ciudad de Domicilio" departmentGridProps={{ xs: 12, sm: 6 }} cityGridProps={{ xs: 12, sm: 6 }} />
+            <LocationSelector control={control} errors={errors} watch={watch} setValue={setValue} showDepartment={true} showCity={true} departmentFieldName={`${partyType}.${index}.departamento`} cityFieldName={`${partyType}.${index}.ciudad`} departmentLabel="Departamento de Domicilio" cityLabel="Ciudad de Domicilio" departmentGridProps={{ xs: 12, sm: 6 }} cityGridProps={{ xs: 12, sm: 6 }} departmentRules={{ required: 'Campo requerido' }} cityRules={{ required: 'Campo requerido' }} />
             <Grid item xs={12} sm={6}><GlassTextField {...register(`${partyType}.${index}.domicilio`, { required: 'Campo requerido' })} label="Domicilio (Dirección)" fullWidth error={errors[partyType]?.[index]?.domicilio} helperText={errors[partyType]?.[index]?.domicilio?.message} /></Grid>
         </Grid>
     );
@@ -199,9 +199,9 @@ const ConciliacionUnificadaForm = ({ onSubmit }) => {
     }
   });
 
-  const { fields: convocantes, append: appendConvocante, remove: removeConvocante } = useFieldArray({ control, name: "convocantes" });
-  const { fields: convocados, append: appendConvocado, remove: removeConvocado } = useFieldArray({ control, name: "convocados" });
-  const { fields: hechos, append: appendHecho, remove: removeHecho } = useFieldArray({ control, name: "hechos" });
+  const { fields: convocantes, append: appendConvocante, remove: removeConvocante } = useFieldArray({ control, name: "convocantes", rules: { minLength: { value: 1, message: "Debe agregar al menos un convocante" }} });
+  const { fields: convocados, append: appendConvocado, remove: removeConvocado } = useFieldArray({ control, name: "convocados", rules: { minLength: { value: 1, message: "Debe agregar al menos un convocado" }} });
+  const { fields: hechos, append: appendHecho, remove: removeHecho } = useFieldArray({ control, name: "hechos", rules: { minLength: { value: 1, message: "Debe agregar al menos un hecho" }} });
   const { fields: anexos, append: appendAnexo, remove: removeAnexo } = useFieldArray({ control, name: "anexos" });
 
   const [tabValue, setTabValue] = useState(0);
@@ -254,9 +254,9 @@ const ConciliacionUnificadaForm = ({ onSubmit }) => {
           <GlassCard sx={{ p: 3 }}>
             <Stack spacing={3}>
               <Typography variant="h6">Sede</Typography>
-              <LocationSelector control={control} errors={errors} watch={watch} setValue={setValue} showDepartment={true} showCity={true} departmentFieldName="sede.departamento" cityFieldName="sede.ciudad" />
-              <GlassTextField {...register('sede.entidadPromotora')} label="Entidad Promotora" fullWidth />
-              <GlassTextField {...register('sede.sedeCentro')} label="Sede / Centro" fullWidth />
+              <LocationSelector control={control} errors={errors} watch={watch} setValue={setValue} showDepartment={true} showCity={true} departmentFieldName="sede.departamento" cityFieldName="sede.ciudad" departmentRules={{ required: 'Campo requerido' }} cityRules={{ required: 'Campo requerido' }} />
+              <GlassTextField {...register('sede.entidadPromotora', { required: 'Campo requerido' })} label="Entidad Promotora" fullWidth error={!!errors.sede?.entidadPromotora} helperText={errors.sede?.entidadPromotora?.message} />
+              <GlassTextField {...register('sede.sedeCentro', { required: 'Campo requerido' })} label="Sede / Centro" fullWidth error={!!errors.sede?.sedeCentro} helperText={errors.sede?.sedeCentro?.message} />
             </Stack>
           </GlassCard>
         </TabPanel>
@@ -266,17 +266,18 @@ const ConciliacionUnificadaForm = ({ onSubmit }) => {
             <Stack spacing={3}>
               <Typography variant="h6">Información General del Caso</Typography>
               <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}><GlassSelect control={control} name="infoGeneral.solicitanteServicio" label="Solicitante del servicio" options={[{value: 'LAS DOS PARTES-MUTUO ACUERDO', label: 'LAS DOS PARTES-MUTUO ACUERDO'}, {value: 'MEDIANTE APODERADO', label: 'MEDIANTE APODERADO'}, {value: 'SOLO UNA DE LAS PARTES', label: 'SOLO UNA DE LAS PARTES'}]} /></Grid>
-                <Grid item xs={12} sm={6}><GlassSelect control={control} name="infoGeneral.finalidadServicio" label="Finalidad de Adquisición" options={[{value: 'CUMPLIR REQUISITO DE PROCEDIBILIDAD', label: 'CUMPLIR REQUISITO DE PROCEDIBILIDAD'}, {value: 'RESOLVER DE MANERA ALTERNATIVA EL CONFLICTO', label: 'RESOLVER DE MANERA ALTERNATIVA EL CONFLICTO'}]} /></Grid>
-                <Grid item xs={12} sm={6}><GlassSelect control={control} name="infoGeneral.tiempoConflicto" label="Tiempo del Conflicto" options={[{value: 'NO INFORMA', label: 'NO INFORMA'}, {value: 'DE 1 A 30 Días (HASTA 1 MES)', label: 'DE 1 A 30 Días (HASTA 1 MES)'}, {value: 'DE 31 A 180 Días (ENTRE 2 Y 6 MESES)', label: 'DE 31 A 180 Días (ENTRE 2 Y 6 MESES)'}, {value: 'SUPERIOR A 180 Días (ENTRE 7 Y 12 MESES)', label: 'SUPERIOR A 180 Días (ENTRE 7 Y 12 MESES)'}, {value: 'SUPERIOR A 365 Días (SUPERIOR A 1 AÑO)', label: 'SUPERIOR A 365 Días (SUPERIOR A 1 AÑO)'}]} /></Grid>
+                <Grid item xs={12} sm={6}><GlassSelect control={control} name="infoGeneral.solicitanteServicio" label="Solicitante del servicio" options={[{value: 'LAS DOS PARTES-MUTUO ACUERDO', label: 'LAS DOS PARTES-MUTUO ACUERDO'}, {value: 'MEDIANTE APODERADO', label: 'MEDIANTE APODERADO'}, {value: 'SOLO UNA DE LAS PARTES', label: 'SOLO UNA DE LAS PARTES'}]} rules={{ required: 'Campo requerido' }} error={errors.infoGeneral?.solicitanteServicio} /></Grid>
+                <Grid item xs={12} sm={6}><GlassSelect control={control} name="infoGeneral.finalidadServicio" label="Finalidad de Adquisición" options={[{value: 'CUMPLIR REQUISITO DE PROCEDIBILIDAD', label: 'CUMPLIR REQUISITO DE PROCEDIBILIDAD'}, {value: 'RESOLVER DE MANERA ALTERNATIVA EL CONFLICTO', label: 'RESOLVER DE MANERA ALTERNATIVA EL CONFLICTO'}]} rules={{ required: 'Campo requerido' }} error={errors.infoGeneral?.finalidadServicio} /></Grid>
+                <Grid item xs={12} sm={6}><GlassSelect control={control} name="infoGeneral.tiempoConflicto" label="Tiempo del Conflicto" options={[{value: 'NO INFORMA', label: 'NO INFORMA'}, {value: 'DE 1 A 30 Días (HASTA 1 MES)', label: 'DE 1 A 30 Días (HASTA 1 MES)'}, {value: 'DE 31 A 180 Días (ENTRE 2 Y 6 MESES)', label: 'DE 31 A 180 Días (ENTRE 2 Y 6 MESES)'}, {value: 'SUPERIOR A 180 Días (ENTRE 7 Y 12 MESES)', label: 'SUPERIOR A 180 Días (ENTRE 7 Y 12 MESES)'}, {value: 'SUPERIOR A 365 Días (SUPERIOR A 1 AÑO)', label: 'SUPERIOR A 365 Días (SUPERIOR A 1 AÑO)'}]} rules={{ required: 'Campo requerido' }} error={errors.infoGeneral?.tiempoConflicto} /></Grid>
                 <Grid item xs={12} sm={6}><FormControlLabel control={<Controller name="infoGeneral.asuntoJuridicoDefinible" control={control} render={({ field }) => <Checkbox {...field} checked={field.value} />} />} label="¿Asunto Juridico Definible?" /></Grid>
-                <Grid item xs={12} sm={6}><GlassSelect control={control} name="infoGeneral.areaDerecho" label="Área del Derecho" options={[{value: 'COMUNITARIO', label: 'COMUNITARIO'}, {value: 'FAMILIARES', label: 'FAMILIARES'}]} /></Grid>
-                {areaDerecho && <Grid item xs={12} sm={6}><GlassSelect control={control} name="infoGeneral.tema" label="Tema" options={(temas[areaDerecho] || []).map(t => ({value: t, label: t}))} /></Grid>}
+                <Grid item xs={12} sm={6}><GlassSelect control={control} name="infoGeneral.areaDerecho" label="Área del Derecho" options={[{value: 'COMUNITARIO', label: 'COMUNITARIO'}, {value: 'FAMILIARES', label: 'FAMILIARES'}]} rules={{ required: 'Campo requerido' }} error={errors.infoGeneral?.areaDerecho} /></Grid>
+                {areaDerecho && <Grid item xs={12} sm={6}><GlassSelect control={control} name="infoGeneral.tema" label="Tema" options={(temas[areaDerecho] || []).map(t => ({value: t, label: t}))} rules={{ required: 'Campo requerido' }} error={errors.infoGeneral?.tema} /></Grid>}
                 <Grid item xs={12} sm={6}><FormControlLabel control={<Controller name="infoGeneral.cuantiaDetallada" control={control} render={({ field }) => <Checkbox {...field} checked={field.value} />} />} label="¿Cuantía Detallada?" /></Grid>
-                <Grid item xs={12} sm={6}><FormControlLabel control={<Controller name="infoGeneral.cuantiaIndeterminada" control={control} render={({ field }) => <Checkbox {...field} checked={field.value} />} />} label="¿Cuantía Indeterminada?" /></Grid>
+                <Grid item xs={12} sm={6}><FormControlLabel control={<Controller name="infoGeneral.cuantiaIndeterminada" control={control} rules={{ validate: (value, formValues) => formValues.infoGeneral.cuantiaDetallada || value || 'Debe seleccionar un tipo de cuantía' }} render={({ field }) => <Checkbox {...field} checked={field.value} />} />} label="¿Cuantía Indeterminada?" /></Grid>
+                {errors.infoGeneral?.cuantiaIndeterminada && <Grid item xs={12}><FormHelperText error>{errors.infoGeneral.cuantiaIndeterminada.message}</FormHelperText></Grid>}
                 {watchCuantiaDetallada && <>
-                    <Grid item xs={12} sm={6}><GlassTextField {...register('infoGeneral.cuantiaTexto')} label="Detalle Cuantía" fullWidth /></Grid>
-                    <Grid item xs={12} sm={6}><GlassTextField {...register('infoGeneral.cuantiaTotal')} label="Cuantía Total" type="number" fullWidth /></Grid>
+                    <Grid item xs={12} sm={6}><GlassTextField {...register('infoGeneral.cuantiaTexto', { required: 'Campo requerido' })} label="Detalle Cuantía" fullWidth error={!!errors.infoGeneral?.cuantiaTexto} helperText={errors.infoGeneral?.cuantiaTexto?.message} /></Grid>
+                    <Grid item xs={12} sm={6}><GlassTextField {...register('infoGeneral.cuantiaTotal', { required: 'Campo requerido' })} label="Cuantía Total" type="number" fullWidth error={!!errors.infoGeneral?.cuantiaTotal} helperText={errors.infoGeneral?.cuantiaTotal?.message} /></Grid>
                 </>}
               </Grid>
             </Stack>
@@ -297,6 +298,7 @@ const ConciliacionUnificadaForm = ({ onSubmit }) => {
                     </GlassCard>
                 ))}
                 <Button variant="outlined" onClick={() => appendConvocante({})} startIcon={<AddIcon />}>Añadir Convocante</Button>
+                {errors.convocantes?.root && <FormHelperText error>{errors.convocantes.root.message}</FormHelperText>}
             </Stack>
         </TabPanel>
 
@@ -314,6 +316,7 @@ const ConciliacionUnificadaForm = ({ onSubmit }) => {
                     </GlassCard>
                 ))}
                 <Button variant="outlined" onClick={() => appendConvocado({})} startIcon={<AddIcon />}>Añadir Convocado</Button>
+                {errors.convocados?.root && <FormHelperText error>{errors.convocados.root.message}</FormHelperText>}
             </Stack>
         </TabPanel>
 
@@ -328,11 +331,12 @@ const ConciliacionUnificadaForm = ({ onSubmit }) => {
                                     <Chip label={`Hecho #${index + 1}`} />
                                     <IconButton onClick={() => removeHecho(index)}><DeleteIcon /></IconButton>
                                 </Stack>
-                                <GlassTextField {...register(`hechos.${index}.descripcion`)} label="Descripción del Hecho" multiline rows={4} fullWidth />
+                                <GlassTextField {...register(`hechos.${index}.descripcion`, { required: 'Campo requerido' })} label="Descripción del Hecho" multiline rows={4} fullWidth error={!!errors.hechos?.[index]?.descripcion} helperText={errors.hechos?.[index]?.descripcion?.message} />
                             </Stack>
                         </GlassCard>
                     ))}
                     <Button variant="outlined" onClick={() => appendHecho({ descripcion: '' })} startIcon={<AddIcon />}>Añadir Hecho</Button>
+                    {errors.hechos?.root && <FormHelperText error>{errors.hechos.root.message}</FormHelperText>}
                 </Stack>
             </GlassCard>
         </TabPanel>
@@ -341,7 +345,7 @@ const ConciliacionUnificadaForm = ({ onSubmit }) => {
             <GlassCard sx={{ p: 3 }}>
                 <Stack spacing={2}>
                     <Typography variant="h6">Pretensiones</Typography>
-                    <GlassTextField {...register('pretensiones')} label="Descripción de las Pretensiones" multiline rows={6} fullWidth />
+                    <GlassTextField {...register('pretensiones', { required: 'Campo requerido' })} label="Descripción de las Pretensiones" multiline rows={6} fullWidth error={!!errors.pretensiones} helperText={errors.pretensiones?.message} />
                 </Stack>
             </GlassCard>
         </TabPanel>
@@ -350,7 +354,7 @@ const ConciliacionUnificadaForm = ({ onSubmit }) => {
             <GlassCard sx={{ p: 3 }}>
                 <Stack spacing={2}>
                     <Typography variant="h6">Fundamentos</Typography>
-                    <GlassTextField {...register('fundamentos')} label="Fundamentos de Derecho" multiline rows={6} fullWidth />
+                    <GlassTextField {...register('fundamentos', { required: 'Campo requerido' })} label="Fundamentos de Derecho" multiline rows={6} fullWidth error={!!errors.fundamentos} helperText={errors.fundamentos?.message}/>
                 </Stack>
             </GlassCard>
         </TabPanel>
@@ -362,11 +366,33 @@ const ConciliacionUnificadaForm = ({ onSubmit }) => {
                     {anexos.map((field, index) => (
                         <GlassCard key={field.id} sx={{ p: 2, mt: 2 }}>
                             <Stack direction="row" spacing={2} alignItems="center">
-                                <Button variant="outlined" component="label" startIcon={<UploadFileIcon />}>
-                                    Seleccionar Archivo
-                                    <input type="file" hidden onChange={(e) => handleFileChange(e, index)} />
-                                </Button>
-                                <Typography variant="body2" noWrap>{watch(`anexos.${index}.name`) || 'Ningún archivo seleccionado'}</Typography>
+                                <Controller
+                                    name={`anexos.${index}.file`}
+                                    control={control}
+                                    rules={{ required: 'Debe seleccionar un archivo' }}
+                                    render={({ field: { onChange, ...fieldProps }, fieldState }) => (
+                                        <>
+                                            <Button variant="outlined" component="label" startIcon={<UploadFileIcon />} color={fieldState.error ? 'error' : 'primary'}>
+                                                Seleccionar Archivo
+                                                <input
+                                                    type="file"
+                                                    hidden
+                                                    {...fieldProps}
+                                                    onChange={(e) => {
+                                                        handleFileChange(e, index);
+                                                        onChange(e.target.files[0]);
+                                                    }}
+                                                />
+                                            </Button>
+                                            <Box flexGrow={1}>
+                                                <Typography variant="body2" noWrap sx={{ color: fieldState.error ? 'error.main' : 'inherit' }}>
+                                                    {watch(`anexos.${index}.name`) || 'Ningún archivo seleccionado'}
+                                                </Typography>
+                                                {fieldState.error && <FormHelperText error>{fieldState.error.message}</FormHelperText>}
+                                            </Box>
+                                        </>
+                                    )}
+                                />
                                 <IconButton onClick={() => removeAnexo(index)}><DeleteIcon /></IconButton>
                             </Stack>
                         </GlassCard>

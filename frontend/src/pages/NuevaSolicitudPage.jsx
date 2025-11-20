@@ -106,7 +106,7 @@ const tiposDeSolicitud = [
   },
   {
     value: 'Solicitud de Conciliación Unificada',
-    label: 'Conciliación Unificada (Varios Asuntos)',
+    label: 'Solicitud de Conciliación',
     shortLabel: 'Conciliación',
     icon: '⚖️',
     color: '#4caf50',
