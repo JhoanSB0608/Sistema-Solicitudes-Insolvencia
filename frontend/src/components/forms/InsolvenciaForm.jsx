@@ -30,9 +30,12 @@ import {
   Verified as VerifiedIcon,
   Error as ErrorIcon,
   AttachFile as AttachFileIcon,
-  UploadFile as UploadFileIcon
+  UploadFile as UploadFileIcon,
+  Create as CreateIcon
 } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
+// HINT: You may need to install this dependency: npm install react-signature-canvas
+import SignatureCanvas from 'react-signature-canvas';
 import LocationSelector from './LocationSelector';
 import { getAcreedores } from '../../services/acreedorService';
 
@@ -228,6 +231,7 @@ const InsolvenciaForm = ({ onSubmit, resetToken, initialData, isUpdating }) => {
       propuestaPago: { tipoNegociacion: 'texto' },
       noPoseeBienes: false,
       anexos: [],
+      firma: { source: 'draw', data: null, file: null },
     }
   });
 
@@ -260,9 +264,25 @@ const InsolvenciaForm = ({ onSubmit, resetToken, initialData, isUpdating }) => {
     financiera: false,
     propuesta: false,
     anexos: false,
+    firma: false,
   });
   const [isSaving, setIsSaving] = useState(false);
   const [isConfirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [signatureSource, setSignatureSource] = useState('draw');
+  const [signatureImage, setSignatureImage] = useState(null);
+  const sigCanvas = React.useRef({});
+
+  const handleSignatureFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setValue('firma.file', file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSignatureImage(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   useEffect(() => {
     if (initialData) {
@@ -299,6 +319,7 @@ const InsolvenciaForm = ({ onSubmit, resetToken, initialData, isUpdating }) => {
         financiera: true,
         propuesta: true,
         anexos: true,
+        firma: true,
       });
     }
   }, [initialData, reset]);
@@ -358,6 +379,9 @@ const InsolvenciaForm = ({ onSubmit, resetToken, initialData, isUpdating }) => {
       case 'anexos':
         fieldsToValidate = ['anexos'];
         break;
+      case 'firma':
+        fieldsToValidate = ['firma'];
+        break;
       default:
         break;
     }
@@ -413,6 +437,10 @@ const InsolvenciaForm = ({ onSubmit, resetToken, initialData, isUpdating }) => {
       });
     }
 
+    if (signatureSource === 'upload' && data.firma?.file) {
+      formData.append('firma', data.firma.file);
+    }
+
     // Use the corrected data to build the final payload
     const dataToSend = {
       ...correctedData,
@@ -423,6 +451,18 @@ const InsolvenciaForm = ({ onSubmit, resetToken, initialData, isUpdating }) => {
       }),
       projectionData,
     };
+
+    if (signatureSource === 'draw' && sigCanvas.current && !sigCanvas.current.isEmpty()) {
+      dataToSend.firma = {
+        source: 'draw',
+        data: sigCanvas.current.getTrimmedCanvas().toDataURL('image/png')
+      };
+    } else if (signatureSource === 'upload' && data.firma?.file) {
+        dataToSend.firma = {
+          source: 'upload',
+          name: data.firma.file.name,
+        };
+    }
 
     formData.append('solicitudData', JSON.stringify(dataToSend));
 
@@ -561,6 +601,7 @@ const InsolvenciaForm = ({ onSubmit, resetToken, initialData, isUpdating }) => {
     { key: 'financiera', label: 'Info. Financiera', icon: AssessmentIcon, color: '#ff9800' },
     { key: 'propuesta', label: 'Propuesta', icon: GavelIcon, color: '#9c27b0' },
     { key: 'anexos', label: 'Anexos', icon: AttachFileIcon, color: '#009688' },
+    { key: 'firma', label: 'Firma', icon: CreateIcon, color: '#795548' },
   ];
 
   return (
@@ -3968,6 +4009,92 @@ const InsolvenciaForm = ({ onSubmit, resetToken, initialData, isUpdating }) => {
                     background: `linear-gradient(135deg, ${tabsConfig[7].color}, ${alpha(tabsConfig[7].color, 0.7)})`,
                     '&:hover': {
                       background: `linear-gradient(135deg, ${alpha(tabsConfig[7].color, 0.9)}, ${alpha(tabsConfig[7].color, 0.6)})`,
+                      transform: 'translateY(-2px)',
+                    },
+                  }}
+                >
+                  {isSaving ? 'Guardando...' : 'Guardar Sección'}
+                </Button>
+              </Stack>
+            </Box>
+          </GlassCard>
+        </TabPanel>
+
+        {/* Tab 9: Firma */}
+        <TabPanel value={tabValue} index={8}>
+          <GlassCard>
+            <Box sx={{ p: 3 }}>
+              <Stack spacing={3}>
+                <Stack direction="row" spacing={2} alignItems="center">
+                  <Avatar sx={{ bgcolor: alpha(tabsConfig[8].color, 0.1), color: tabsConfig[8].color }}>
+                    <CreateIcon />
+                  </Avatar>
+                  <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                    Firma del Deudor
+                  </Typography>
+                </Stack>
+
+                <FormControl component="fieldset">
+                  <RadioGroup row value={signatureSource} onChange={(e) => setSignatureSource(e.target.value)}>
+                    <FormControlLabel value="draw" control={<Radio />} label="Dibujar Firma" />
+                    <FormControlLabel value="upload" control={<Radio />} label="Subir Imagen de Firma" />
+                  </RadioGroup>
+                </FormControl>
+
+                {signatureSource === 'draw' && (
+                  <Box sx={{ border: '1px dashed grey', borderRadius: '12px', p: 1, background: 'white' }}>
+                    <SignatureCanvas
+                      ref={sigCanvas}
+                      penColor='black'
+                      canvasProps={{
+                        width: 500,
+                        height: 200,
+                        style: { background: '#f8f8f8', borderRadius: '12px' }
+                      }}
+                    />
+                    <Button onClick={() => sigCanvas.current.clear()}>Limpiar</Button>
+                  </Box>
+                )}
+
+                {signatureSource === 'upload' && (
+                  <Box>
+                    <Button
+                      variant="outlined"
+                      component="label"
+                      startIcon={<UploadFileIcon />}
+                    >
+                      Seleccionar Archivo
+                      <input
+                        type="file"
+                        hidden
+                        accept="image/*"
+                        onChange={handleSignatureFileUpload}
+                      />
+                    </Button>
+                    {signatureImage && (
+                      <Box mt={2}>
+                        <Typography>Vista Previa:</Typography>
+                        <img src={signatureImage} alt="Firma" style={{ maxWidth: '100%', maxHeight: 200, border: '1px solid #ccc' }} />
+                      </Box>
+                    )}
+                  </Box>
+                )}
+
+                <Button
+                  variant="contained"
+                  onClick={() => handleSaveSection('firma')}
+                  disabled={isSaving}
+                  startIcon={isSaving ? null : <SaveIcon />}
+                  sx={{
+                    mt: 2,
+                    py: 1.5,
+                    px: 4,
+                    borderRadius: '12px',
+                    fontWeight: 600,
+                    textTransform: 'none',
+                    background: `linear-gradient(135deg, ${tabsConfig[8].color}, ${alpha(tabsConfig[8].color, 0.7)})`,
+                    '&:hover': {
+                      background: `linear-gradient(135deg, ${alpha(tabsConfig[8].color, 0.9)}, ${alpha(tabsConfig[8].color, 0.6)})`,
                       transform: 'translateY(-2px)',
                     },
                   }}
