@@ -13,11 +13,12 @@ const generateToken = (id) => {
 // Helper function to send verification email using Resend
 const sendVerificationEmail = async (user) => {
   const resend = new Resend(process.env.RESEND_API_KEY);
-  const verificationLink = `${process.env.BACKEND_URL}/api/users/verify/${user.verificationToken}`;
 
-  // Read the image file for the attachment
+  // Read the image file and convert to base64
   const imagePath = path.join(__dirname, '..', 'public', 'logoPrincipal.png');
   const imageBuffer = await fs.readFile(imagePath);
+  const imageBase64 = imageBuffer.toString('base64');
+  const verificationLink = `${process.env.BACKEND_URL || 'http://localhost:5000'}/api/users/verify/${user.verificationToken}`;
 
   const mailOptions = {
    from: "SystemLex <no-reply@systemlex.com.co>", // Resend requires a verified domain, using default for now
@@ -43,7 +44,7 @@ const sendVerificationEmail = async (user) => {
                 <!-- Header con logo -->
                 <tr>
                   <td align="center" style="padding: 40px 40px 20px 40px; background: rgba(255, 255, 255, 0.1);">
-                    <img src="cid:logo" alt="SystemLex Logo" style="max-width: 180px; height: auto; display: block; margin: 0 auto;" />
+                    <img src="data:image/png;base64,${imageBase64}" alt="SystemLex Logo" style="max-width: 180px; height: auto; display: block; margin: 0 auto;" />
                   </td>
                 </tr>
                 
@@ -93,14 +94,6 @@ const sendVerificationEmail = async (user) => {
                       </p>
                     </div>
                     
-                    <!-- Enlace alternativo -->
-                    <p style="margin: 25px 0 0 0; font-size: 13px; line-height: 1.6; color: #e3f2fd; text-align: center;">
-                      Si el botón no funciona, copia y pega este enlace en tu navegador:
-                    </p>
-                    <p style="margin: 10px 0 0 0; padding: 12px; background: rgba(0, 0, 0, 0.1); border-radius: 8px; word-break: break-all; font-size: 12px; color: #ffffff; text-align: center;">
-                      ${verificationLink}
-                    </p>
-                    
                   </td>
                 </tr>
                 
@@ -125,13 +118,6 @@ const sendVerificationEmail = async (user) => {
       </body>
       </html>
     `,
-    attachments: [
-      {
-        filename: 'logoPrincipal.png',
-        content: imageBuffer,
-        cid: 'logo',
-      },
-    ],
   };
 
   await resend.emails.send(mailOptions);
