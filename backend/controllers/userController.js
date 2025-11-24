@@ -13,11 +13,28 @@ const generateToken = (id) => {
 // Helper function to send verification email using Resend
 const sendVerificationEmail = async (user) => {
   const resend = new Resend(process.env.RESEND_API_KEY);
+  let imageBase64 = ''; // Default to empty string
+  let imgTag = '<p style="text-align:center; font-size:24px; font-weight:bold; color: #ffffff;">SystemLex</p>'; // Fallback text
 
-  // Read the image file and convert to base64
-  const imagePath = path.join(__dirname, '..', 'public', 'logoPrincipal.png');
-  const imageBuffer = await fs.readFile(imagePath);
-  const imageBase64 = imageBuffer.toString('base64');
+  try {
+    const imagePath = path.join(__dirname, '..', 'public', 'logoPrincipal.png');
+    console.log('[Email Debug] Image path:', imagePath);
+    
+    const imageBuffer = await fs.readFile(imagePath);
+    console.log('[Email Debug] Image buffer length:', imageBuffer.length);
+    
+    if (imageBuffer.length > 0) {
+      imageBase64 = imageBuffer.toString('base64');
+      console.log('[Email Debug] Base64 snippet:', imageBase64.substring(0, 50));
+      imgTag = `<img src="data:image/png;base64,${imageBase64}" alt="SystemLex Logo" style="max-width: 180px; height: auto; display: block; margin: 0 auto;" />`;
+    } else {
+      console.log('[Email Debug] Warning: Image file is empty.');
+    }
+  } catch (error) {
+    console.error('[Email Debug] Error reading or encoding the logo file. Sending email without logo.', error);
+    // The email will be sent with the fallback text logo.
+  }
+
   const verificationLink = `${process.env.BACKEND_URL || 'http://localhost:5000'}/api/users/verify/${user.verificationToken}`;
 
   const mailOptions = {
@@ -44,7 +61,7 @@ const sendVerificationEmail = async (user) => {
                 <!-- Header con logo -->
                 <tr>
                   <td align="center" style="padding: 40px 40px 20px 40px; background: rgba(255, 255, 255, 0.1);">
-                    <img src="data:image/png;base64,${imageBase64}" alt="SystemLex Logo" style="max-width: 180px; height: auto; display: block; margin: 0 auto;" />
+                    ${imgTag}
                   </td>
                 </tr>
                 
