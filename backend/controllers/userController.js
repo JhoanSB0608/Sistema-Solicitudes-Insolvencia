@@ -20,7 +20,7 @@ const sendVerificationEmail = async (user) => {
   const imageBuffer = await fs.readFile(imagePath);
 
   const mailOptions = {
-    from: 'SystemLex <onboarding@resend.dev>', // Resend requires a verified domain, using default for now
+   from: "SystemLex <no-reply@systemlex.com.co>", // Resend requires a verified domain, using default for now
     to: user.email,
     subject: 'Verifica tu correo electrónico - SystemLex',
     html: `

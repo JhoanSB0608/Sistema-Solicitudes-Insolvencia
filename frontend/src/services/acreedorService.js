@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'https://sistema-solicitudes-insolvencia.onrender.com/api/acreedores';
+const API_URL = 'https://api.systemlex.com.co/api/acreedores';
 
 // Helper para obtener el token y la configuración
 const getConfig = (options = {}) => {

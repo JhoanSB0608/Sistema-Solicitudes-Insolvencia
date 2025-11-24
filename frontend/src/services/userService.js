@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-export const API_BASE_URL = 'https://sistema-solicitudes-insolvencia.onrender.com'
+export const API_BASE_URL = 'https://api.systemlex.com.co'
 
 const API_URL = `${API_BASE_URL}/api/users`;
 const AUTH_URL = `${API_BASE_URL}/api/auth`;
