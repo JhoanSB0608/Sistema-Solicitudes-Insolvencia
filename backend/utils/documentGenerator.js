@@ -388,7 +388,6 @@ c.push({
       unbreakable: true, // Prevent this block from breaking across pages
       // Using columns to create a robust indented block
       columns: [
-        { width: 15, text: '' }, // Spacer column for left indentation
         {
           width: '*',
           table: { 
@@ -471,7 +470,6 @@ c.push({
     c.push({
       unbreakable: true,
       columns: [
-        { width: 15, text: '' },
         {
           width: '*',
           table: { 
@@ -492,7 +490,6 @@ c.push({
   c.push({
     unbreakable: true,
     columns: [
-      { width: 15, text: '' },
       {
         width: '*',
         table: {

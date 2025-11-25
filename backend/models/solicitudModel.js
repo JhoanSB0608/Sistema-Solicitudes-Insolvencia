@@ -228,6 +228,14 @@ const anexoSchema = new mongoose.Schema({
   size: { type: Number },
 });
 
+const firmaSchema = new mongoose.Schema({
+  source: { type: String, enum: ['draw', 'upload'] },
+  data: { type: String }, // This will store the base64 data URL
+  name: { type: String }, // For uploaded file's original name
+  url: { type: String }, // For uploaded file's path
+});
+
+
 // ====================
 // ESQUEMA PRINCIPAL DE SOLICITUD
 // ====================
@@ -258,6 +266,7 @@ const solicitudSchema = new mongoose.Schema({
   sociedadConyugal: sociedadConyugalSchema,
   propuestaPago: propuestaPagoSchema,
   anexos: [anexoSchema],
+  firma: firmaSchema,
 
   // --- CAMPOS PARA FIJACIÓN DE ALIMENTOS ---
   convocante: personaSchema,

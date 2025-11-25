@@ -37,7 +37,24 @@ const updateSolicitud = async (req, res) => {
     
     const parsedData = JSON.parse(req.body.solicitudData);
 
-    // Update fields
+    // If a new signature file was uploaded, process it and overwrite the 'firma' field in parsedData
+    if (req.files && req.files.firma && req.files.firma[0]) {
+      const signatureFile = req.files.firma[0];
+      const fileContent = fs.readFileSync(signatureFile.path);
+      const base64Image = `data:${signatureFile.mimetype};base64,${fileContent.toString('base64')}`;
+      
+      parsedData.firma = {
+        source: 'upload',
+        data: base64Image,
+        name: signatureFile.originalname,
+        url: signatureFile.path,
+      };
+      
+      // Clean up the uploaded file as it's now stored as base64
+      fs.unlinkSync(signatureFile.path);
+    }
+
+    // Update fields by assigning the (potentially modified) parsedData
     Object.assign(solicitud, parsedData);
 
     // Handle 'anexos' files
@@ -49,19 +66,6 @@ const updateSolicitud = async (req, res) => {
         size: file.size,
       }));
       solicitud.anexos = solicitud.anexos ? [...solicitud.anexos, ...newAnexos] : newAnexos;
-    }
-
-    // Handle 'firma' file for update
-    if (req.files && req.files.firma && req.files.firma[0]) {
-      const signatureFile = req.files.firma[0];
-      if (!solicitud.firma) {
-        solicitud.firma = {};
-      }
-      if (solicitud.firma.source === 'upload') {
-        const fileContent = fs.readFileSync(signatureFile.path);
-        const base64Image = `data:${signatureFile.mimetype};base64,${fileContent.toString('base64')}`;
-        solicitud.firma.data = base64Image;
-      }
     }
     
     // Construct nombreCompleto for the deudor
@@ -101,7 +105,6 @@ const getMisSolicitudes = async (req, res) => {
 const createSolicitud = async (req, res) => {
   try {
 
-    // For debugging, return the received body if solicitudData is missing
     if (!req.body.solicitudData) {
       return res.status(400).json({
         message: 'Missing solicitudData in request body.',
@@ -110,13 +113,29 @@ const createSolicitud = async (req, res) => {
       });
     }
 
-    // Parse the JSON string from the solicitudData field
     const parsedData = JSON.parse(req.body.solicitudData);
+    
+    // If a signature file was uploaded, process it and overwrite the 'firma' field
+    if (req.files && req.files.firma && req.files.firma[0]) {
+      const signatureFile = req.files.firma[0];
+      const fileContent = fs.readFileSync(signatureFile.path);
+      const base64Image = `data:${signatureFile.mimetype};base64,${fileContent.toString('base64')}`;
+      
+      parsedData.firma = {
+        source: 'upload',
+        data: base64Image,
+        name: signatureFile.originalname,
+        url: signatureFile.path,
+      };
 
+      // Clean up the uploaded file as it's now stored as base64
+      fs.unlinkSync(signatureFile.path);
+    }
+    
     // Start with the parsed data as the base
     const dataToSave = parsedData;
 
-    // Add properties that are not in the parsedData (user from auth, tipoSolicitud from body)
+    // Add properties that are not in the parsedData
     dataToSave.user = req.user._id;
     if (req.body.tipoSolicitud) {
       dataToSave.tipoSolicitud = req.body.tipoSolicitud;
@@ -130,19 +149,6 @@ const createSolicitud = async (req, res) => {
         mimetype: file.mimetype,
         size: file.size,
       }));
-    }
-
-    // Handle 'firma' file
-    if (req.files && req.files.firma && req.files.firma[0]) {
-      const signatureFile = req.files.firma[0];
-      if (!dataToSave.firma) {
-        dataToSave.firma = {};
-      }
-      if (dataToSave.firma.source === 'upload') {
-        const fileContent = fs.readFileSync(signatureFile.path);
-        const base64Image = `data:${signatureFile.mimetype};base64,${fileContent.toString('base64')}`;
-        dataToSave.firma.data = base64Image;
-      }
     }
 
     // Construct nombreCompleto for the deudor
