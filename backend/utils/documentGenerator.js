@@ -385,7 +385,7 @@ c.push({
 
     c.push({
       table: { 
-        widths: ['*', '*'], 
+        widths: ['auto', '*'], 
         body
       },
       layout: standardTableLayout,
