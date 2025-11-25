@@ -392,7 +392,7 @@ c.push({
         {
           width: '*',
           table: { 
-            widths: ['+', '*'], 
+            widths: ['*', '*'], 
             body
           },
           layout: standardTableLayout,
@@ -475,7 +475,7 @@ c.push({
         {
           width: '*',
           table: { 
-            widths: ['+', '*'],
+            widths: ['*', '*'],
             body
           },
           layout: standardTableLayout,
@@ -496,7 +496,7 @@ c.push({
       {
         width: '*',
         table: {
-          widths: ['+', '*'],
+          widths: ['*', '*'],
           body: [
             [
               { 

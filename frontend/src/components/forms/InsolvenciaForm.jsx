@@ -268,9 +268,19 @@ const InsolvenciaForm = ({ onSubmit, resetToken, initialData, isUpdating }) => {
   });
   const [isSaving, setIsSaving] = useState(false);
   const [isConfirmModalOpen, setConfirmModalOpen] = useState(false);
+  const sigCanvas = React.useRef({});
+
+  // Watcher for firma.source to keep state in sync
+  const watchedFirmaSource = watch('firma.source');
   const [signatureSource, setSignatureSource] = useState('draw');
   const [signatureImage, setSignatureImage] = useState(null);
-  const sigCanvas = React.useRef({});
+
+  // Keep signatureSource state in sync with the form value
+  useEffect(() => {
+    if (watchedFirmaSource) {
+      setSignatureSource(watchedFirmaSource);
+    }
+  }, [watchedFirmaSource]);
 
   const handleSignatureFileUpload = (e) => {
     const file = e.target.files[0];
@@ -310,6 +320,26 @@ const InsolvenciaForm = ({ onSubmit, resetToken, initialData, isUpdating }) => {
         }
       };
       reset(formattedData);
+
+      // Set signature state when updating
+      if (initialData.firma) {
+        const { source, data, url } = initialData.firma;
+        setSignatureSource(source || 'draw');
+        
+        if (source === 'draw' && data) {
+          // Use a timeout to ensure canvas is ready
+          setTimeout(() => {
+            if (sigCanvas.current && sigCanvas.current.fromDataURL) {
+              sigCanvas.current.fromDataURL(data);
+            }
+          }, 200);
+        } else if (source === 'upload' && url) {
+          // Assuming the URL is a relative path to the backend
+          const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+          setSignatureImage(`${backendUrl}${url}`);
+        }
+      }
+
       setSavedSections({
         deudor: true,
         sede: true,
