@@ -15,7 +15,7 @@ const sendVerificationEmail = async (user) => {
   const resend = new Resend(process.env.RESEND_API_KEY);
 
   const backendUrl = process.env.BACKEND_URL || 'http://localhost:5000';
-  const imageUrl = `https://i.imgur.com/SHi2d2i.png`;
+  const imageUrl = `https://i.imgur.com/atITK1R.png`;
   const verificationLink = `${backendUrl}/api/users/verify/${user.verificationToken}`;
 
   const mailOptions = {
