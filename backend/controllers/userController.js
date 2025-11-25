@@ -13,15 +13,14 @@ const generateToken = (id) => {
 // Helper function to send verification email using Resend
 const sendVerificationEmail = async (user) => {
   const resend = new Resend(process.env.RESEND_API_KEY);
+  const verificationLink = `${process.env.BACKEND_URL}/api/users/verify/${user.verificationToken}`;
 
-  const backendUrl = process.env.BACKEND_URL || 'http://localhost:5000';
-  const imageUrl = `${backendUrl}/logoPrincipal.png`;
-  console.log('[Email Debug] Using external image URL:', imageUrl);
-
-  const verificationLink = `${backendUrl}/api/users/verify/${user.verificationToken}`;
+  // Read the image file for the attachment
+  const imagePath = path.join(__dirname, '..', 'public', 'logoPrincipal.png');
+  const imageBuffer = await fs.readFile(imagePath);
 
   const mailOptions = {
-   from: "SystemLex <no-reply@systemlex.com.co>", // Resend requires a verified domain, using default for now
+    from: "SystemLex <no-reply@systemlex.com.co>", // Resend requires a verified domain, using default for now
     to: user.email,
     subject: 'Verifica tu correo electrónico - SystemLex',
     html: `
@@ -44,7 +43,7 @@ const sendVerificationEmail = async (user) => {
                 <!-- Header con logo -->
                 <tr>
                   <td align="center" style="padding: 40px 40px 20px 40px; background: rgba(255, 255, 255, 0.1);">
-                    <img src="${imageUrl}" alt="SystemLex Logo" style="max-width: 180px; height: auto; display: block; margin: 0 auto;" />
+                    <img src="cid:logo" alt="SystemLex Logo" style="max-width: 180px; height: auto; display: block; margin: 0 auto;" />
                   </td>
                 </tr>
                 
@@ -118,16 +117,16 @@ const sendVerificationEmail = async (user) => {
       </body>
       </html>
     `,
+    attachments: [
+      {
+        filename: 'logoPrincipal.png',
+        content: imageBuffer,
+        cid: 'logo',
+      },
+    ],
   };
 
-  try {
-    console.log('[Email Debug] Attempting to send email to:', user.email);
-    await resend.emails.send(mailOptions);
-    console.log('[Email Debug] Email successfully sent.');
-  } catch (error) {
-    console.error('[Email Debug] Failed to send email:', error);
-    throw error;
-  }
+  await resend.emails.send(mailOptions);
 };
 
 // @desc    Auth user & get token
@@ -141,10 +140,8 @@ const authUser = async (req, res) => {
   if (user && (await user.matchPassword(password))) {
     // Check if user is verified
     if (!user.isVerified) {
-      return res.status(401).json({
-        message: 'Tu cuenta no ha sido verificada. Por favor, revisa tu correo electrónico.',
-        code: 'ACCOUNT_NOT_VERIFIED',
-      });
+      res.status(401);
+      throw new Error('Tu cuenta no ha sido verificada. Por favor, revisa tu correo electrónico.');
     }
 
     res.json({
@@ -181,19 +178,7 @@ const registerUser = async (req, res) => {
     // 2. Check if user exists
     const userExists = await User.findOne({ email });
     if (userExists) {
-      if (!userExists.isVerified) {
-        // If user exists but is not verified, resend verification email
-        userExists.generateVerificationToken();
-        await sendVerificationEmail(userExists);
-        await userExists.save();
-        return res.status(409).json({ 
-          message: 'Este correo ya está registrado pero no ha sido verificado. Se ha enviado un nuevo correo de verificación.',
-          code: 'ACCOUNT_EXISTS_NOT_VERIFIED'
-        });
-      } else {
-        // If user exists and is verified, it's a conflict
-        return res.status(400).json({ message: 'El correo electrónico ya está registrado' });
-      }
+      return res.status(400).json({ message: 'El correo electrónico ya está registrado' });
     }
 
     // 3. Create user instance (in memory)
@@ -267,37 +252,4 @@ const verifyEmail = async (req, res) => {
   }
 };
 
-// @desc    Resend verification email
-// @route   POST /api/users/resend-verification
-// @access  Public
-const resendVerificationEmail = async (req, res) => {
-  try {
-    const { email } = req.body;
-    if (!email) {
-      return res.status(400).json({ message: 'El correo electrónico es requerido.' });
-    }
-
-    const user = await User.findOne({ email });
-    if (!user) {
-      // Don't reveal that the user doesn't exist for security reasons
-      return res.status(200).json({ message: 'Si existe una cuenta con este correo, se ha enviado un nuevo enlace de verificación.' });
-    }
-
-    if (user.isVerified) {
-      return res.status(400).json({ message: 'Esta cuenta ya ha sido verificada.' });
-    }
-
-    // Regenerate token and send email
-    user.generateVerificationToken();
-    await sendVerificationEmail(user);
-    await user.save();
-
-    res.status(200).json({ message: 'Se ha enviado un nuevo enlace de verificación a tu correo electrónico.' });
-
-  } catch (error) {
-    console.error('Error al reenviar el correo de verificación:', error);
-    res.status(500).json({ message: 'Ha ocurrido un error interno al intentar reenviar el correo.' });
-  }
-};
-
-module.exports = { authUser, registerUser, verifyEmail, resendVerificationEmail };
+module.exports = { authUser, registerUser, verifyEmail };
