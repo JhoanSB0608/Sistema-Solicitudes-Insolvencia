@@ -1019,6 +1019,7 @@ if (!propuestaPago || propuestaPago.tipoNegociacion !== 'proyeccion') {
 
       // --- Encabezados ---
       c.push({
+        unbreakable: true,
         text: 'CRÉDITOS PRINCIPALES',
         fontSize: 10,
         bold: true,
@@ -1027,6 +1028,7 @@ if (!propuestaPago || propuestaPago.tipoNegociacion !== 'proyeccion') {
       });
 
       c.push({
+        unbreakable: true,
         text: className,
         fontSize: 9,
         bold: true,
@@ -1224,6 +1226,7 @@ if (!propuestaPago || propuestaPago.tipoNegociacion !== 'proyeccion') {
       });
 
       c.push({
+        unbreakable: true,
         table: {
           widths: [25, '*', '*', '*', '*', '*', 30, '*'],
           body: proyeccionBody
