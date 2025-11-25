@@ -62,25 +62,37 @@ app.use(
 
 app.use(express.json());
 
-// Servir archivos estáticos
-app.use(express.static(path.join(__dirname, 'public')));
+//
+// =============================
+//   📁 ARCHIVOS ESTÁTICOS
+// =============================
+//  Esto es lo que permite que el logo cargue en los correos
+//
+app.use(express.static(path.join(__dirname, "public")));
 
 // Inicializar Passport
 app.use(passport.initialize());
 
-// Ruta raíz
+//
+// =============================
+//        🔗 RUTAS API
+// =============================
+//
 app.get("/", (req, res) => {
   res.send("API is running...");
 });
 
-// Rutas API
 app.use("/api/acreedores", acreedorRoutes);
 app.use("/api/solicitudes", solicitudRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
 
-// Middleware de errores
+//
+// =============================
+//     🛑 MIDDLEWARE ERRORES
+// =============================
+//
 app.use((err, req, res, next) => {
   console.error("Error global:", err);
   res.status(500).json({ message: err.message || "Error interno del servidor" });

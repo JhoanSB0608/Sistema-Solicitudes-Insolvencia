@@ -42,7 +42,7 @@ const sendVerificationEmail = async (user) => {
                 <!-- Header con logo -->
                 <tr>
                   <td align="center" style="padding: 40px 40px 20px 40px; background: rgba(255, 255, 255, 0.1);">
-                    <img src="${imageUrl}" alt="SystemLex Logo" style="max-width: 180px; height: auto; display: block; margin: 0 auto;" />
+                    <img src="${imageUrl}" alt="SystemLex Logo" title="SystemLex Logo" style="max-width: 180px; height: auto; display: block; margin: 0 auto; font-family: sans-serif; color: #ffffff; font-size: 16px; font-weight: bold;" />
                   </td>
                 </tr>
                 
@@ -118,7 +118,12 @@ const sendVerificationEmail = async (user) => {
     `,
   };
 
-  await resend.emails.send(mailOptions);
+  try {
+    await resend.emails.send(mailOptions);
+  } catch (error) {
+    console.error(`Failed to send verification email to ${user.email}`, error);
+    throw error;
+  }
 };
 
 // @desc    Auth user & get token
