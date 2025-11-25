@@ -1084,6 +1084,7 @@ if (!propuestaPago || propuestaPago.tipoNegociacion !== 'proyeccion') {
       ];
 
       c.push({
+        unbreakable: true,
         table: { widths: ['*', '*'], body: detalleBody },
         layout: standardTableLayout,
         margin: [15, 0, 0, 10]
@@ -1150,6 +1151,7 @@ if (!propuestaPago || propuestaPago.tipoNegociacion !== 'proyeccion') {
       });
 
       c.push({
+        unbreakable: true,
         table: {
           widths: ['*', 120, 90, 50, 90],
           body: distribBody
