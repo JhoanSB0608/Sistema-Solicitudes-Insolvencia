@@ -384,11 +384,21 @@ c.push({
     });
 
     c.push({
-      table: { 
-        widths: ['auto', '*'], 
-        body
-      },
-      layout: standardTableLayout,
+      unbreakable: true, // Prevent this block from breaking across pages
+      // Using columns to create a robust indented block
+      columns: [
+        { width: 15, text: '' }, // Spacer column for left indentation
+        {
+          width: '*',
+          table: { 
+            widths: ['auto', '*'], 
+            body
+          },
+          layout: standardTableLayout,
+        }
+      ],
+      columnGap: 0,
+      // Apply vertical margin to the entire columns block
       margin: [15, 0, 0, 15]
     });
   });
@@ -1151,7 +1161,7 @@ if (!propuestaPago || propuestaPago.tipoNegociacion !== 'proyeccion') {
           pagoInteres: formatCurrency(pagoInteres),
           montoPago: formatCurrency(cuotaFija),
           saldoFinalCapital: formatCurrency(Math.max(saldoFinal, 0)),
-          plazoDias: 30,
+          plazoDias: plazo,
           fecha: fechaPago.toLocaleDateString('es-CO')
         });
 

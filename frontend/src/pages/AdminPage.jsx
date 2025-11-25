@@ -700,7 +700,7 @@ const AdminPage = () => {
     try {
       await downloadSolicitudDocument(solicitudId, format);
       toast.update(toastId, { 
-        render: "¡Descarga iniciada!", 
+        render: "¡Descarga Completada!", 
         type: "success", 
         isLoading: false, 
         autoClose: 5000 

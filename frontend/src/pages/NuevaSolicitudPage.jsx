@@ -177,7 +177,7 @@ const NuevaSolicitudPage = () => {
     try {
       await downloadSolicitudDocument(createdSolicitudId, format);
       toast.update(toastId, { 
-        render: "¡Descarga iniciada!", 
+        render: "¡Descarga Completada!", 
         type: "success", 
         isLoading: false, 
         autoClose: 5000 
