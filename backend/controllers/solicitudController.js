@@ -1,4 +1,5 @@
 const Solicitud = require('../models/solicitudModel');
+const fs = require('fs');
 const { generateSolicitudPdf } = require('../utils/documentGenerator');
 const { generateSolicitudDocx } = require('../utils/docxGenerator');
 
@@ -39,15 +40,28 @@ const updateSolicitud = async (req, res) => {
     // Update fields
     Object.assign(solicitud, parsedData);
 
-    // Handle file uploads
-    if (req.files && req.files.length > 0) {
-      const newAnexos = req.files.map(file => ({
+    // Handle 'anexos' files
+    if (req.files && req.files.anexos && req.files.anexos.length > 0) {
+      const newAnexos = req.files.anexos.map(file => ({
         filename: file.filename,
         path: file.path,
         mimetype: file.mimetype,
         size: file.size,
       }));
       solicitud.anexos = solicitud.anexos ? [...solicitud.anexos, ...newAnexos] : newAnexos;
+    }
+
+    // Handle 'firma' file for update
+    if (req.files && req.files.firma && req.files.firma[0]) {
+      const signatureFile = req.files.firma[0];
+      if (!solicitud.firma) {
+        solicitud.firma = {};
+      }
+      if (solicitud.firma.source === 'upload') {
+        const fileContent = fs.readFileSync(signatureFile.path);
+        const base64Image = `data:${signatureFile.mimetype};base64,${fileContent.toString('base64')}`;
+        solicitud.firma.data = base64Image;
+      }
     }
     
     // Construct nombreCompleto for the deudor
@@ -108,14 +122,27 @@ const createSolicitud = async (req, res) => {
       dataToSave.tipoSolicitud = req.body.tipoSolicitud;
     }
 
-    // Handle file uploads from multer
-    if (req.files && req.files.length > 0) {
-      dataToSave.anexos = req.files.map(file => ({
+    // Handle 'anexos' files
+    if (req.files && req.files.anexos) {
+      dataToSave.anexos = req.files.anexos.map(file => ({
         filename: file.filename,
         path: file.path,
         mimetype: file.mimetype,
         size: file.size,
       }));
+    }
+
+    // Handle 'firma' file
+    if (req.files && req.files.firma && req.files.firma[0]) {
+      const signatureFile = req.files.firma[0];
+      if (!dataToSave.firma) {
+        dataToSave.firma = {};
+      }
+      if (dataToSave.firma.source === 'upload') {
+        const fileContent = fs.readFileSync(signatureFile.path);
+        const base64Image = `data:${signatureFile.mimetype};base64,${fileContent.toString('base64')}`;
+        dataToSave.firma.data = base64Image;
+      }
     }
 
     // Construct nombreCompleto for the deudor

@@ -50,6 +50,7 @@ const standardTableLayout = {
 // -------------------- Construcción docDefinition --------------------
 function buildDocDefinition(solicitud = {}) {
   const deudor = solicitud.deudor || {};
+  const firma = solicitud.firma || {};
   const sede = solicitud.sede || {};
   const acreencias = Array.isArray(solicitud.acreencias) ? solicitud.acreencias : [];
   const bienesMuebles = Array.isArray(solicitud.bienesMuebles) ? solicitud.bienesMuebles : [];
@@ -391,7 +392,7 @@ c.push({
         {
           width: '*',
           table: { 
-            widths: ['auto', '*'], 
+            widths: ['+', '*'], 
             body
           },
           layout: standardTableLayout,
@@ -474,7 +475,7 @@ c.push({
         {
           width: '*',
           table: { 
-            widths: ['auto', '*'],
+            widths: ['+', '*'],
             body
           },
           layout: standardTableLayout,
@@ -495,7 +496,7 @@ c.push({
       {
         width: '*',
         table: {
-          widths: ['auto', '*'],
+          widths: ['+', '*'],
           body: [
             [
               { 
@@ -1333,6 +1334,15 @@ if (!propuestaPago || propuestaPago.tipoNegociacion !== 'proyeccion') {
     fontSize: 9,
     margin: [0, 8, 0, 20]
   });
+  
+  if (firma && firma.data) {
+    c.push({
+      image: firma.data,
+      width: 150,
+      alignment: 'center',
+      margin: [0, 0, 0, 5],
+    });
+  }
   
   c.push({
     text: nombreCompleto,

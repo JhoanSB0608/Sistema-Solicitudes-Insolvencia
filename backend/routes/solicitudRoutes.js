@@ -23,13 +23,18 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
+const uploadFields = upload.fields([
+  { name: 'anexos' },
+  { name: 'firma', maxCount: 1 }
+]);
+
 router.route('/')
-  .post(protect, upload.array('anexos'), createSolicitud)
+  .post(protect, uploadFields, createSolicitud)
   .get(protect, getMisSolicitudes);
 
 router.route('/:id')
   .get(protect, getSolicitudById)
-  .put(protect, upload.array('anexos'), updateSolicitud);
+  .put(protect, uploadFields, updateSolicitud);
 
 router.route('/:id/documento').get(protect, getSolicitudDocumento);
 

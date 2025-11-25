@@ -3996,7 +3996,7 @@ const InsolvenciaForm = ({ onSubmit, resetToken, initialData, isUpdating }) => {
 
                 <Button
                   variant="contained"
-                  onClick={() => handleSaveSection('anexos')}
+                  onClick={() => handleSaveSection('anexos', 8)}
                   disabled={isSaving}
                   startIcon={isSaving ? null : <SaveIcon />}
                   sx={{
@@ -4013,7 +4013,7 @@ const InsolvenciaForm = ({ onSubmit, resetToken, initialData, isUpdating }) => {
                     },
                   }}
                 >
-                  {isSaving ? 'Guardando...' : 'Guardar Sección'}
+                  {isSaving ? 'Guardando...' : 'Guardar y Continuar'}
                 </Button>
               </Stack>
             </Box>
