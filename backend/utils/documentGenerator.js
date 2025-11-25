@@ -468,11 +468,19 @@ c.push({
 
     // ✅ Tabla individual del bien
     c.push({
-      table: { 
-        widths: ['*', '*'],
-        body
-      },
-      layout: standardTableLayout,
+      unbreakable: true,
+      columns: [
+        { width: 15, text: '' },
+        {
+          width: '*',
+          table: { 
+            widths: ['auto', '*'],
+            body
+          },
+          layout: standardTableLayout,
+        }
+      ],
+      columnGap: 0,
       margin: [15, 0, 0, 8]
     });
   });
@@ -481,27 +489,35 @@ c.push({
   const totalAvaluo = bienesMuebles.reduce((s, b) => s + (Number(b.avaluoComercial)), 0);
 
   c.push({
-    table: {
-      widths: ['*', '*'],
-      body: [
-        [
-          { 
-            text: 'Total Avalúo Comercial Estimado de Bienes Muebles', 
-            bold: true, 
-            fontSize: 9, 
-            alignment: 'center', 
-            margin: [0, 3, 0, 3], 
-            colSpan: 2 
-          }, 
-          {}
-        ],
-        [
-          { text: 'Total', bold: true, fontSize: 9, margin: [4, 2, 2, 2] },
-          { text: formatCurrency(totalAvaluo), bold: true, fontSize: 9, alignment: 'right', margin: [4, 2, 2, 2] }
-        ]
-      ]
-    },
-    layout: standardTableLayout,
+    unbreakable: true,
+    columns: [
+      { width: 15, text: '' },
+      {
+        width: '*',
+        table: {
+          widths: ['auto', '*'],
+          body: [
+            [
+              { 
+                text: 'Total Avalúo Comercial Estimado de Bienes Muebles', 
+                bold: true, 
+                fontSize: 9, 
+                alignment: 'center', 
+                margin: [0, 3, 0, 3], 
+                colSpan: 2 
+              }, 
+              {}
+            ],
+            [
+              { text: 'Total', bold: true, fontSize: 9, margin: [4, 2, 2, 2] },
+              { text: formatCurrency(totalAvaluo), bold: true, fontSize: 9, alignment: 'right', margin: [4, 2, 2, 2] }
+            ]
+          ]
+        },
+        layout: standardTableLayout,
+      }
+    ],
+    columnGap: 0,
     margin: [15, 0, 0, 8]
   });
 
