@@ -13,14 +13,13 @@ const generateToken = (id) => {
 // Helper function to send verification email using Resend
 const sendVerificationEmail = async (user) => {
   const resend = new Resend(process.env.RESEND_API_KEY);
-  const verificationLink = `${process.env.BACKEND_URL}/api/users/verify/${user.verificationToken}`;
 
-  // Read the image file for the attachment
-  const imagePath = path.join(__dirname, '..', 'public', 'logoPrincipal.png');
-  const imageBuffer = await fs.readFile(imagePath);
+  const backendUrl = process.env.BACKEND_URL || 'http://localhost:5000';
+  const imageUrl = `${backendUrl}/logoPrincipal.png`;
+  const verificationLink = `${backendUrl}/api/users/verify/${user.verificationToken}`;
 
   const mailOptions = {
-    from: "SystemLex <no-reply@systemlex.com.co>", // Resend requires a verified domain, using default for now
+    from: "SystemLex <no-reply@systemlex.com.co>",
     to: user.email,
     subject: 'Verifica tu correo electrónico - SystemLex',
     html: `
@@ -43,7 +42,7 @@ const sendVerificationEmail = async (user) => {
                 <!-- Header con logo -->
                 <tr>
                   <td align="center" style="padding: 40px 40px 20px 40px; background: rgba(255, 255, 255, 0.1);">
-                    <img src="cid:logo" alt="SystemLex Logo" style="max-width: 180px; height: auto; display: block; margin: 0 auto;" />
+                    <img src="${imageUrl}" alt="SystemLex Logo" style="max-width: 180px; height: auto; display: block; margin: 0 auto;" />
                   </td>
                 </tr>
                 
@@ -117,13 +116,6 @@ const sendVerificationEmail = async (user) => {
       </body>
       </html>
     `,
-    attachments: [
-      {
-        filename: 'logoPrincipal.png',
-        content: imageBuffer,
-        cid: 'logo',
-      },
-    ],
   };
 
   await resend.emails.send(mailOptions);

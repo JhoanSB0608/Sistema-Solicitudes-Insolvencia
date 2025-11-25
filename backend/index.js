@@ -15,6 +15,7 @@ const solicitudRoutes = require("./routes/solicitudRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const userRoutes = require("./routes/userRoutes");
 const authRoutes = require("./routes/authRoutes");
+const path = require("path");
 
 // Passport config
 require("./config/passport")(passport);
@@ -60,6 +61,9 @@ app.use(
 );
 
 app.use(express.json());
+
+// Servir archivos estáticos
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Inicializar Passport
 app.use(passport.initialize());
