@@ -252,4 +252,4 @@ const verifyEmail = async (req, res) => {
   }
 };
 
-module.exports = { authUser, registerUser, verifyEmail };
+module.exports = { authUser, registerUser, verifyEmail, resendVerificationEmail };
