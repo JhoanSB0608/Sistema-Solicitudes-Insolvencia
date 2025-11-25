@@ -252,4 +252,37 @@ const verifyEmail = async (req, res) => {
   }
 };
 
+// @desc    Resend verification email
+// @route   POST /api/users/resend-verification
+// @access  Public
+const resendVerificationEmail = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ message: 'El correo electrónico es requerido.' });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      // Don't reveal that the user doesn't exist for security reasons
+      return res.status(200).json({ message: 'Si existe una cuenta con este correo, se ha enviado un nuevo enlace de verificación.' });
+    }
+
+    if (user.isVerified) {
+      return res.status(400).json({ message: 'Esta cuenta ya ha sido verificada.' });
+    }
+
+    // Regenerate token and send email
+    user.generateVerificationToken();
+    await sendVerificationEmail(user);
+    await user.save();
+
+    res.status(200).json({ message: 'Se ha enviado un nuevo enlace de verificación a tu correo electrónico.' });
+
+  } catch (error) {
+    console.error('Error al reenviar el correo de verificación:', error);
+    res.status(500).json({ message: 'Ha ocurrido un error interno al intentar reenviar el correo.' });
+  }
+};
+
 module.exports = { authUser, registerUser, verifyEmail, resendVerificationEmail };
