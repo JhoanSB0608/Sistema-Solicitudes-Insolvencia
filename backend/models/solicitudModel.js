@@ -247,10 +247,6 @@ const solicitudSchema = new mongoose.Schema({
     required: true,
     enum: [
       'Solicitud de Insolvencia Económica de Persona Natural No Comerciante',
-      'Solicitud de Conciliación Extrajudicial en Derecho – Fijación Cuota de Alimentos',
-      'Solicitud Declaración de Unión Marital de Hecho - Fijación Cuota de Alimentos',
-      'Solicitud Audiencia de Conciliación Extrajudicial en Derecho – Fijación Cuota de Alimentos (como cónyuge)',
-      'Solicitud Audiencia de Conciliación Extrajudicial en Derecho – Fijación Cuota de Alimentos'
     ]
   },
   

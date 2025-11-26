@@ -616,12 +616,7 @@ const EnhancedTable = ({ table, isLoading, solicitudesData, navigate, onDownload
                             tooltip="Descargar PDF"
                             color="error"
                           />
-                          <ActionButton
-                            onClick={() => onDownload(row.original._id, 'docx')}
-                            icon={Description}
-                            tooltip="Descargar DOCX"
-                            color="info"
-                          />
+                          
                         </Stack>
                       ) : (
                         <Typography variant="body2" sx={{ fontWeight: 500 }}>
