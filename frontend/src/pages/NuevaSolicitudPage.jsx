@@ -40,7 +40,7 @@ import {
 import InsolvenciaForm from '../components/forms/InsolvenciaForm';
 import ConciliacionUnificadaForm from '../components/forms/ConciliacionUnificadaForm';
 import { createSolicitud, downloadSolicitudDocument } from '../services/solicitudService';
-import { createConciliacion } from '../services/conciliacionService';
+import { createConciliacion, downloadConciliacionDocument } from '../services/conciliacionService';
 import { toast } from 'react-toastify';
 import { handleAxiosError, showSuccess } from '../utils/alert';
 
@@ -181,7 +181,12 @@ const NuevaSolicitudPage = () => {
     const toastId = toast.loading(`Descargando documento ${format.toUpperCase()}, por favor espere...`);
 
     try {
-      await downloadSolicitudDocument(createdSolicitudId, format);
+      if (tipoSeleccionado === 'Solicitud de Conciliación Unificada') {
+        await downloadConciliacionDocument(createdSolicitudId, format);
+      } else {
+        await downloadSolicitudDocument(createdSolicitudId, format);
+      }
+
       toast.update(toastId, { 
         render: "¡Descarga Completada!", 
         type: "success", 

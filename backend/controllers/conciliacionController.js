@@ -1,6 +1,8 @@
 const Conciliacion = require('../models/conciliacionModel');
 const fs = require('fs');
 
+const { generateConciliacionPdf } = require('../utils/conciliacionDocumentGenerator');
+
 const createConciliacion = async (req, res) => {
   try {
     if (!req.body.solicitudData) {
@@ -52,4 +54,31 @@ const createConciliacion = async (req, res) => {
   }
 };
 
-module.exports = { createConciliacion };
+const getConciliacionDocumento = async (req, res) => {
+  try {
+    const solicitud = await Conciliacion.findById(req.params.id).populate('user');
+
+    if (!solicitud) {
+      return res.status(404).json({ message: 'Solicitud de conciliación no encontrada' });
+    }
+
+    // Security check
+    if (!solicitud.user || (solicitud.user._id.toString() !== req.user._id.toString() && !req.user.isAdmin)) {
+        return res.status(401).json({ message: 'No autorizado para ver este documento' });
+    }
+
+    const buffer = await generateConciliacionPdf(solicitud);
+    const filename = `conciliacion-${solicitud._id}.pdf`;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`);
+    res.send(buffer);
+
+  } catch (error) {
+    console.error('Error al generar el documento de conciliación:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ message: 'Error en el servidor al generar el documento.', error: error.message });
+    }
+  }
+};
+
+module.exports = { createConciliacion, getConciliacionDocumento };
