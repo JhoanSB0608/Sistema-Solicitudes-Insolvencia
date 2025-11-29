@@ -38,7 +38,7 @@ import {
   AutoAwesome as AutoAwesomeIcon
 } from '@mui/icons-material';
 import InsolvenciaForm from '../components/forms/InsolvenciaForm';
-// import ConciliacionUnificadaForm from '../components/forms/ConciliacionUnificadaForm';
+import ConciliacionUnificadaForm from '../components/forms/ConciliacionUnificadaForm';
 import { createSolicitud, downloadSolicitudDocument } from '../services/solicitudService';
 import { toast } from 'react-toastify';
 import { handleAxiosError, showSuccess } from '../utils/alert';
@@ -104,19 +104,19 @@ const tiposDeSolicitud = [
     icon: '💰',
     color: '#f44336',
   },
-  // {
-  //   value: 'Solicitud de Conciliación Unificada',
-  //   label: 'Solicitud de Conciliación',
-  //   shortLabel: 'Conciliación',
-  //   icon: '⚖️',
-  //   color: '#4caf50',
-  // }
+  {
+    value: 'Solicitud de Conciliación Unificada',
+    label: 'Solicitud de Conciliación',
+    shortLabel: 'Conciliación',
+    icon: '⚖️',
+    color: '#4caf50',
+  }
 ];
 
 // Mapa para renderizar el formulario correcto
 const formComponentMap = {
   'Solicitud de Insolvencia Económica de Persona Natural No Comerciante': <InsolvenciaForm />,
-  // 'Solicitud de Conciliación Unificada': <ConciliacionUnificadaForm />
+  'Solicitud de Conciliación Unificada': <ConciliacionUnificadaForm />
 };
 
 const NuevaSolicitudPage = () => {
