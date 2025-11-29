@@ -790,40 +790,139 @@ const ConciliacionUnificadaForm = ({ onSubmit }) => {
               </FormControl>
               
               {signatureSource === 'draw' && (
-                <Box sx={{ border: `1px solid ${alpha(theme.palette.grey[500], 0.4)}`, borderRadius: '12px', overflow: 'hidden' }}>
-                  <SignatureCanvas
-                    ref={sigCanvas}
-                    penColor='black'
-                    canvasProps={{ width: 500, height: 200, className: 'sigCanvas' }}
-                    onEnd={() => setValue('firma.data', sigCanvas.current.toDataURL())}
+                <Stack spacing={1}>
+                  <Box 
+                      ref={signatureContainerRef}
+                      sx={{ 
+                          border: '1px dashed grey', 
+                          borderRadius: '12px', 
+                          p: 1, 
+                          background: 'white',
+                          width: '100%',
+                          height: 200,
+                          cursor: 'crosshair'
+                      }}
+                  >
+                      <SignatureCanvas
+                          ref={sigCanvas}
+                          penColor='black'
+                          canvasProps={{
+                              width: canvasSize.width,
+                              height: canvasSize.height,
+                              style: { background: '#f8f8f8', borderRadius: '12px' }
+                          }}
+                          onEnd={() => setValue('firma.data', sigCanvas.current.getTrimmedCanvas().toDataURL('image/png'))}
+                      />
+                  </Box>
+                  <Button
+                      variant="text"
+                      onClick={() => {
+                          if (sigCanvas.current) {
+                              sigCanvas.current.clear();
+                              setValue('firma.data', null);
+                          }
+                      }}
+                      sx={{ alignSelf: 'flex-start' }}
+                  >
+                      Limpiar
+                  </Button>
+                </Stack>
+              )}
+
+              {signatureSource === 'upload' && (
+                <Box>
+                  <Button
+                    variant="outlined"
+                    component="label"
+                    startIcon={<UploadFileIcon />}
+                  >
+                    Seleccionar Archivo
+                    <input
+                      type="file"
+                      hidden
+                      accept="image/*"
+                      onChange={handleSignatureFileUpload}
+                    />
+                  </Button>
+                  {signatureImage && (
+                    <Box mt={2}>
+                      <Typography>Vista Previa:</Typography>
+                      <img src={signatureImage} alt="Firma" style={{ maxWidth: '100%', maxHeight: 200, border: '1px solid #ccc' }} />
+                    </Box>
+                  )}
+                  <Controller 
+                    name="firma.file" 
+                    control={control} 
+                    rules={{
+                      validate: value => signatureSource !== 'upload' || value !== null || 'Debe seleccionar una imagen de firma.'
+                    }}
+                    render={({ fieldState }) => fieldState.error && <FormHelperText error>{fieldState.error.message}</FormHelperText>} 
                   />
                 </Box>
               )}
 
-              {signatureSource === 'upload' && (
-                <Stack spacing={2} alignItems="center">
-                  <Button variant="outlined" component="label" startIcon={<UploadFileIcon />}>
-                    Seleccionar Imagen
-                    <input type="file" hidden accept="image/*" onChange={handleSignatureFileUpload} />
-                  </Button>
-                  {signatureImage && <Avatar src={signatureImage} sx={{ width: 200, height: 100, mt: 2 }} variant="rounded" />}
-                  <Controller name="firma.file" control={control} render={({ fieldState }) => fieldState.error && <FormHelperText error>{fieldState.error.message}</FormHelperText>} />
-                </Stack>
-              )}
-
               <Button
                   variant="contained"
-                  color="primary"
-                  onClick={() => setConfirmModalOpen(true)}
-                  disabled={!allSectionsSaved || isSaving}
-                  sx={{ mt: 4, py: 1.5, fontSize: '1rem' }}
+                  onClick={() => handleSaveSection('firma')}
+                  disabled={isSaving || savedSections.firma}
+                  startIcon={<SaveIcon />}
+                  sx={{ mt: 2 }}
               >
-                  Generar Solicitud Unificada
+                  {savedSections.firma ? 'Firma Guardada' : 'Guardar Firma'}
               </Button>
             </Stack>
           </GlassCard>
         </TabPanel>
-        
+      </form>
+
+      {allSectionsSaved && (
+          <GlassCard hover={false} sx={{ mt: 3 }}>
+            <Box sx={{ p: 3, textAlign: 'center' }}>
+                <Stack spacing={2} alignItems="center">
+                  <Avatar
+                    sx={{
+                      width: 64,
+                      height: 64,
+                      background: `linear-gradient(135deg, ${theme.palette.success.main}, ${theme.palette.info.main})`,
+                    }}
+                  >
+                    <CreateIcon sx={{ fontSize: 32 }} />
+                  </Avatar>
+                  <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                    ¡Formulario Completo!
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Todas las secciones han sido guardadas. Puede generar su solicitud.
+                  </Typography>
+                  <Button
+                    onClick={() => setConfirmModalOpen(true)}
+                    variant="contained"
+                    size="large"
+                    disabled={isSaving}
+                    startIcon={<CreateIcon />}
+                    sx={{
+                      py: 2,
+                      px: 6,
+                      borderRadius: '12px',
+                      fontWeight: 700,
+                      textTransform: 'none',
+                      background: `linear-gradient(135deg, ${theme.palette.success.main}, ${theme.palette.info.main})`,
+                      fontSize: '1.1rem',
+                      boxShadow: `0 8px 24px ${alpha(theme.palette.success.main, 0.4)}`,
+                      '&:hover': {
+                        background: `linear-gradient(135deg, ${alpha(theme.palette.success.main, 0.9)}, ${alpha(theme.palette.info.main, 0.9)})`,
+                        transform: 'translateY(-2px)',
+                        boxShadow: `0 12px 32px ${alpha(theme.palette.success.main, 0.5)}`,
+                      },
+                    }}
+                  >
+                    Generar Solicitud Unificada
+                  </Button>
+                </Stack>
+              </Box>
+            </GlassCard>
+        )}
+
         <Dialog open={isConfirmModalOpen} onClose={() => setConfirmModalOpen(false)}>
             <DialogTitle>Confirmar Envío</DialogTitle>
             <DialogContent>
@@ -841,7 +940,6 @@ const ConciliacionUnificadaForm = ({ onSubmit }) => {
                 </Button>
             </DialogActions>
         </Dialog>
-      </form>
     </Box>
   );
 };
