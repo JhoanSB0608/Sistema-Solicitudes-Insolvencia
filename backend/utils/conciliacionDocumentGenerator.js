@@ -38,7 +38,6 @@ async function generatePDF(data, outputPath) {
   const marginLeft = 55; // margen idéntico
   const marginRight = 540;
   const marginTop = 785;
-  let y = marginTop;([595.28, 841.89]); // A4
 
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
   page.setFont(font);
