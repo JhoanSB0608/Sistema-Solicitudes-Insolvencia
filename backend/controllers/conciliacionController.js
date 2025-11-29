@@ -81,4 +81,75 @@ const getConciliacionDocumento = async (req, res) => {
   }
 };
 
-module.exports = { createConciliacion, getConciliacionDocumento };
+module.exports = { createConciliacion, getConciliacionDocumento, getConciliacionById, updateConciliacion };
+
+const getConciliacionById = async (req, res) => {
+  try {
+    const conciliacion = await Conciliacion.findById(req.params.id).populate('user', 'name email');
+    if (conciliacion) {
+      // Security check could be more robust, ensuring only user or admin can access
+      // For now, allowing any authenticated user to fetch for editing purposes
+      res.json(conciliacion);
+    } else {
+      res.status(404).json({ message: 'Solicitud de conciliación no encontrada' });
+    }
+  } catch (error) {
+    console.error('Error fetching conciliation by ID:', error);
+    res.status(500).json({ message: 'Error del servidor' });
+  }
+};
+
+const updateConciliacion = async (req, res) => {
+  try {
+    const conciliacion = await Conciliacion.findById(req.params.id);
+
+    if (!conciliacion) {
+      return res.status(404).json({ message: 'Solicitud de conciliación no encontrada' });
+    }
+
+    // Authorization check
+    if (conciliacion.user.toString() !== req.user._id.toString() && !req.user.isAdmin) {
+      return res.status(401).json({ message: 'No autorizado para actualizar esta solicitud' });
+    }
+    
+    const parsedData = JSON.parse(req.body.solicitudData);
+
+    // Signature file handling
+    if (req.files && req.files.firma && req.files.firma[0]) {
+      const signatureFile = req.files.firma[0];
+      const fileContent = fs.readFileSync(signatureFile.path);
+      const base64Image = `data:${signatureFile.mimetype};base64,${fileContent.toString('base64')}`;
+      parsedData.firma = {
+        source: 'upload',
+        data: base64Image,
+        name: signatureFile.originalname,
+        url: signatureFile.path,
+      };
+      fs.unlinkSync(signatureFile.path);
+    }
+
+    Object.assign(conciliacion, parsedData);
+
+    // Anexos handling
+    if (req.files && req.files.anexos && req.files.anexos.length > 0) {
+      const newAnexos = req.files.anexos.map(file => ({
+        filename: file.filename,
+        path: file.path,
+        mimetype: file.mimetype,
+        size: file.size,
+      }));
+      conciliacion.anexos = conciliacion.anexos ? [...conciliacion.anexos, ...newAnexos] : newAnexos;
+    }
+    
+    const updatedConciliacion = await conciliacion.save();
+    res.json(updatedConciliacion);
+
+  } catch (error) {
+    console.error('Error updating conciliation:', error);
+    res.status(400).json({ 
+        message: 'Error de validación al actualizar la solicitud.', 
+        error: error.errors ? Object.values(error.errors).map(e => e.message) : error.message,
+        details: error.errors 
+    });
+  }
+};

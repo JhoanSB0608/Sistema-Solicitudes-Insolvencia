@@ -607,8 +607,16 @@ const EnhancedTable = ({ table, isLoading, solicitudesData, navigate, onDownload
                             <ActionButton
                               onClick={() => navigate(`/admin/editar-solicitud/${row.original._id}`)}
                               icon={EditIcon}
-                              tooltip="Editar Solicitud"
+                              tooltip="Editar Solicitud de Insolvencia"
                               color="success"
+                            />
+                          )}
+                          {row.original.tipoSolicitud === 'Solicitud de Conciliación Unificada' && (
+                            <ActionButton
+                              onClick={() => navigate(`/admin/editar-conciliacion/${row.original._id}`)}
+                              icon={EditIcon}
+                              tooltip="Editar Solicitud de Conciliación"
+                              color="info"
                             />
                           )}
                           <ActionButton

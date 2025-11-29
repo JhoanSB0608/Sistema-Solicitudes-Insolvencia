@@ -17,6 +17,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import useIdleTimeout from './hooks/useIdleTimeout';
 import SessionTimeoutModal from './components/common/SessionTimeoutModal';
 import EditarInsolvenciaPage from './pages/EditarInsolvenciaPage';
+import EditarConciliacionPage from './pages/EditarConciliacionPage';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -153,6 +154,7 @@ const AuthProvider = ({ children }) => {
           <Route path="/nueva-solicitud" element={<PrivateRoute><NuevaSolicitudPage /></PrivateRoute>} />
           <Route path="/admin" element={<PrivateRoute><AdminPage /></PrivateRoute>} />
           <Route path="/admin/editar-solicitud/:id" element={<PrivateRoute><EditarInsolvenciaPage /></PrivateRoute>} />
+          <Route path="/admin/editar-conciliacion/:id" element={<PrivateRoute><EditarConciliacionPage /></PrivateRoute>} />
         </Routes>
       </Container>
     </AuthContext.Provider>

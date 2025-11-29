@@ -61,5 +61,28 @@ export const downloadConciliacionDocument = async (solicitudId, format = 'pdf') 
   }
 };
 
-const conciliacionService = { createConciliacion, downloadConciliacionDocument };
+const conciliacionService = { createConciliacion, downloadConciliacionDocument, getConciliacionById, updateConciliacion };
+
+export const getConciliacionById = async (solicitudId) => {
+  try {
+    const config = getConfig();
+    const response = await axios.get(`${API_URL}/${solicitudId}`, config);
+    return response.data;
+  } catch (err) {
+    console.error('Error fetching conciliation by ID:', err.response?.data || err.message || err);
+    throw err.response?.data || { message: err.message || 'Error obteniendo la solicitud' };
+  }
+};
+
+export const updateConciliacion = async (solicitudId, payload) => {
+  try {
+    const config = getConfig({ body: payload });
+    const response = await axios.put(`${API_URL}/${solicitudId}`, payload, config);
+    return response.data;
+  } catch (err) {
+    console.error('Error updating conciliation:', err.response?.data || err.message || err);
+    throw err.response?.data || { message: err.message || 'Error actualizando la solicitud' };
+  }
+};
+
 export default conciliacionService;
