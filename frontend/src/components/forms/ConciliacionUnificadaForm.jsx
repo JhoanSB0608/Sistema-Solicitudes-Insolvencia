@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { 
   TextField, Button, Typography, Box, Paper, Grid, Tabs, Tab, Checkbox, 
@@ -247,10 +247,25 @@ const ConciliacionUnificadaForm = ({ onSubmit }) => {
       anexos: false,
       firma: false,
   });
-  const sigCanvas = React.useRef({});
+
+  const sigCanvas = useRef({});
+  const signatureContainerRef = useRef(null);
+  const [canvasSize, setCanvasSize] = useState({ width: 500, height: 200 });
   const watchedFirmaSource = watch('firma.source');
   const [signatureSource, setSignatureSource] = useState('draw');
   const [signatureImage, setSignatureImage] = useState(null);
+
+  useLayoutEffect(() => {
+    function handleResize() {
+      if (signatureContainerRef.current) {
+        const { width } = signatureContainerRef.current.getBoundingClientRect();
+        setCanvasSize({ width: width > 0 ? width : 500, height: 200 });
+      }
+    }
+    window.addEventListener('resize', handleResize);
+    handleResize();
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const areaDerecho = watch('infoGeneral.areaDerecho');
   const watchCuantiaDetallada = watch('infoGeneral.cuantiaDetallada');
