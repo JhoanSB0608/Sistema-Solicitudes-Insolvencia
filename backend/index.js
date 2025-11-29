@@ -12,6 +12,7 @@ const passport = require("passport");
 const connectDB = require("./config/db");
 const acreedorRoutes = require("./routes/acreedorRoutes");
 const solicitudRoutes = require("./routes/solicitudRoutes");
+const conciliacionRoutes = require("./routes/conciliacionRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const userRoutes = require("./routes/userRoutes");
 const authRoutes = require("./routes/authRoutes");
@@ -84,6 +85,7 @@ app.get("/", (req, res) => {
 
 app.use("/api/acreedores", acreedorRoutes);
 app.use("/api/solicitudes", solicitudRoutes);
+app.use("/api/conciliaciones", conciliacionRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);

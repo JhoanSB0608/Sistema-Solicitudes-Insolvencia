@@ -40,6 +40,7 @@ import {
 import InsolvenciaForm from '../components/forms/InsolvenciaForm';
 import ConciliacionUnificadaForm from '../components/forms/ConciliacionUnificadaForm';
 import { createSolicitud, downloadSolicitudDocument } from '../services/solicitudService';
+import { createConciliacion } from '../services/conciliacionService';
 import { toast } from 'react-toastify';
 import { handleAxiosError, showSuccess } from '../utils/alert';
 
@@ -154,9 +155,14 @@ const NuevaSolicitudPage = () => {
         formData.append('solicitudData', JSON.stringify(data));
       }
 
-      formData.append('tipoSolicitud', tipoSeleccionado);
-
-      const createdSolicitud = await createSolicitud(formData);
+      let createdSolicitud;
+      if (tipoSeleccionado === 'Solicitud de Conciliación Unificada') {
+        createdSolicitud = await createConciliacion(formData);
+      } else {
+        formData.append('tipoSolicitud', tipoSeleccionado);
+        createdSolicitud = await createSolicitud(formData);
+      }
+      
       showSuccess('¡Éxito! La solicitud ha sido guardada correctamente.');
       setCreatedSolicitudId(createdSolicitud._id);
       setFormResetToken(Date.now());
