@@ -219,17 +219,18 @@ const ConciliacionUnificadaForm = ({ onSubmit }) => {
       convocantes: [],
       convocados: [],
       hechos: [],
-      pretensiones: '',
+      pretensiones: [],
       fundamentos: '',
       anexos: [],
       firma: { source: 'draw', data: null, file: null },
     }
   });
 
-  const { fields: convocantes, append: appendConvocante, remove: removeConvocante } = useFieldArray({ control, name: "convocantes", rules: { minLength: { value: 1, message: "Debe agregar al menos un convocante" }} });
-  const { fields: convocados, append: appendConvocado, remove: removeConvocado } = useFieldArray({ control, name: "convocados", rules: { minLength: { value: 1, message: "Debe agregar al menos un convocado" }} });
-  const { fields: hechos, append: appendHecho, remove: removeHecho } = useFieldArray({ control, name: "hechos", rules: { minLength: { value: 1, message: "Debe agregar al menos un hecho" }} });
-  const { fields: anexos, append: appendAnexo, remove: removeAnexo } = useFieldArray({ control, name: "anexos" });
+  const { fields: convocantesFields, append: appendConvocante, remove: removeConvocante } = useFieldArray({ control, name: "convocantes", rules: { minLength: { value: 1, message: "Debe agregar al menos un convocante" }} });
+  const { fields: convocadosFields, append: appendConvocado, remove: removeConvocado } = useFieldArray({ control, name: "convocados", rules: { minLength: { value: 1, message: "Debe agregar al menos un convocado" }} });
+  const { fields: hechosFields, append: appendHecho, remove: removeHecho } = useFieldArray({ control, name: "hechos", rules: { minLength: { value: 1, message: "Debe agregar al menos un hecho" }} });
+  const { fields: pretensionesFields, append: appendPretension, remove: removePretension } = useFieldArray({ control, name: "pretensiones", rules: { minLength: { value: 1, message: "Debe agregar al menos una pretensión" }} });
+  const { fields: anexosFields, append: appendAnexo, remove: removeAnexo } = useFieldArray({ control, name: "anexos" });
 
   const [tabValue, setTabValue] = useState(0);
   const [validationError, setValidationError] = useState('');
@@ -291,12 +292,6 @@ const ConciliacionUnificadaForm = ({ onSubmit }) => {
     FAMILIARES: ['ECONOMÍA DOMÉSTICA', 'INFIDELIDAD', 'PROBLEMAS DE COMUNICACIÓN', 'VIOLENCIA / MALTRATO', 'OTROS'],
   };
 
-  const handleFileChange = (e, index) => {
-    if (e.target.files[0]) {
-      setValue(`anexos.${index}.file`, e.target.files[0]);
-      setValue(`anexos.${index}.name`, e.target.files[0].name);
-    }
-  };
 
   const handleSaveSection = async (sectionName, nextTabIndex) => {
     setIsSaving(true);
@@ -565,7 +560,7 @@ const ConciliacionUnificadaForm = ({ onSubmit }) => {
 
         <TabPanel value={tabValue} index={2}>
             <Stack spacing={3}>
-                {convocantes.map((field, index) => (
+                {convocantesFields.map((field, index) => (
                     <GlassCard key={field.id} sx={{ p: 3 }}>
                         <Stack spacing={2}>
                             <Stack direction="row" justifyContent="space-between" alignItems="center">
@@ -586,7 +581,7 @@ const ConciliacionUnificadaForm = ({ onSubmit }) => {
 
         <TabPanel value={tabValue} index={3}>
             <Stack spacing={3}>
-                {convocados.map((field, index) => (
+                {convocadosFields.map((field, index) => (
                     <GlassCard key={field.id} sx={{ p: 3 }}>
                         <Stack spacing={2}>
                             <Stack direction="row" justifyContent="space-between" alignItems="center">
@@ -609,7 +604,7 @@ const ConciliacionUnificadaForm = ({ onSubmit }) => {
             <GlassCard sx={{ p: 3 }}>
                 <Stack spacing={2}>
                     <Typography variant="h6">Hechos</Typography>
-                    {hechos.map((field, index) => (
+                    {hechosFields.map((field, index) => (
                         <GlassCard key={field.id} sx={{ p: 2, mt: 2 }}>
                             <Stack spacing={2}>
                                 <Stack direction="row" justifyContent="space-between" alignItems="center">
@@ -633,7 +628,19 @@ const ConciliacionUnificadaForm = ({ onSubmit }) => {
             <GlassCard sx={{ p: 3 }}>
                 <Stack spacing={2}>
                     <Typography variant="h6">Pretensiones</Typography>
-                    <GlassTextField {...register('pretensiones', { required: 'Campo requerido' })} label="Descripción de las Pretensiones" multiline rows={6} fullWidth error={!!errors.pretensiones} helperText={errors.pretensiones?.message} />
+                    {pretensionesFields.map((field, index) => (
+                        <GlassCard key={field.id} sx={{ p: 2, mt: 2 }}>
+                            <Stack spacing={2}>
+                                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                                    <Chip label={`Pretensión #${index + 1}`} />
+                                    <IconButton onClick={() => removePretension(index)}><DeleteIcon /></IconButton>
+                                </Stack>
+                                <GlassTextField {...register(`pretensiones.${index}.descripcion`, { required: 'Campo requerido' })} label="Descripción de la Pretensión" multiline rows={4} fullWidth error={!!errors.pretensiones?.[index]?.descripcion} helperText={errors.pretensiones?.[index]?.descripcion?.message} />
+                            </Stack>
+                        </GlassCard>
+                    ))}
+                    <Button variant="outlined" onClick={() => appendPretension({ descripcion: '' })} startIcon={<AddIcon />}>Añadir Pretensión</Button>
+                    {errors.pretensiones?.root && <FormHelperText error>{errors.pretensiones.root.message}</FormHelperText>}
                     <Button variant="contained" onClick={() => handleSaveSection('pretensiones', 6)} disabled={isSaving} startIcon={<SaveIcon />} sx={{ mt: 2 }}>
                       {isSaving ? 'Guardando...' : 'Guardar y Continuar'}
                     </Button>
@@ -657,24 +664,29 @@ const ConciliacionUnificadaForm = ({ onSubmit }) => {
             <GlassCard sx={{ p: 3 }}>
                 <Stack spacing={2}>
                     <Typography variant="h6">Pruebas y Anexos</Typography>
-                    {anexos.map((field, index) => (
+                    {anexosFields.map((field, index) => (
                         <GlassCard key={field.id} sx={{ p: 2, mt: 2 }}>
                             <Stack direction="row" spacing={2} alignItems="center">
                                 <Controller
                                     name={`anexos.${index}.file`}
                                     control={control}
                                     rules={{ required: 'Debe seleccionar un archivo' }}
-                                    render={({ field: { onChange, ...fieldProps }, fieldState }) => (
+                                    render={({ field: { onChange, onBlur, name, ref }, fieldState }) => (
                                         <>
                                             <Button variant="outlined" component="label" startIcon={<UploadFileIcon />} color={fieldState.error ? 'error' : 'primary'}>
                                                 Seleccionar Archivo
                                                 <input
                                                     type="file"
                                                     hidden
-                                                    {...fieldProps}
+                                                    name={name}
+                                                    ref={ref}
+                                                    onBlur={onBlur}
                                                     onChange={(e) => {
-                                                        handleFileChange(e, index);
-                                                        onChange(e.target.files[0]);
+                                                        const file = e.target.files[0];
+                                                        if (file) {
+                                                            setValue(`anexos.${index}.name`, file.name);
+                                                        }
+                                                        onChange(file || null);
                                                     }}
                                                 />
                                             </Button>
