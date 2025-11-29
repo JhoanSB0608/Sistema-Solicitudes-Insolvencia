@@ -54,7 +54,6 @@ const createConciliacion = async (req, res) => {
   }
 };
 
-module.exports = { createConciliacion, getConciliacionDocumento, getConciliacionById, updateConciliacion };
 const getConciliacionDocumento = async (req, res) => {
   try {
     const solicitud = await Conciliacion.findById(req.params.id).populate('user');
@@ -152,3 +151,5 @@ const updateConciliacion = async (req, res) => {
     });
   }
 };
+
+module.exports = { createConciliacion, getConciliacionDocumento, getConciliacionById, updateConciliacion };
