@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getAdminStats, getAdminSolicitudes } from '../services/adminService';
 import { downloadSolicitudDocument } from '../services/solicitudService';
+import { downloadConciliacionDocument } from '../services/conciliacionService';
 import { toast } from 'react-toastify';
 import { handleAxiosError } from '../utils/alert';
 import {
@@ -611,7 +612,7 @@ const EnhancedTable = ({ table, isLoading, solicitudesData, navigate, onDownload
                             />
                           )}
                           <ActionButton
-                            onClick={() => onDownload(row.original._id, 'pdf')}
+                            onClick={() => onDownload(row.original._id, row.original.tipoSolicitud, 'pdf')}
                             icon={PictureAsPdf}
                             tooltip="Descargar PDF"
                             color="error"
@@ -690,10 +691,14 @@ const AdminPage = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const debouncedLocalFilters = useDebounce(localFilters, 500);
 
-  const handleDownload = async (solicitudId, format) => {
+  const handleDownload = async (solicitudId, tipoSolicitud, format) => {
     const toastId = toast.loading(`Descargando documento ${format.toUpperCase()}, por favor espere...`);
     try {
-      await downloadSolicitudDocument(solicitudId, format);
+      if (tipoSolicitud === 'Solicitud de Conciliación Unificada') {
+        await downloadConciliacionDocument(solicitudId, format);
+      } else {
+        await downloadSolicitudDocument(solicitudId, format);
+      }
       toast.update(toastId, { 
         render: "¡Descarga Completada!", 
         type: "success", 

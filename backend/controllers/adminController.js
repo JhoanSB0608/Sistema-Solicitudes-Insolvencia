@@ -1,3 +1,4 @@
+const Conciliacion = require('../models/conciliacionModel');
 const Solicitud = require('../models/solicitudModel');
 const User = require('../models/userModel');
 const Acreedor = require('../models/acreedorModel');
@@ -7,22 +8,53 @@ const Acreedor = require('../models/acreedorModel');
 // @access  Private/Admin
 const getStats = async (req, res) => {
   try {
-    const totalSolicitudes = await Solicitud.countDocuments({});
+    const totalSolicitudesInsolvencia = await Solicitud.countDocuments({});
+    const totalSolicitudesConciliacion = await Conciliacion.countDocuments({});
+    const totalSolicitudes = totalSolicitudesInsolvencia + totalSolicitudesConciliacion;
+
     const totalUsuarios = await User.countDocuments({});
     const totalAcreedores = await Acreedor.countDocuments({});
 
-    const solicitudesPorTipo = await Solicitud.aggregate([
+    const solicitudesPorTipoInsolvencia = await Solicitud.aggregate([
       { $group: { _id: '$tipoSolicitud', count: { $sum: 1 } } },
-      { $sort: { count: -1 } }
+    ]);
+    const solicitudesPorTipoConciliacion = await Conciliacion.aggregate([
+      { $group: { _id: '$tipoSolicitud', count: { $sum: 1 } } },
     ]);
 
-    const solicitudesPorMes = await Solicitud.aggregate([
+    // Merge solicitudesPorTipo results
+    const solicitudesPorTipoMap = new Map();
+    [...solicitudesPorTipoInsolvencia, ...solicitudesPorTipoConciliacion].forEach(item => {
+      solicitudesPorTipoMap.set(item._id, (solicitudesPorTipoMap.get(item._id) || 0) + item.count);
+    });
+    const solicitudesPorTipo = Array.from(solicitudesPorTipoMap, ([_id, count]) => ({ _id, count }))
+      .sort((a, b) => b.count - a.count);
+
+
+    const solicitudesPorMesInsolvencia = await Solicitud.aggregate([
         { $group: { 
             _id: { year: { $year: "$createdAt" }, month: { $month: "$createdAt" } }, 
             count: { $sum: 1 } 
         }},
-        { $sort: { '_id.year': 1, '_id.month': 1 } }
     ]);
+    const solicitudesPorMesConciliacion = await Conciliacion.aggregate([
+        { $group: { 
+            _id: { year: { $year: "$createdAt" }, month: { $month: "$createdAt" } }, 
+            count: { $sum: 1 } 
+        }},
+    ]);
+
+    // Merge solicitudesPorMes results
+    const solicitudesPorMesMap = new Map();
+    [...solicitudesPorMesInsolvencia, ...solicitudesPorMesConciliacion].forEach(item => {
+      const key = `${item._id.year}-${item._id.month}`;
+      const existing = solicitudesPorMesMap.get(key) || { _id: item._id, count: 0 };
+      existing.count += item.count;
+      solicitudesPorMesMap.set(key, existing);
+    });
+    const solicitudesPorMes = Array.from(solicitudesPorMesMap.values())
+      .sort((a, b) => (a._id.year - b._id.year) || (a._id.month - b._id.month));
+
 
     res.json({ 
       totalSolicitudes, 
@@ -42,26 +74,19 @@ const getStats = async (req, res) => {
 const getSolicitudes = async (req, res) => {
   try {
     const { pageIndex = 0, pageSize = 10, filters = '[]', sorting = '[]' } = req.query;
-    const query = {}; // Admin ve todas las solicitudes, no solo las suyas
-
-    // Lógica de filtros por columna
+    
+    // Build query and sort options from request
     const parsedFilters = JSON.parse(filters);
+    const query = {};
     if (parsedFilters.length > 0) {
       query.$and = parsedFilters.map(filter => {
-        // Si filtramos por usuario, necesitamos buscar en el campo anidado 'user.name' o 'user.email'
-        if (filter.id === 'user') {
-          return { 
-            $or: [
-              { 'user.name': { $regex: filter.value, $options: 'i' } },
-              { 'user.email': { $regex: filter.value, $options: 'i' } },
-            ]
-          }
+        if (filter.id === 'user.name') { // Corrected filter id
+          return { 'user.name': { $regex: filter.value, $options: 'i' } };
         }
         return { [filter.id]: { $regex: filter.value, $options: 'i' } };
       });
     }
 
-    // Lógica de ordenamiento
     const parsedSorting = JSON.parse(sorting);
     const sortOptions = parsedSorting.length > 0
       ? parsedSorting.reduce((acc, sort) => {
@@ -70,17 +95,39 @@ const getSolicitudes = async (req, res) => {
         }, {})
       : { createdAt: -1 };
 
-    const count = await Solicitud.countDocuments(query);
-    const solicitudes = await Solicitud.find(query)
-      .populate('user', 'name email')
-      .sort(sortOptions)
-      .limit(parseInt(pageSize))
-      .skip(parseInt(pageIndex) * parseInt(pageSize));
+    // Perform parallel queries
+    const [solicitudesInsolvencia, solicitudesConciliacion, countInsolvencia, countConciliacion] = await Promise.all([
+      Solicitud.find(query).populate('user', 'name email').lean(),
+      Conciliacion.find(query).populate('user', 'name email').lean(),
+      Solicitud.countDocuments(query),
+      Conciliacion.countDocuments(query)
+    ]);
+    
+    // Combine, sort, and paginate in memory
+    const combinedResults = [...solicitudesInsolvencia, ...solicitudesConciliacion];
+
+    // In-memory sort
+    combinedResults.sort((a, b) => {
+      for (const sort of parsedSorting) {
+        const fieldA = a[sort.id];
+        const fieldB = b[sort.id];
+        if (fieldA < fieldB) return sort.desc ? 1 : -1;
+        if (fieldA > fieldB) return sort.desc ? -1 : 1;
+      }
+      // Default sort if no sorting is provided or values are equal
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+    
+    const totalRows = countInsolvencia + countConciliacion;
+    const pagedResults = combinedResults.slice(
+      parseInt(pageIndex) * parseInt(pageSize),
+      (parseInt(pageIndex) + 1) * parseInt(pageSize)
+    );
 
     res.json({ 
-      rows: solicitudes, 
-      pageCount: Math.ceil(count / parseInt(pageSize)),
-      totalRows: count,
+      rows: pagedResults, 
+      pageCount: Math.ceil(totalRows / parseInt(pageSize)),
+      totalRows: totalRows,
     });
   } catch (error) {
     res.status(500).json({ message: 'Error al obtener solicitudes', error: error.message });
