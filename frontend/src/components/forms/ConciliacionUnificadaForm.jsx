@@ -3,7 +3,8 @@ import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { 
   TextField, Button, Typography, Box, Paper, Grid, Tabs, Tab, Checkbox, 
   FormControlLabel, FormControl, InputLabel, Select, MenuItem, FormHelperText,
-  alpha, useTheme, Stack, Avatar, IconButton, Chip
+  alpha, useTheme, Stack, Avatar, IconButton, Chip, LinearProgress, Collapse,
+  Alert, Badge, RadioGroup, Radio, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle
 } from '@mui/material';
 import {
   LocationCity as LocationCityIcon,
@@ -16,12 +17,19 @@ import {
   Delete as DeleteIcon,
   AttachFile as AttachFileIcon,
   UploadFile as UploadFileIcon,
-  Business as BusinessIcon
+  Business as BusinessIcon,
+  Save as SaveIcon,
+  CheckCircle as CheckCircleIcon,
+  Error as ErrorIcon,
+  Close as CloseIcon,
+  TrendingUp as TrendingUpIcon,
+  Create as CreateIcon
 } from '@mui/icons-material';
+import SignatureCanvas from 'react-signature-canvas';
 import LocationSelector from './LocationSelector';
 
 // --- Reusable Glassmorphism Components ---
-const GlassCard = ({ children, sx = {}, ...props }) => (
+const GlassCard = ({ children, sx = {}, hover = true, ...props }) => (
   <Paper
     elevation={0}
     sx={{
@@ -31,6 +39,24 @@ const GlassCard = ({ children, sx = {}, ...props }) => (
       border: '1px solid rgba(255, 255, 255, 0.2)',
       borderRadius: '16px',
       boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      position: 'relative',
+      overflow: 'hidden',
+      '&::before': {
+        content: '""',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: '1px',
+        background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent)',
+      },
+      ...(hover && {
+        '&:hover': {
+          transform: 'translateY(-2px)',
+          boxShadow: '0 12px 40px rgba(0, 0, 0, 0.15)',
+        }
+      }),
       ...sx
     }}
     {...props}
@@ -186,7 +212,7 @@ function TabPanel(props) {
 
 const ConciliacionUnificadaForm = ({ onSubmit }) => {
   const theme = useTheme();
-  const { register, control, handleSubmit, watch, setValue, formState: { errors } } = useForm({
+  const { register, control, handleSubmit, watch, setValue, trigger, formState: { errors } } = useForm({
     defaultValues: {
       sede: {},
       infoGeneral: { asuntoJuridicoDefinible: false, cuantiaIndeterminada: false, cuantiaDetallada: false },
@@ -196,6 +222,7 @@ const ConciliacionUnificadaForm = ({ onSubmit }) => {
       pretensiones: '',
       fundamentos: '',
       anexos: [],
+      firma: { source: 'draw', data: null, file: null },
     }
   });
 
@@ -205,10 +232,47 @@ const ConciliacionUnificadaForm = ({ onSubmit }) => {
   const { fields: anexos, append: appendAnexo, remove: removeAnexo } = useFieldArray({ control, name: "anexos" });
 
   const [tabValue, setTabValue] = useState(0);
+  const [validationError, setValidationError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [isConfirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [savedSections, setSavedSections] = useState({
+      sede: false,
+      infoGeneral: false,
+      convocantes: false,
+      convocados: false,
+      hechos: false,
+      pretensiones: false,
+      fundamentos: false,
+      anexos: false,
+      firma: false,
+  });
+  const sigCanvas = React.useRef({});
+  const watchedFirmaSource = watch('firma.source');
+  const [signatureSource, setSignatureSource] = useState('draw');
+  const [signatureImage, setSignatureImage] = useState(null);
 
   const areaDerecho = watch('infoGeneral.areaDerecho');
   const watchCuantiaDetallada = watch('infoGeneral.cuantiaDetallada');
   const watchCuantiaIndeterminada = watch('infoGeneral.cuantiaIndeterminada');
+
+    useEffect(() => {
+        if (watchedFirmaSource) {
+        setSignatureSource(watchedFirmaSource);
+        }
+    }, [watchedFirmaSource]);
+
+    const handleSignatureFileUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+        setValue('firma.file', file);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setSignatureImage(reader.result);
+        };
+        reader.readAsDataURL(file);
+        }
+    };
+
 
   useEffect(() => {
     if (watchCuantiaDetallada) {
@@ -234,22 +298,231 @@ const ConciliacionUnificadaForm = ({ onSubmit }) => {
     }
   };
 
+  const handleSaveSection = async (sectionName, nextTabIndex) => {
+    setIsSaving(true);
+    let fieldsToValidate = [];
+
+    switch (sectionName) {
+      case 'sede': fieldsToValidate = ['sede']; break;
+      case 'infoGeneral': fieldsToValidate = ['infoGeneral']; break;
+      case 'convocantes': fieldsToValidate = ['convocantes']; break;
+      case 'convocados': fieldsToValidate = ['convocados']; break;
+      case 'hechos': fieldsToValidate = ['hechos']; break;
+      case 'pretensiones': fieldsToValidate = ['pretensiones']; break;
+      case 'fundamentos': fieldsToValidate = ['fundamentos']; break;
+      case 'anexos': fieldsToValidate = ['anexos']; break;
+      case 'firma': fieldsToValidate = ['firma']; break;
+      default: break;
+    }
+
+    const results = await Promise.all(fieldsToValidate.map(field => trigger(field)));
+    const isValid = results.every(Boolean);
+
+    if (isValid) {
+      setValidationError('');
+      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate save
+      setSavedSections(prev => ({ ...prev, [sectionName]: true }));
+      if (nextTabIndex !== undefined) {
+        setTabValue(nextTabIndex);
+      }
+    } else {
+      setValidationError(`Hay errores en la sección actual. Por favor, revise los campos marcados.`);
+    }
+    setIsSaving(false);
+  };
+
+  const onInvalid = (errors) => {
+    console.error('Errores de validación del formulario:', errors);
+    setValidationError('El formulario tiene errores. Por favor, revise todas las pestañas y corrija los campos marcados en rojo.');
+  };
+
+  const customOnSubmit = (data) => {
+    const formData = new FormData();
+    if (data.anexos && data.anexos.length > 0) {
+      data.anexos.forEach(anexo => {
+        if (anexo.file) {
+          formData.append('anexos', anexo.file);
+        }
+      });
+    }
+
+    if (signatureSource === 'upload' && data.firma?.file) {
+      formData.append('firma', data.firma.file);
+    }
+
+    const dataToSend = {
+      ...data,
+      anexos: (data.anexos || []).map(a => ({ name: a.name })),
+    };
+
+    if (signatureSource === 'draw' && sigCanvas.current && !sigCanvas.current.isEmpty()) {
+      dataToSend.firma = {
+        source: 'draw',
+        data: sigCanvas.current.getTrimmedCanvas().toDataURL('image/png')
+      };
+    } else if (signatureSource === 'upload' && data.firma?.file) {
+        dataToSend.firma = {
+          source: 'upload',
+          name: data.firma.file.name,
+        };
+    }
+
+    formData.append('solicitudData', JSON.stringify(dataToSend));
+    onSubmit(formData);
+  }
+
+  const allSectionsSaved = Object.values(savedSections).every(Boolean);
+  const completionPercentage = (Object.values(savedSections).filter(Boolean).length / Object.values(savedSections).length) * 100;
+
+  const tabsConfig = [
+    { key: 'sede', label: 'Sede', icon: LocationCityIcon, color: '#673ab7' },
+    { key: 'infoGeneral', label: 'Info General', icon: InfoIcon, color: '#2196f3' },
+    { key: 'convocantes', label: 'Convocantes', icon: PersonIcon, color: '#ff5722' },
+    { key: 'convocados', label: 'Convocados', icon: PersonIcon, color: '#f44336' },
+    { key: 'hechos', label: 'Hechos', icon: DescriptionIcon, color: '#4caf50' },
+    { key: 'pretensiones', label: 'Pretensiones', icon: AccountBalanceWalletIcon, color: '#ff9800' },
+    { key: 'fundamentos', label: 'Fundamentos', icon: GavelIcon, color: '#9c27b0' },
+    { key: 'anexos', label: 'Anexos', icon: AttachFileIcon, color: '#009688' },
+    { key: 'firma', label: 'Firma', icon: CreateIcon, color: '#795548' },
+  ];
+
   return (
     <Box>
-      <GlassCard sx={{ mb: 3 }}>
-        <Tabs value={tabValue} onChange={(e, val) => setTabValue(val)} variant="scrollable" scrollButtons="auto">
-          <Tab label="Sede" icon={<LocationCityIcon />} iconPosition="start" />
-          <Tab label="Info General" icon={<InfoIcon />} iconPosition="start" />
-          <Tab label="Convocantes" icon={<PersonIcon />} iconPosition="start" />
-          <Tab label="Convocados" icon={<PersonIcon />} iconPosition="start" />
-          <Tab label="Hechos" icon={<DescriptionIcon />} iconPosition="start" />
-          <Tab label="Pretensiones" icon={<AccountBalanceWalletIcon />} iconPosition="start" />
-          <Tab label="Fundamentos" icon={<GavelIcon />} iconPosition="start" />
-          <Tab label="Pruebas y Anexos" icon={<AttachFileIcon />} iconPosition="start" />
+       <GlassCard hover={false} sx={{ mb: 3, p: 3 }}>
+        <Stack spacing={2}>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center" justifyContent="space-between">
+            <Stack direction="row" spacing={2} alignItems="center">
+              <Avatar
+                sx={{
+                  width: 48,
+                  height: 48,
+                  background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+                }}
+              >
+                <GavelIcon />
+              </Avatar>
+              <Box>
+                <Typography 
+                  variant="h6" 
+                  sx={{ 
+                    fontWeight: 700,
+                    background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    backgroundClip: 'text',
+                  }}
+                >
+                  Solicitud de Conciliación Unificada
+                </Typography>
+                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                  Complete todos los pasos para generar la solicitud
+                </Typography>
+              </Box>
+            </Stack>
+          </Stack>
+          <Chip
+            icon={<TrendingUpIcon />}
+            label={`${completionPercentage.toFixed(0)}% Completado`}
+            sx={{
+              background: alpha(theme.palette.success.main, 0.1),
+              color: theme.palette.success.main,
+              fontWeight: 600,
+              px: 2,
+              py: 2.5,
+              alignSelf: 'flex-start'
+            }}
+          />
+          <Box>
+            <LinearProgress
+              variant="determinate"
+              value={completionPercentage}
+              sx={{
+                height: 8,
+                borderRadius: 4,
+                backgroundColor: alpha(theme.palette.grey[500], 0.1),
+                '& .MuiLinearProgress-bar': {
+                  borderRadius: 4,
+                  background: `linear-gradient(90deg, ${theme.palette.success.main}, ${theme.palette.info.main})`,
+                },
+              }}
+            />
+          </Box>
+        </Stack>
+      </GlassCard>
+
+      <Collapse in={!!validationError}>
+        <GlassCard
+          hover={false}
+          sx={{
+            mb: 3,
+            border: `2px solid ${alpha(theme.palette.error.main, 0.3)}`,
+            background: `linear-gradient(135deg, ${alpha(theme.palette.error.main, 0.1)} 0%, ${alpha(theme.palette.error.main, 0.05)} 100%)`,
+          }}
+        >
+            <Alert
+              severity="error"
+              icon={<ErrorIcon sx={{ fontSize: 28 }} />}
+              sx={{ background: 'transparent', border: 'none' }}
+              action={
+                <IconButton size="small" onClick={() => setValidationError('')} sx={{ color: theme.palette.error.main }}>
+                  <CloseIcon fontSize="small" />
+                </IconButton>
+              }
+            >
+              {validationError}
+            </Alert>
+          </GlassCard>
+      </Collapse>
+
+      <GlassCard hover={false} sx={{ mb: 3 }}>
+        <Tabs
+          value={tabValue}
+          onChange={(e, newValue) => setTabValue(newValue)}
+          variant="scrollable"
+          scrollButtons="auto"
+          sx={{
+            '& .MuiTab-root': {
+              minHeight: 72,
+              textTransform: 'none',
+              fontWeight: 600,
+              fontSize: '0.9rem',
+              transition: 'all 0.3s ease',
+              '&:hover': { background: alpha(theme.palette.primary.main, 0.05) },
+              '&.Mui-selected': { color: theme.palette.primary.main },
+            },
+            '& .MuiTabs-indicator': {
+              height: 3,
+              borderRadius: '3px 3px 0 0',
+              background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+            },
+          }}
+        >
+          {tabsConfig.map((tab, index) => {
+            const Icon = tab.icon;
+            const isSaved = savedSections[tab.key];
+            const isDisabled = index > 0 && !Object.values(savedSections).slice(0, index).every(Boolean);
+            
+            return (
+              <Tab
+                key={tab.key}
+                disabled={isDisabled}
+                onClick={() => setTabValue(index)}
+                label={
+                  <Stack spacing={0.5} alignItems="center">
+                    <Badge badgeContent={isSaved ? <CheckCircleIcon sx={{ fontSize: 16 }} /> : null} color="success">
+                      <Icon sx={{ fontSize: 24, color: isSaved ? theme.palette.success.main : tab.color }} />
+                    </Badge>
+                    <Typography variant="caption" sx={{ fontWeight: 600 }}>{tab.label}</Typography>
+                  </Stack>
+                }
+                sx={{ opacity: isDisabled ? 0.4 : 1, '&.Mui-disabled': { color: 'text.disabled' } }}
+              />
+            );
+          })}
         </Tabs>
       </GlassCard>
 
-      <form onSubmit={handleSubmit(onSubmit)}>
+      <form onSubmit={handleSubmit(customOnSubmit, onInvalid)}>
         <TabPanel value={tabValue} index={0}>
           <GlassCard sx={{ p: 3 }}>
             <Stack spacing={3}>
@@ -257,6 +530,9 @@ const ConciliacionUnificadaForm = ({ onSubmit }) => {
               <LocationSelector control={control} errors={errors} watch={watch} setValue={setValue} showDepartment={true} showCity={true} departmentFieldName="sede.departamento" cityFieldName="sede.ciudad" departmentRules={{ required: 'Campo requerido' }} cityRules={{ required: 'Campo requerido' }} />
               <GlassTextField {...register('sede.entidadPromotora', { required: 'Campo requerido' })} label="Entidad Promotora" fullWidth error={!!errors.sede?.entidadPromotora} helperText={errors.sede?.entidadPromotora?.message} />
               <GlassTextField {...register('sede.sedeCentro', { required: 'Campo requerido' })} label="Sede / Centro" fullWidth error={!!errors.sede?.sedeCentro} helperText={errors.sede?.sedeCentro?.message} />
+              <Button variant="contained" onClick={() => handleSaveSection('sede', 1)} disabled={isSaving} startIcon={<SaveIcon />} sx={{ mt: 2 }}>
+                {isSaving ? 'Guardando...' : 'Guardar y Continuar'}
+              </Button>
             </Stack>
           </GlassCard>
         </TabPanel>
@@ -280,6 +556,9 @@ const ConciliacionUnificadaForm = ({ onSubmit }) => {
                     <Grid item xs={12} sm={6}><GlassTextField {...register('infoGeneral.cuantiaTotal', { required: 'Campo requerido' })} label="Cuantía Total" type="number" fullWidth error={!!errors.infoGeneral?.cuantiaTotal} helperText={errors.infoGeneral?.cuantiaTotal?.message} /></Grid>
                 </>}
               </Grid>
+              <Button variant="contained" onClick={() => handleSaveSection('infoGeneral', 2)} disabled={isSaving} startIcon={<SaveIcon />} sx={{ mt: 2 }}>
+                {isSaving ? 'Guardando...' : 'Guardar y Continuar'}
+              </Button>
             </Stack>
           </GlassCard>
         </TabPanel>
@@ -299,6 +578,9 @@ const ConciliacionUnificadaForm = ({ onSubmit }) => {
                 ))}
                 <Button variant="outlined" onClick={() => appendConvocante({})} startIcon={<AddIcon />}>Añadir Convocante</Button>
                 {errors.convocantes?.root && <FormHelperText error>{errors.convocantes.root.message}</FormHelperText>}
+                <Button variant="contained" onClick={() => handleSaveSection('convocantes', 3)} disabled={isSaving} startIcon={<SaveIcon />} sx={{ mt: 2 }}>
+                  {isSaving ? 'Guardando...' : 'Guardar y Continuar'}
+                </Button>
             </Stack>
         </TabPanel>
 
@@ -317,6 +599,9 @@ const ConciliacionUnificadaForm = ({ onSubmit }) => {
                 ))}
                 <Button variant="outlined" onClick={() => appendConvocado({})} startIcon={<AddIcon />}>Añadir Convocado</Button>
                 {errors.convocados?.root && <FormHelperText error>{errors.convocados.root.message}</FormHelperText>}
+                <Button variant="contained" onClick={() => handleSaveSection('convocados', 4)} disabled={isSaving} startIcon={<SaveIcon />} sx={{ mt: 2 }}>
+                  {isSaving ? 'Guardando...' : 'Guardar y Continuar'}
+                </Button>
             </Stack>
         </TabPanel>
 
@@ -337,6 +622,9 @@ const ConciliacionUnificadaForm = ({ onSubmit }) => {
                     ))}
                     <Button variant="outlined" onClick={() => appendHecho({ descripcion: '' })} startIcon={<AddIcon />}>Añadir Hecho</Button>
                     {errors.hechos?.root && <FormHelperText error>{errors.hechos.root.message}</FormHelperText>}
+                    <Button variant="contained" onClick={() => handleSaveSection('hechos', 5)} disabled={isSaving} startIcon={<SaveIcon />} sx={{ mt: 2 }}>
+                      {isSaving ? 'Guardando...' : 'Guardar y Continuar'}
+                    </Button>
                 </Stack>
             </GlassCard>
         </TabPanel>
@@ -346,6 +634,9 @@ const ConciliacionUnificadaForm = ({ onSubmit }) => {
                 <Stack spacing={2}>
                     <Typography variant="h6">Pretensiones</Typography>
                     <GlassTextField {...register('pretensiones', { required: 'Campo requerido' })} label="Descripción de las Pretensiones" multiline rows={6} fullWidth error={!!errors.pretensiones} helperText={errors.pretensiones?.message} />
+                    <Button variant="contained" onClick={() => handleSaveSection('pretensiones', 6)} disabled={isSaving} startIcon={<SaveIcon />} sx={{ mt: 2 }}>
+                      {isSaving ? 'Guardando...' : 'Guardar y Continuar'}
+                    </Button>
                 </Stack>
             </GlassCard>
         </TabPanel>
@@ -355,6 +646,9 @@ const ConciliacionUnificadaForm = ({ onSubmit }) => {
                 <Stack spacing={2}>
                     <Typography variant="h6">Fundamentos</Typography>
                     <GlassTextField {...register('fundamentos', { required: 'Campo requerido' })} label="Fundamentos de Derecho" multiline rows={6} fullWidth error={!!errors.fundamentos} helperText={errors.fundamentos?.message}/>
+                    <Button variant="contained" onClick={() => handleSaveSection('fundamentos', 7)} disabled={isSaving} startIcon={<SaveIcon />} sx={{ mt: 2 }}>
+                      {isSaving ? 'Guardando...' : 'Guardar y Continuar'}
+                    </Button>
                 </Stack>
             </GlassCard>
         </TabPanel>
@@ -398,11 +692,84 @@ const ConciliacionUnificadaForm = ({ onSubmit }) => {
                         </GlassCard>
                     ))}
                     <Button variant="outlined" onClick={() => appendAnexo({ name: '', file: null })} startIcon={<AddIcon />}>Añadir Anexo</Button>
+                    <Button variant="contained" onClick={() => handleSaveSection('anexos', 8)} disabled={isSaving} startIcon={<SaveIcon />} sx={{ mt: 2 }}>
+                      {isSaving ? 'Guardando...' : 'Guardar y Continuar'}
+                    </Button>
                 </Stack>
             </GlassCard>
         </TabPanel>
 
-        <Button type="submit" variant="contained" color="primary" sx={{ mt: 4, py: 1.5, fontSize: '1rem' }}>Generar Solicitud Unificada</Button>
+        <TabPanel value={tabValue} index={8}>
+          <GlassCard sx={{ p: 3 }}>
+            <Stack spacing={3}>
+              <Typography variant="h6">Firma</Typography>
+              <FormControl component="fieldset" fullWidth>
+                <RadioGroup row value={signatureSource} onChange={(e) => {
+                  const newSource = e.target.value;
+                  setSignatureSource(newSource);
+                  setValue('firma.source', newSource);
+                  setValue('firma.data', null);
+                  setValue('firma.file', null);
+                  if (sigCanvas.current) sigCanvas.current.clear();
+                  setSignatureImage(null);
+                }}>
+                  <FormControlLabel value="draw" control={<Radio />} label="Dibujar Firma" />
+                  <FormControlLabel value="upload" control={<Radio />} label="Subir Imagen de Firma" />
+                </RadioGroup>
+              </FormControl>
+              
+              {signatureSource === 'draw' && (
+                <Box sx={{ border: `1px solid ${alpha(theme.palette.grey[500], 0.4)}`, borderRadius: '12px', overflow: 'hidden' }}>
+                  <SignatureCanvas
+                    ref={sigCanvas}
+                    penColor='black'
+                    canvasProps={{ width: 500, height: 200, className: 'sigCanvas' }}
+                    onEnd={() => setValue('firma.data', sigCanvas.current.toDataURL())}
+                  />
+                </Box>
+              )}
+
+              {signatureSource === 'upload' && (
+                <Stack spacing={2} alignItems="center">
+                  <Button variant="outlined" component="label" startIcon={<UploadFileIcon />}>
+                    Seleccionar Imagen
+                    <input type="file" hidden accept="image/*" onChange={handleSignatureFileUpload} />
+                  </Button>
+                  {signatureImage && <Avatar src={signatureImage} sx={{ width: 200, height: 100, mt: 2 }} variant="rounded" />}
+                  <Controller name="firma.file" control={control} render={({ fieldState }) => fieldState.error && <FormHelperText error>{fieldState.error.message}</FormHelperText>} />
+                </Stack>
+              )}
+
+              <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={() => setConfirmModalOpen(true)}
+                  disabled={!allSectionsSaved || isSaving}
+                  sx={{ mt: 4, py: 1.5, fontSize: '1rem' }}
+              >
+                  Generar Solicitud Unificada
+              </Button>
+            </Stack>
+          </GlassCard>
+        </TabPanel>
+        
+        <Dialog open={isConfirmModalOpen} onClose={() => setConfirmModalOpen(false)}>
+            <DialogTitle>Confirmar Envío</DialogTitle>
+            <DialogContent>
+                <DialogContentText>
+                    ¿Está seguro de que desea generar la solicitud? Verifique que toda la información sea correcta antes de continuar.
+                </DialogContentText>
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={() => setConfirmModalOpen(false)}>Cancelar</Button>
+                <Button onClick={() => {
+                    setConfirmModalOpen(false);
+                    handleSubmit(customOnSubmit, onInvalid)();
+                }} color="primary" autoFocus>
+                    Confirmar y Enviar
+                </Button>
+            </DialogActions>
+        </Dialog>
       </form>
     </Box>
   );
