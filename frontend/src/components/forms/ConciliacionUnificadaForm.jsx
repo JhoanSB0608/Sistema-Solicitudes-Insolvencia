@@ -212,9 +212,27 @@ function TabPanel(props) {
   );
 }
 
-const ConciliacionUnificadaForm = ({ onSubmit }) => {
+const formatDateForInput = (dateString) => {
+  if (!dateString) return '';
+  try {
+    const date = new Date(dateString);
+    const userTimezoneOffset = date.getTimezoneOffset() * 60000;
+    const adjustedDate = new Date(date.getTime() + userTimezoneOffset);
+    const year = adjustedDate.getFullYear();
+    const month = String(adjustedDate.getMonth() + 1).padStart(2, '0');
+    const day = String(adjustedDate.getDate()).padStart(2, '0');
+    if (isNaN(year) || isNaN(month) || isNaN(day)) return '';
+    return `${year}-${month}-${day}`;
+  } catch (error) {
+    console.error('Error formatting date:', dateString, error);
+    return '';
+  }
+};
+
+
+const ConciliacionUnificadaForm = ({ onSubmit, initialData, isUpdating }) => {
   const theme = useTheme();
-  const { register, control, handleSubmit, watch, setValue, trigger, formState: { errors } } = useForm({
+  const { register, control, handleSubmit, watch, setValue, trigger, formState: { errors }, reset } = useForm({
     defaultValues: {
       sede: {},
       infoGeneral: { asuntoJuridicoDefinible: false, cuantiaIndeterminada: false, cuantiaDetallada: false },
@@ -254,6 +272,45 @@ const ConciliacionUnificadaForm = ({ onSubmit }) => {
   const watchedFirmaSource = watch('firma.source');
   const [signatureSource, setSignatureSource] = useState('draw');
   const [signatureImage, setSignatureImage] = useState(null);
+
+  useEffect(() => {
+    if (initialData) {
+      const formattedData = {
+        ...initialData,
+        convocantes: initialData.convocantes?.map(p => ({
+          ...p,
+          fechaNacimiento: formatDateForInput(p.fechaNacimiento),
+        })),
+        convocados: initialData.convocados?.map(p => ({
+          ...p,
+          fechaNacimiento: formatDateForInput(p.fechaNacimiento),
+        })),
+      };
+      reset(formattedData);
+
+      // Handle signature
+      if (initialData.firma) {
+        const { source, data, url } = initialData.firma;
+        setSignatureSource(source || 'draw');
+        if (source === 'draw' && data) {
+          setTimeout(() => {
+            if (sigCanvas.current && sigCanvas.current.fromDataURL) {
+              sigCanvas.current.fromDataURL(data);
+            }
+          }, 200);
+        } else if (source === 'upload' && url) {
+          const backendUrl = process.env.REACT_APP_BACKEND_URL || 'https://api.systemlex.com.co';
+          setSignatureImage(`${backendUrl}${url}`);
+        }
+      }
+
+      // Mark all sections as saved since we are editing
+      setSavedSections({
+          sede: true, infoGeneral: true, convocantes: true, convocados: true,
+          hechos: true, pretensiones: true, anexos: true, firma: true,
+      });
+    }
+  }, [initialData, reset]);
 
   useLayoutEffect(() => {
     function handleResize() {
