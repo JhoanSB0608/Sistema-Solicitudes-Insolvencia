@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 import { 
   TextField, Button, Typography, Box, Paper, Grid, Tabs, Tab, Checkbox, 
   FormControlLabel, FormControl, InputLabel, Select, MenuItem, FormHelperText,
@@ -220,7 +222,6 @@ const ConciliacionUnificadaForm = ({ onSubmit }) => {
       convocados: [],
       hechos: [],
       pretensiones: [],
-      fundamentos: '',
       anexos: [],
       firma: { source: 'draw', data: null, file: null },
     }
@@ -243,7 +244,6 @@ const ConciliacionUnificadaForm = ({ onSubmit }) => {
       convocados: false,
       hechos: false,
       pretensiones: false,
-      fundamentos: false,
       anexos: false,
       firma: false,
   });
@@ -319,7 +319,6 @@ const ConciliacionUnificadaForm = ({ onSubmit }) => {
       case 'convocados': fieldsToValidate = ['convocados']; break;
       case 'hechos': fieldsToValidate = ['hechos']; break;
       case 'pretensiones': fieldsToValidate = ['pretensiones']; break;
-      case 'fundamentos': fieldsToValidate = ['fundamentos']; break;
       case 'anexos': fieldsToValidate = ['anexos']; break;
       case 'firma': fieldsToValidate = ['firma']; break;
       default: break;
@@ -391,7 +390,6 @@ const ConciliacionUnificadaForm = ({ onSubmit }) => {
     { key: 'convocados', label: 'Convocados', icon: PersonIcon, color: '#f44336' },
     { key: 'hechos', label: 'Hechos', icon: DescriptionIcon, color: '#4caf50' },
     { key: 'pretensiones', label: 'Pretensiones', icon: AccountBalanceWalletIcon, color: '#ff9800' },
-    { key: 'fundamentos', label: 'Fundamentos', icon: GavelIcon, color: '#9c27b0' },
     { key: 'anexos', label: 'Anexos', icon: AttachFileIcon, color: '#009688' },
     { key: 'firma', label: 'Firma', icon: CreateIcon, color: '#795548' },
   ];
@@ -626,7 +624,35 @@ const ConciliacionUnificadaForm = ({ onSubmit }) => {
                                     <Chip label={`Hecho #${index + 1}`} />
                                     <IconButton onClick={() => removeHecho(index)}><DeleteIcon /></IconButton>
                                 </Stack>
-                                <GlassTextField {...register(`hechos.${index}.descripcion`, { required: 'Campo requerido' })} label="Descripción del Hecho" multiline rows={4} fullWidth error={!!errors.hechos?.[index]?.descripcion} helperText={errors.hechos?.[index]?.descripcion?.message} />
+                                <Box sx={{
+                                    '& .ql-toolbar': {
+                                        borderRadius: '12px 12px 0 0',
+                                        background: 'rgba(255, 255, 255, 0.1)',
+                                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                                    },
+                                    '& .ql-container': {
+                                        borderRadius: '0 0 12px 12px',
+                                        background: 'rgba(255, 255, 255, 0.08)',
+                                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                                    },
+                                    '& .ql-editor': {
+                                        minHeight: '150px',
+                                    }
+                                }}>
+                                    <Controller
+                                        name={`hechos.${index}.descripcion`}
+                                        control={control}
+                                        rules={{ required: 'La descripción del hecho es requerida.' }}
+                                        render={({ field }) => (
+                                            <ReactQuill 
+                                                theme="snow"
+                                                value={field.value}
+                                                onChange={field.onChange}
+                                            />
+                                        )}
+                                    />
+                                </Box>
+                                {errors.hechos?.[index]?.descripcion && <FormHelperText error>{errors.hechos[index].descripcion.message}</FormHelperText>}
                             </Stack>
                         </GlassCard>
                     ))}
@@ -650,7 +676,35 @@ const ConciliacionUnificadaForm = ({ onSubmit }) => {
                                     <Chip label={`Pretensión #${index + 1}`} />
                                     <IconButton onClick={() => removePretension(index)}><DeleteIcon /></IconButton>
                                 </Stack>
-                                <GlassTextField {...register(`pretensiones.${index}.descripcion`, { required: 'Campo requerido' })} label="Descripción de la Pretensión" multiline rows={4} fullWidth error={!!errors.pretensiones?.[index]?.descripcion} helperText={errors.pretensiones?.[index]?.descripcion?.message} />
+                                <Box sx={{
+                                    '& .ql-toolbar': {
+                                        borderRadius: '12px 12px 0 0',
+                                        background: 'rgba(255, 255, 255, 0.1)',
+                                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                                    },
+                                    '& .ql-container': {
+                                        borderRadius: '0 0 12px 12px',
+                                        background: 'rgba(255, 255, 255, 0.08)',
+                                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                                    },
+                                    '& .ql-editor': {
+                                        minHeight: '150px',
+                                    }
+                                }}>
+                                    <Controller
+                                        name={`pretensiones.${index}.descripcion`}
+                                        control={control}
+                                        rules={{ required: 'La descripción de la pretensión es requerida.' }}
+                                        render={({ field }) => (
+                                            <ReactQuill 
+                                                theme="snow"
+                                                value={field.value}
+                                                onChange={field.onChange}
+                                            />
+                                        )}
+                                    />
+                                </Box>
+                                {errors.pretensiones?.[index]?.descripcion && <FormHelperText error>{errors.pretensiones[index].descripcion.message}</FormHelperText>}
                             </Stack>
                         </GlassCard>
                     ))}
@@ -663,19 +717,9 @@ const ConciliacionUnificadaForm = ({ onSubmit }) => {
             </GlassCard>
         </TabPanel>
 
-        <TabPanel value={tabValue} index={6}>
-            <GlassCard sx={{ p: 3 }}>
-                <Stack spacing={2}>
-                    <Typography variant="h6">Fundamentos</Typography>
-                    <GlassTextField {...register('fundamentos', { required: 'Campo requerido' })} label="Fundamentos de Derecho" multiline rows={6} fullWidth error={!!errors.fundamentos} helperText={errors.fundamentos?.message}/>
-                    <Button variant="contained" onClick={() => handleSaveSection('fundamentos', 7)} disabled={isSaving} startIcon={<SaveIcon />} sx={{ mt: 2 }}>
-                      {isSaving ? 'Guardando...' : 'Guardar y Continuar'}
-                    </Button>
-                </Stack>
-            </GlassCard>
-        </TabPanel>
+        
 
-        <TabPanel value={tabValue} index={7}>
+        <TabPanel value={tabValue} index={6}>
             <GlassCard sx={{ p: 3 }}>
                 <Stack spacing={2}>
                     <Typography variant="h6">Pruebas y Anexos</Typography>
@@ -719,14 +763,14 @@ const ConciliacionUnificadaForm = ({ onSubmit }) => {
                         </GlassCard>
                     ))}
                     <Button variant="outlined" onClick={() => appendAnexo({ name: '', file: null })} startIcon={<AddIcon />}>Añadir Anexo</Button>
-                    <Button variant="contained" onClick={() => handleSaveSection('anexos', 8)} disabled={isSaving} startIcon={<SaveIcon />} sx={{ mt: 2 }}>
+                    <Button variant="contained" onClick={() => handleSaveSection('anexos', 7)} disabled={isSaving} startIcon={<SaveIcon />} sx={{ mt: 2 }}>
                       {isSaving ? 'Guardando...' : 'Guardar y Continuar'}
                     </Button>
                 </Stack>
             </GlassCard>
         </TabPanel>
 
-        <TabPanel value={tabValue} index={8}>
+        <TabPanel value={tabValue} index={7}>
           <GlassCard sx={{ p: 3 }}>
             <Stack spacing={3}>
               <Typography variant="h6">Firma</Typography>
