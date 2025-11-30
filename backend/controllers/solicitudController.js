@@ -55,17 +55,41 @@ const updateSolicitud = async (req, res) => {
     }
 
     // Update fields by assigning the (potentially modified) parsedData
+    // We handle anexos separately, so remove it from parsedData to avoid conflicts
+    const anexoDataFromClient = parsedData.anexos;
+    delete parsedData.anexos;
+
     Object.assign(solicitud, parsedData);
 
-    // Handle 'anexos' files
-    if (req.files && req.files.anexos && req.files.anexos.length > 0) {
-      const newAnexos = req.files.anexos.map(file => ({
-        filename: file.filename,
-        path: file.path,
-        mimetype: file.mimetype,
-        size: file.size,
-      }));
-      solicitud.anexos = solicitud.anexos ? [...solicitud.anexos, ...newAnexos] : newAnexos;
+    // Process anexos
+    if (anexoDataFromClient) {
+      const newAnexosFromFiles = (req.files && req.files.anexos) || [];
+      
+      const finalAnexos = anexoDataFromClient.map(anexoFromClient => {
+        // Is this a new file? Check if it was just uploaded.
+        const newFile = newAnexosFromFiles.find(f => f.originalname === anexoFromClient.name);
+        if (newFile) {
+          // It's a new file, create a full anexo object
+          return {
+            filename: newFile.filename,
+            path: newFile.path,
+            mimetype: newFile.mimetype,
+            size: newFile.size,
+            descripcion: anexoFromClient.descripcion,
+          };
+        } else {
+          // It's an existing file. Find it in the current solicitud.
+          const existingAnexo = solicitud.anexos.find(a => a.filename === anexoFromClient.name);
+          if (existingAnexo) {
+            // Update its description and return it
+            existingAnexo.descripcion = anexoFromClient.descripcion;
+            return existingAnexo;
+          }
+        }
+        return null; // This anexo from client was not found, might be a removed one.
+      }).filter(Boolean); // Filter out nulls
+
+      solicitud.anexos = finalAnexos;
     }
     
     // Construct nombreCompleto for the deudor
@@ -143,12 +167,17 @@ const createSolicitud = async (req, res) => {
 
     // Handle 'anexos' files
     if (req.files && req.files.anexos) {
-      dataToSave.anexos = req.files.anexos.map(file => ({
-        filename: file.filename,
-        path: file.path,
-        mimetype: file.mimetype,
-        size: file.size,
-      }));
+      const anexoDescriptions = parsedData.anexos || [];
+      dataToSave.anexos = req.files.anexos.map(file => {
+        const descriptionObj = anexoDescriptions.find(d => d.name === file.originalname);
+        return {
+          filename: file.filename,
+          path: file.path,
+          mimetype: file.mimetype,
+          size: file.size,
+          descripcion: descriptionObj ? descriptionObj.descripcion : ''
+        };
+      });
     }
 
     // Construct nombreCompleto for the deudor

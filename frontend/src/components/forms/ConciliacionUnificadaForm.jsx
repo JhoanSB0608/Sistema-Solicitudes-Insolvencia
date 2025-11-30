@@ -285,6 +285,11 @@ const ConciliacionUnificadaForm = ({ onSubmit, initialData, isUpdating }) => {
           ...p,
           fechaNacimiento: formatDateForInput(p.fechaNacimiento),
         })),
+        anexos: initialData.anexos?.map(a => ({
+          ...a,
+          name: a.filename, // Map filename to name for the form field
+          file: null // Existing files are not re-uploaded by default
+        }))
       };
       reset(formattedData);
 
