@@ -13,6 +13,7 @@ const anexoSchema = new mongoose.Schema({
   path: { type: String },
   mimetype: { type: String },
   size: { type: Number },
+  descripcion: { type: String },
 });
 
 const firmaSchema = new mongoose.Schema({

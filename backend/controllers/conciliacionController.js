@@ -32,14 +32,22 @@ const createConciliacion = async (req, res) => {
     const dataToSave = parsedData;
     dataToSave.user = req.user._id;
 
+    // Handle 'anexos' files by merging descriptions with file data
+    const anexoInfoFromClient = parsedData.anexos ? [...parsedData.anexos] : [];
+    let finalAnexos = [];
     if (req.files && req.files.anexos) {
-      dataToSave.anexos = req.files.anexos.map(file => ({
-        filename: file.filename,
-        path: file.path,
-        mimetype: file.mimetype,
-        size: file.size,
-      }));
+      finalAnexos = req.files.anexos.map(file => {
+        const matchingInfo = anexoInfoFromClient.find(info => info.name === file.originalname);
+        return {
+          filename: file.filename,
+          path: file.path,
+          mimetype: file.mimetype,
+          size: file.size,
+          descripcion: matchingInfo ? matchingInfo.descripcion : '',
+        };
+      });
     }
+    dataToSave.anexos = finalAnexos;
 
     const conciliacion = new Conciliacion(dataToSave);
     const createdConciliacion = await conciliacion.save();
@@ -126,17 +134,43 @@ const updateConciliacion = async (req, res) => {
       fs.unlinkSync(signatureFile.path);
     }
 
+    const anexoDataFromClient = parsedData.anexos;
+    delete parsedData.anexos;
+
     Object.assign(conciliacion, parsedData);
 
-    // Anexos handling
-    if (req.files && req.files.anexos && req.files.anexos.length > 0) {
-      const newAnexos = req.files.anexos.map(file => ({
-        filename: file.filename,
-        path: file.path,
-        mimetype: file.mimetype,
-        size: file.size,
-      }));
-      conciliacion.anexos = conciliacion.anexos ? [...conciliacion.anexos, ...newAnexos] : newAnexos;
+    const newAnexosFromFiles = (req.files && req.files.anexos) || [];
+    
+    // Get a list of annex filenames from the client
+    const clientAnexoNames = anexoDataFromClient ? anexoDataFromClient.map(a => a.name) : [];
+
+    // Remove annexes that are no longer in the client's list
+    conciliacion.anexos.slice().forEach(existingAnexo => {
+        if (!clientAnexoNames.includes(existingAnexo.filename)) {
+            conciliacion.anexos.id(existingAnexo._id).remove();
+        }
+    });
+
+    // Update existing ones and add new ones
+    if (anexoDataFromClient) {
+        for (const anexoFromClient of anexoDataFromClient) {
+            const existingAnexo = conciliacion.anexos.find(a => a.filename === anexoFromClient.name);
+            const newFile = newAnexosFromFiles.find(f => f.originalname === anexoFromClient.name);
+
+            if (existingAnexo) {
+                // It exists, so just update the description.
+                existingAnexo.descripcion = anexoFromClient.descripcion;
+            } else if (newFile) {
+                // It doesn't exist and it's a new file, so add it.
+                conciliacion.anexos.push({
+                    filename: newFile.filename,
+                    path: newFile.path,
+                    mimetype: newFile.mimetype,
+                    size: newFile.size,
+                    descripcion: anexoFromClient.descripcion,
+                });
+            }
+        }
     }
     
     const updatedConciliacion = await conciliacion.save();
