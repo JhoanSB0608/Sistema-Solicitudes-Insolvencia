@@ -60,36 +60,40 @@ const updateSolicitud = async (req, res) => {
     Object.assign(solicitud, parsedData);
 
     const newAnexosFromFiles = (req.files && req.files.anexos) || [];
-    const clientAnexoNames = anexoDataFromClient ? anexoDataFromClient.map(a => a.name) : [];
+    const finalAnexos = [];
 
-    // Use slice() to create a shallow copy for safe iteration while removing
-    solicitud.anexos.slice().forEach(existingAnexo => {
-        if (!clientAnexoNames.includes(existingAnexo.filename)) {
-            solicitud.anexos.id(existingAnexo._id).remove();
-        }
-    });
-
-    // Update existing ones and add new ones
     if (anexoDataFromClient) {
         for (const anexoFromClient of anexoDataFromClient) {
-            const existingAnexo = solicitud.anexos.find(a => a.filename === anexoFromClient.name);
             const newFile = newAnexosFromFiles.find(f => f.originalname === anexoFromClient.name);
-
-            if (existingAnexo) {
-                // It exists, so just update the description.
-                existingAnexo.descripcion = anexoFromClient.descripcion;
-            } else if (newFile) {
-                // It doesn't exist and it's a new file, so add it.
-                solicitud.anexos.push({
+            
+            if (newFile) {
+                // It's a new file, create a new object. No _id.
+                finalAnexos.push({
                     filename: newFile.filename,
                     path: newFile.path,
                     mimetype: newFile.mimetype,
                     size: newFile.size,
                     descripcion: anexoFromClient.descripcion,
                 });
+            } else {
+                // It's an existing file. Find it in the original array.
+                const existingAnexo = solicitud.anexos.find(a => a.filename === anexoFromClient.name);
+                if (existingAnexo) {
+                    // Create a new plain object, but copy the _id.
+                    finalAnexos.push({
+                        _id: existingAnexo._id,
+                        filename: existingAnexo.filename,
+                        path: existingAnexo.path,
+                        mimetype: existingAnexo.mimetype,
+                        size: existingAnexo.size,
+                        descripcion: anexoFromClient.descripcion, // The updated description
+                    });
+                }
             }
         }
     }
+
+    solicitud.anexos = finalAnexos; // Overwrite the array
     
     // Construct nombreCompleto for the deudor
     if (solicitud.deudor) {
