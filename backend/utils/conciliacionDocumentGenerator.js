@@ -92,7 +92,7 @@ function buildConciliacionDocDefinition(solicitud = {}) {
 
     c.push({
         text: safe(sede.sedeCentro).toUpperCase() + ' - ' + safe(sede.ciudad).toUpperCase(),
-        style: 'header',
+        style: 'body',
         margin: [0, 0, 0, 15]
     });
 
@@ -163,7 +163,8 @@ function buildConciliacionDocDefinition(solicitud = {}) {
                     { text: `${numero} – `, bold: true },
                     ...parsed
                 ],
-                style: 'section'
+                style: 'section',
+                margin: [0, 5, 0, 5]
             });
         } catch (e) {
             // Fallback: remover tags HTML
@@ -173,7 +174,8 @@ function buildConciliacionDocDefinition(solicitud = {}) {
                     { text: `${numero} – `, bold: true },
                     descripcion
                 ],
-                style: 'section'
+                style: 'section',
+                margin: [0, 5, 0, 5]
             });
         }
     });
@@ -201,7 +203,8 @@ function buildConciliacionDocDefinition(solicitud = {}) {
                     { text: `${numero}: `, bold: true },
                     ...parsed
                 ],
-                style: 'section'
+                style: 'section',
+                margin: [0, 5, 0, 5]
             });
         } catch (e) {
             descripcion = descripcion.replace(/<[^>]+>/g, '');
@@ -210,7 +213,8 @@ function buildConciliacionDocDefinition(solicitud = {}) {
                     { text: `${numero}: `, bold: true },
                     descripcion
                 ],
-                style: 'section'
+                style: 'section',
+                margin: [0, 5, 0, 5]
             });
         }
     });
