@@ -50,7 +50,7 @@ function buildConciliacionDocDefinition(solicitud = {}) {
 
     const docDefinition = {
         pageSize: 'LETTER',
-        pageMargins: [80, 70, 80, 100],
+        pageMargins: [80, 70, 80, 70],
         defaultStyle: { 
             font: 'Roboto', 
             fontSize: 11, 
@@ -114,28 +114,22 @@ function buildConciliacionDocDefinition(solicitud = {}) {
     
     const idConvocante = `${safe(convocante.tipoIdentificacion)} No. ${safe(convocante.numeroIdentificacion)} de ${safe(convocante.ciudadExpedicion)}`;
 
-    c.push({
-    text: [
-        { text: nombreConvocante, bold: true },
-        `, identificado(a) con ${idConvocante}; mayor de edad y domiciliado en la ciudad de ${safe(convocante.ciudad)}, solicitamos respetuosamente a usted se sirva de celebrar `,
-        { text: 'AUDIENCIA DE CONCILIACIÓN EXTRAJUDICIAL EN DERECHO – ', bold: true },
-        { text: safe(infoGeneral.tema).toUpperCase(), bold: true },
-        { text: ' - ', bold: true }
-    ],
-    style: 'body'
-    });
-
-
     // --- IDENTIFICACIÓN DEL CONVOCADO ---
     const convocado = convocados[0] || {};
     const nombreConvocado = convocado.tipoInvolucrado === 'Persona Jurídica'
         ? safe(convocado.razonSocial)
         : `${safe(convocado.primerNombre)} ${safe(convocado.segundoNombre)} ${safe(convocado.primerApellido)} ${safe(convocado.segundoApellido)}`.trim().toUpperCase();
-    
+      
     const idConvocado = `${safe(convocado.tipoIdentificacion)} No. ${safe(convocado.numeroIdentificacion)} de ${safe(convocado.ciudadExpedicion)}`;
-
+      
+    // --- TODO EN UN SOLO PÁRRAFO ---
     c.push({
         text: [
+            { text: nombreConvocante, bold: true },
+            `, identificado(a) con ${idConvocante}; mayor de edad y domiciliado en la ciudad de ${safe(convocante.ciudad)}, solicitamos respetuosamente a usted se sirva de celebrar `,
+            { text: 'AUDIENCIA DE CONCILIACIÓN EXTRAJUDICIAL EN DERECHO – ', bold: true },
+            { text: safe(infoGeneral.tema).toUpperCase(), bold: true },
+            { text: ' - ', bold: true },
             'en contra de ',
             { text: nombreConvocado, bold: true },
             ` identificado(a) con ${idConvocado}; de acuerdo con lo siguiente:`
@@ -149,7 +143,7 @@ function buildConciliacionDocDefinition(solicitud = {}) {
         text: 'HECHOS',
         bold: true,
         alignment: 'center',
-        margin: [0, 15, 0, 10]
+        margin: [0, 15, 0, 5]
     });
 
     hechos.forEach((h, idx) => {
@@ -189,7 +183,7 @@ function buildConciliacionDocDefinition(solicitud = {}) {
         text: 'PETICIONES',
         bold: true,
         alignment: 'center',
-        margin: [0, 20, 0, 10]
+        margin: [0, 20, 0, 5]
     });
 
     pretensiones.forEach((p, idx) => {
@@ -226,7 +220,7 @@ function buildConciliacionDocDefinition(solicitud = {}) {
         text: 'FUNDAMENTOS DE DERECHO',
         bold: true,
         alignment: 'center',
-        margin: [0, 20, 0, 10]
+        margin: [0, 20, 0, 5]
     });
 
     c.push({
@@ -239,7 +233,7 @@ function buildConciliacionDocDefinition(solicitud = {}) {
         text: 'ANEXOS',
         bold: true,
         alignment: 'center',
-        margin: [0, 20, 0, 10]
+        margin: [0, 20, 0, 5]
     });
 
     c.push({
@@ -267,7 +261,7 @@ function buildConciliacionDocDefinition(solicitud = {}) {
         text: 'NOTIFICACIONES',
         bold: true,
         alignment: 'center',
-        margin: [0, 20, 0, 10]
+        margin: [0, 20, 0, 5]
     });
 
     c.push({
