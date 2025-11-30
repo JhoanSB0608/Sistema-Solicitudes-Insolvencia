@@ -50,7 +50,7 @@ function buildConciliacionDocDefinition(solicitud = {}) {
 
     const docDefinition = {
         pageSize: 'LETTER',
-        pageMargins: [60, 80, 60, 60],
+        pageMargins: [80, 80, 80, 120],
         defaultStyle: { 
             font: 'Roboto', 
             fontSize: 11, 
@@ -91,7 +91,7 @@ function buildConciliacionDocDefinition(solicitud = {}) {
     });
 
     c.push({
-        text: 'E. S. D.',
+        text: safe(sede.sedeCentro).toUpperCase() + ' - ' + safe(sede.ciudad).toUpperCase(),
         style: 'header',
         margin: [0, 0, 0, 15]
     });
@@ -100,7 +100,7 @@ function buildConciliacionDocDefinition(solicitud = {}) {
     c.push({
         text: [
             { text: 'REF. ', bold: true },
-            'SOLICITUD CONCILIACIÓN EXTRAJUDICIAL EN DERECHO'
+            { text: 'SOLICITUD CONCILIACIÓN EXTRAJUDICIAL EN DERECHO ', bold: true }
         ],
         style: 'body',
         margin: [0, 0, 0, 15]
