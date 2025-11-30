@@ -54,7 +54,7 @@ function buildConciliacionDocDefinition(solicitud = {}) {
         defaultStyle: { 
             font: 'Calibri', 
             fontSize: 11, 
-            lineHeight: 1.5 
+            lineHeight: 1.2
         },
         content: [],
         styles: {
@@ -82,18 +82,20 @@ function buildConciliacionDocDefinition(solicitud = {}) {
     // --- ENCABEZADO ---
     c.push({
         text: 'Señores',
-        style: 'header'
+        style: 'body',
+        margin: [0, 0, 0, 5]
     });
 
     c.push({
         text: safe(sede.entidadPromotora).toUpperCase(),
-        style: 'header'
+        style: 'header',
+        margin: [0, 0, 0, 5]
     });
 
     c.push({
         text: safe(sede.sedeCentro).toUpperCase() + ' - ' + safe(sede.ciudad).toUpperCase(),
         style: 'body',
-        margin: [0, 0, 0, 15]
+        margin: [0, 0, 0, 10]
     });
 
     // --- REFERENCIA ---
