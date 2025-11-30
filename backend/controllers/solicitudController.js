@@ -54,45 +54,42 @@ const updateSolicitud = async (req, res) => {
       fs.unlinkSync(signatureFile.path);
     }
 
-    // Update fields by assigning the (potentially modified) parsedData
     const anexoDataFromClient = parsedData.anexos;
-    delete parsedData.anexos; // <- Crucial step
+    delete parsedData.anexos;
 
-    // Update all scalar fields etc.
     Object.assign(solicitud, parsedData);
 
-    // Now, handle the anexos array carefully
-    const finalAnexos = [];
-    if (anexoDataFromClient) {
-        const newAnexosFromFiles = (req.files && req.files.anexos) || [];
+    const newAnexosFromFiles = (req.files && req.files.anexos) || [];
+    const clientAnexoNames = anexoDataFromClient ? anexoDataFromClient.map(a => a.name) : [];
 
+    // Use slice() to create a shallow copy for safe iteration while removing
+    solicitud.anexos.slice().forEach(existingAnexo => {
+        if (!clientAnexoNames.includes(existingAnexo.filename)) {
+            solicitud.anexos.id(existingAnexo._id).remove();
+        }
+    });
+
+    // Update existing ones and add new ones
+    if (anexoDataFromClient) {
         for (const anexoFromClient of anexoDataFromClient) {
-            // Find if it's a newly uploaded file
+            const existingAnexo = solicitud.anexos.find(a => a.filename === anexoFromClient.name);
             const newFile = newAnexosFromFiles.find(f => f.originalname === anexoFromClient.name);
-            
-            if (newFile) {
-                // Yes, it's a new file. Create a new object for it.
-                finalAnexos.push({
+
+            if (existingAnexo) {
+                // It exists, so just update the description.
+                existingAnexo.descripcion = anexoFromClient.descripcion;
+            } else if (newFile) {
+                // It doesn't exist and it's a new file, so add it.
+                solicitud.anexos.push({
                     filename: newFile.filename,
                     path: newFile.path,
                     mimetype: newFile.mimetype,
                     size: newFile.size,
                     descripcion: anexoFromClient.descripcion,
                 });
-            } else {
-                // No, it's an existing file. Find it in the DB record.
-                const existingAnexo = solicitud.anexos.find(a => a.filename === anexoFromClient.name);
-                if (existingAnexo) {
-                    // Found it. Preserve its data and update the description.
-                    const anexoObject = existingAnexo.toObject();
-                    anexoObject.descripcion = anexoFromClient.descripcion;
-                    finalAnexos.push(anexoObject);
-                }
             }
         }
     }
-    // Replace the old array with the newly constructed one.
-    solicitud.anexos = finalAnexos;
     
     // Construct nombreCompleto for the deudor
     if (solicitud.deudor) {
