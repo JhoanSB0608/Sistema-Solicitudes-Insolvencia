@@ -27,141 +27,288 @@ const formatDate = d => {
   } catch { return String(d); }
 };
 
-const safe = (v, fallback = 'No reporta') => (v === undefined || v === null || v === '') ? fallback : v;
+const safe = (v, fallback = '') => (v === undefined || v === null || v === '') ? fallback : v;
 
-const standardTableLayout = {
-    hLineWidth: () => 1, vLineWidth: () => 1, hLineColor: () => '#999', vLineColor: () => '#999',
-    paddingLeft: () => 8, paddingRight: () => 8, paddingTop: () => 4, paddingBottom: () => 4,
+const formatCurrency = num => {
+  if (num == null || Number.isNaN(Number(num))) return '$0';
+  return `$${Number(num).toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 };
-
 
 // -------------------- Doc Definition Builder --------------------
 function buildConciliacionDocDefinition(solicitud = {}) {
-    const { infoGeneral = {}, convocantes = [], convocados = [], hechos = [], pretensiones = [], firma = {}, sede = {}, user = {} } = solicitud;
+    const { 
+        infoGeneral = {}, 
+        convocantes = [], 
+        convocados = [], 
+        hechos = [], 
+        pretensiones = [], 
+        firma = {}, 
+        sede = {}, 
+        user = {},
+        createdAt 
+    } = solicitud;
 
     const docDefinition = {
         pageSize: 'LETTER',
-        pageMargins: [40, 60, 40, 60],
-        defaultStyle: { font: 'Roboto', fontSize: 10, lineHeight: 1.15 },
-        header: { text: 'Solicitud de Conciliación', alignment: 'center', margin: [0, 30, 0, 0] },
-        footer: (currentPage, pageCount) => ({
-            text: `Página ${currentPage} de ${pageCount}`,
-            alignment: 'right',
-            margin: [0, 0, 40, 0],
-            fontSize: 9
-        }),
+        pageMargins: [60, 80, 60, 60],
+        defaultStyle: { 
+            font: 'Roboto', 
+            fontSize: 11, 
+            lineHeight: 1.3 
+        },
         content: [],
         styles: {
-            header: { fontSize: 18, bold: true, alignment: 'center', margin: [0, 0, 0, 20] },
-            subheader: { fontSize: 14, bold: true, margin: [0, 15, 0, 5] },
-            fieldLabel: { bold: true, color: '#333' }
+            header: { 
+                fontSize: 11, 
+                bold: true, 
+                alignment: 'left',
+                margin: [0, 0, 0, 10] 
+            },
+            body: { 
+                fontSize: 11, 
+                alignment: 'justify',
+                margin: [0, 5, 0, 5]
+            },
+            section: {
+                fontSize: 11,
+                alignment: 'justify',
+                margin: [0, 8, 0, 8]
+            }
         }
     };
 
     const c = docDefinition.content;
 
-    // --- Main Header ---
-    c.push({ text: 'SOLICITUD DE CONCILIACIÓN EXTRAJUDICIAL EN DERECHO', style: 'header' });
+    // --- ENCABEZADO ---
+    c.push({
+        text: 'Señores',
+        style: 'header'
+    });
 
-    // --- Sede Info ---
+    c.push({
+        text: safe(sede.entidadPromotora).toUpperCase(),
+        style: 'header'
+    });
+
+    c.push({
+        text: 'E. S. D.',
+        style: 'header',
+        margin: [0, 0, 0, 15]
+    });
+
+    // --- REFERENCIA ---
     c.push({
         text: [
-            { text: 'Ciudad: ', style: 'fieldLabel' }, `${safe(sede.ciudad)}, ${formatDate(solicitud.createdAt)}
-`,
-            { text: 'Entidad: ', style: 'fieldLabel' }, `${safe(sede.entidadPromotora)}
-`,
-            { text: 'Sede/Centro: ', style: 'fieldLabel' }, `${safe(sede.sedeCentro)}
-
-`
-        ]
+            { text: 'REF. ', bold: true },
+            'SOLICITUD CONCILIACIÓN EXTRAJUDICIAL EN DERECHO'
+        ],
+        style: 'body',
+        margin: [0, 0, 0, 15]
     });
 
-    // --- 1. DATOS GENERALES ---
-    c.push({ text: '1. DATOS GENERALES', style: 'subheader' });
+    // --- IDENTIFICACIÓN DEL CONVOCANTE ---
+    const convocante = convocantes[0] || {};
+    const nombreConvocante = convocante.tipoInvolucrado === 'Persona Jurídica'
+        ? safe(convocante.razonSocial)
+        : `${safe(convocante.primerNombre)} ${safe(convocante.segundoNombre)} ${safe(convocante.primerApellido)} ${safe(convocante.segundoApellido)}`.trim().toUpperCase();
+    
+    const idConvocante = `${safe(convocante.tipoIdentificacion)} No. ${safe(convocante.numeroIdentificacion)} de ${safe(convocante.ciudadExpedicion)}`;
+
     c.push({
-        ul: [
-            `Solicitante del servicio: ${safe(infoGeneral.solicitanteServicio)}`,
-            `Finalidad: ${safe(infoGeneral.finalidadServicio)}`,
-            `Tiempo del conflicto: ${safe(infoGeneral.tiempoConflicto)}`,
-            `Área del Derecho: ${safe(infoGeneral.areaDerecho)} - Tema: ${safe(infoGeneral.tema)}`,
-            `Cuantía: ${infoGeneral.cuantiaIndeterminada ? 'Indeterminada' : formatCurrency(infoGeneral.cuantiaTotal)}`
-        ]
+        text: [
+            { text: nombreConvocante, bold: true },
+            `, identificada con ${idConvocante}; mayor de edad y domiciliado en la ciudad de ${safe(convocante.ciudad)}, solicitamos respetuosamente a usted se sirva de celebrar `
+        ],
+        style: 'body'
     });
 
-    // --- 2. PARTES ---
-    c.push({ text: '2. PARTES EN EL CONFLICTO', style: 'subheader' });
+    // --- TIPO DE AUDIENCIA ---
+    c.push({
+        text: [
+            { text: 'AUDIENCIA DE CONCILIACIÓN EXTRAJUDICIAL EN DERECHO – ', bold: true },
+            { text: safe(infoGeneral.tema).toUpperCase(), bold: true },
+            { text: ' - ', bold: true }
+        ],
+        style: 'body'
+    });
 
-    const buildPartyTable = (party, title) => {
-        const fullName = party.tipoInvolucrado === 'Persona Jurídica'
-            ? safe(party.razonSocial)
-            : `${safe(party.primerNombre)} ${safe(party.segundoNombre)} ${safe(party.primerApellido)} ${safe(party.segundoApellido)}`.trim();
-        
-        return {
-            table: {
-                widths: ['*', '*'],
-                body: [
-                    [{ text: title, style: 'fieldLabel', colSpan: 2, alignment: 'center', fillColor: '#eaeaea' }, {}],
-                    [{ text: 'Nombre / Razón Social', style: 'fieldLabel' }, fullName],
-                    [{ text: 'Identificación', style: 'fieldLabel' }, `${safe(party.tipoIdentificacion)} - ${safe(party.numeroIdentificacion)}`],
-                    [{ text: 'Teléfono', style: 'fieldLabel' }, safe(party.telefono)],
-                    [{ text: 'Email', style: 'fieldLabel' }, safe(party.email)],
-                    [{ text: 'Dirección', style: 'fieldLabel' }, `${safe(party.domicilio)}, ${safe(party.ciudad)} - ${safe(party.departamento)}`]
-                ]
-            },
-            layout: standardTableLayout,
-            margin: [0, 0, 0, 10]
-        };
-    };
+    // --- IDENTIFICACIÓN DEL CONVOCADO ---
+    const convocado = convocados[0] || {};
+    const nombreConvocado = convocado.tipoInvolucrado === 'Persona Jurídica'
+        ? safe(convocado.razonSocial)
+        : `${safe(convocado.primerNombre)} ${safe(convocado.segundoNombre)} ${safe(convocado.primerApellido)} ${safe(convocado.segundoApellido)}`.trim().toUpperCase();
+    
+    const idConvocado = `${safe(convocado.tipoIdentificacion)} No. ${safe(convocado.numeroIdentificacion)} de ${safe(convocado.ciudadExpedicion)}`;
 
-    c.push({ text: 'CONVOCANTE(S)', bold: true, margin: [0, 5, 0, 5] });
-    convocantes.forEach(p => c.push(buildPartyTable(p, 'Datos del Convocante')));
+    c.push({
+        text: [
+            'en contra de ',
+            { text: nombreConvocado, bold: true },
+            ` identificado con ${idConvocado}; de acuerdo con lo siguiente:`
+        ],
+        style: 'body',
+        margin: [0, 0, 0, 15]
+    });
 
-    c.push({ text: 'CONVOCADO(S)', bold: true, margin: [0, 10, 0, 5] });
-    convocados.forEach(p => c.push(buildPartyTable(p, 'Datos del Convocado')));
+    // --- HECHOS ---
+    c.push({
+        text: 'HECHOS',
+        bold: true,
+        alignment: 'center',
+        margin: [0, 15, 0, 10]
+    });
 
-    // --- 3. HECHOS ---
-    c.push({ text: '3. HECHOS', style: 'subheader' });
     hechos.forEach((h, idx) => {
-        const html = `<b>${idx + 1}.</b> ${h.descripcion}`;
+        const numero = idx === 0 ? 'PRIMERO' : 
+                      idx === 1 ? 'SEGUNDO' : 
+                      idx === 2 ? 'TERCERO' : 
+                      idx === 3 ? 'CUARTO' : 
+                      idx === 4 ? 'QUINTO' : 
+                      `${idx + 1}`;
+        
+        // Limpiar HTML y mantener formato básico
+        let descripcion = h.descripcion || '';
         try {
-            c.push(htmlToPdfmake(html, { window }));
+            const parsed = htmlToPdfmake(descripcion, { window });
+            c.push({
+                text: [
+                    { text: `${numero} – `, bold: true },
+                    ...parsed
+                ],
+                style: 'section'
+            });
         } catch (e) {
-            console.error("HTML to PDFmake conversion error:", e);
-            c.push(`${idx + 1}. ${h.descripcion.replace(/<[^>]+>/g, '')}`); // Fallback
+            // Fallback: remover tags HTML
+            descripcion = descripcion.replace(/<[^>]+>/g, '');
+            c.push({
+                text: [
+                    { text: `${numero} – `, bold: true },
+                    descripcion
+                ],
+                style: 'section'
+            });
         }
     });
 
-    // --- 4. PRETENSIONES ---
-    c.push({ text: '4. PRETENSIONES', style: 'subheader' });
+    // --- PETICIONES ---
+    c.push({
+        text: 'PETICIONES',
+        bold: true,
+        alignment: 'center',
+        margin: [0, 20, 0, 10]
+    });
+
     pretensiones.forEach((p, idx) => {
-        const html = `<b>${idx + 1}.</b> ${p.descripcion}`;
+        const numero = idx === 0 ? 'PRIMERA' : 
+                      idx === 1 ? 'SEGUNDA' : 
+                      idx === 2 ? 'TERCERA' : 
+                      idx === 3 ? 'CUARTA' : 
+                      `${idx + 1}`;
+        
+        let descripcion = p.descripcion || '';
         try {
-            c.push(htmlToPdfmake(html, { window }));
+            const parsed = htmlToPdfmake(descripcion, { window });
+            c.push({
+                text: [
+                    { text: `${numero}: `, bold: true },
+                    ...parsed
+                ],
+                style: 'section'
+            });
         } catch (e) {
-            console.error("HTML to PDFmake conversion error:", e);
-            c.push(`${idx + 1}. ${p.descripcion.replace(/<[^>]+>/g, '')}`); // Fallback
+            descripcion = descripcion.replace(/<[^>]+>/g, '');
+            c.push({
+                text: [
+                    { text: `${numero}: `, bold: true },
+                    descripcion
+                ],
+                style: 'section'
+            });
         }
     });
 
-    // --- 5. ANEXOS ---
-    c.push({ text: '5. ANEXOS', style: 'subheader' });
-    if (solicitud.anexos && solicitud.anexos.length > 0) {
-        c.push({
-            ul: solicitud.anexos.map(anexo => safe(anexo.filename))
-        });
-    } else {
-        c.push('No se adjuntaron anexos.');
-    }
+    // --- FUNDAMENTOS DE DERECHO ---
+    c.push({
+        text: 'FUNDAMENTOS DE DERECHO',
+        bold: true,
+        alignment: 'center',
+        margin: [0, 20, 0, 10]
+    });
+
+    c.push({
+        text: 'El artículo 44 de la Constitución Política de Colombia; Títulos XII y XXI del Código Civil; Ley 27 de 1977; Ley 1098 del 2006; artículo 133 a 159 del decreto 2737 de 1989; Ley 75 del 1968; artículo 390 y siguientes del Código General del Proceso y demás normas concordantes.',
+        style: 'section'
+    });
+
+    // --- ANEXOS ---
+    c.push({
+        text: 'ANEXOS',
+        bold: true,
+        alignment: 'center',
+        margin: [0, 20, 0, 10]
+    });
+
+    c.push({
+        text: 'Anexo los siguientes documentos',
+        style: 'body',
+        margin: [0, 0, 0, 5]
+    });
+
+    // Lista de anexos estándar basada en el PDF ejemplo
+    const anexosEstandar = [
+        `Copia de cédula de ciudadanía de ${nombreConvocante}`,
+        `Copia de cédula de ciudadanía de ${nombreConvocado}`,
+        `Registro civil de ${nombreConvocado}`,
+        'Certificado de Cuenta Bancaria',
+        'Poder otorgado'
+    ];
+
+    c.push({
+        ol: anexosEstandar,
+        margin: [40, 0, 0, 0]
+    });
+
+    // --- NOTIFICACIONES ---
+    c.push({
+        text: 'NOTIFICACIONES',
+        bold: true,
+        alignment: 'center',
+        margin: [0, 20, 0, 10]
+    });
+
+    c.push({
+        text: [
+            { text: 'La Accionante:\n', bold: true },
+            `Email: ${safe(convocante.email)}\n\n`,
+            { text: 'El accionado:\n', bold: true },
+            `Email: ${safe(convocado.email)}`
+        ],
+        style: 'body',
+        margin: [0, 0, 0, 30]
+    });
 
     // --- FIRMA ---
-    c.push({ text: 'Firma del solicitante', style: 'subheader', margin: [0, 40, 0, 10] });
+    c.push({
+        text: 'Atentamente;',
+        alignment: 'left',
+        margin: [0, 10, 0, 30]
+    });
 
+    // Firma si existe
     if (firma && firma.data) {
-        c.push({ image: firma.data, width: 150, alignment: 'left' });
+        c.push({ 
+            image: firma.data, 
+            width: 200, 
+            alignment: 'left',
+            margin: [0, 0, 0, 10]
+        });
     }
 
     c.push({
-        text: `\n\n__________________________________\n${safe(user.name)}\nC.C.`,
+        text: [
+            { text: nombreConvocante + '\n', bold: true },
+            `Cédula de Ciudadanía No. ${safe(convocante.numeroIdentificacion)} de ${safe(convocante.ciudadExpedicion)}.`
+        ],
         alignment: 'left'
     });
 
@@ -187,11 +334,5 @@ async function generateConciliacionPdf(solicitud = {}) {
     }
   });
 }
-
-// Helper to format currency, could be moved to a shared utils file
-const formatCurrency = num => {
-  if (num == null || Number.isNaN(Number(num))) return '$0';
-  return `$${Number(num).toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
-};
 
 module.exports = { generateConciliacionPdf };
