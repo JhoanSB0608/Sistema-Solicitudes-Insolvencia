@@ -249,9 +249,8 @@ function buildConciliacionDocDefinition(solicitud = {}) {
         margin: [0, 0, 0, 5]
     });
 
-    // Lista de anexos dinámicos
-    const anexosList = anexos && anexos.length > 0 
-        ? anexos.map(anexo => anexo.filename) 
+    const anexosList = anexos && anexos.length > 0
+        ? anexos.map(anexo => `${anexo.descripcion} - ${anexo.filename}`)
         : [
             `Copia de cédula de ciudadanía de ${nombreConvocante}`,
             `Copia de cédula de ciudadanía de ${nombreConvocado}`,
