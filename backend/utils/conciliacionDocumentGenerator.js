@@ -54,24 +54,24 @@ function buildConciliacionDocDefinition(solicitud = {}) {
         pageMargins: [85, 70, 85, 85],
         defaultStyle: { 
             font: 'Calibri', 
-            fontSize: 11.5, 
+            fontSize: 12, 
             lineHeight: 1.25
         },
         content: [],
         styles: {
             header: { 
-                fontSize: 11.5, 
+                fontSize: 12, 
                 bold: true, 
                 alignment: 'left',
                 margin: [0, 0, 0, 10] 
             },
             body: { 
-                fontSize: 11.5, 
+                fontSize: 12, 
                 alignment: 'justify',
                 margin: [0, 5, 0, 5]
             },
             section: {
-                fontSize: 11.5,
+                fontSize: 12,
                 alignment: 'justify',
                 margin: [0, 8, 0, 8]
             }
@@ -279,14 +279,14 @@ function buildConciliacionDocDefinition(solicitud = {}) {
             { 
                 text: `Email: ${safe(convocante.email)}\n\n`, 
                 link: safe(convocante.email) ? `mailto:${safe(convocante.email)}` : undefined,
-                color: safe(convocante.email) ? 'blue' : undefined,
+                color: safe(convocante.email) ? 'skyblue' : undefined,
                 decoration: safe(convocante.email) ? 'underline' : undefined
             },
             { text: 'El accionado:\n', bold: true },
             { 
                 text: `Email: ${safe(convocado.email)}`,
                 link: safe(convocado.email) ? `mailto:${safe(convocado.email)}` : undefined,
-                color: safe(convocado.email) ? 'blue' : undefined,
+                color: safe(convocado.email) ? 'skyblue' : undefined,
                 decoration: safe(convocado.email) ? 'underline' : undefined
             }
         ],
