@@ -10,11 +10,11 @@ const fontsDir = path.resolve(__dirname, '..', 'fonts');
 const tryFile = name => fs.existsSync(path.join(fontsDir, name)) ? path.join(fontsDir, name) : null;
 
 const FONTS = {
-  Roboto: {
-    normal: tryFile('Roboto-Regular.ttf') || '',
-    bold: tryFile('Roboto-Bold.ttf') || '',
-    italics: tryFile('Roboto-Italic.ttf') || '',
-    bolditalics: tryFile('Roboto-BoldItalic.ttf') || ''
+  Calibri: {
+    normal: tryFile('calibri-regular.ttf') || tryFile('Roboto-Regular.ttf') || '',
+    bold: tryFile('calibri-bold.ttf') || tryFile('Roboto-Bold.ttf') || '',
+    italics: tryFile('calibri-italic.ttf') || tryFile('Roboto-Italic.ttf') || '',
+    bolditalics: tryFile('calibri-bold-italic.ttf') || tryFile('Roboto-BoldItalic.ttf') || ''
   }
 };
 
@@ -52,25 +52,25 @@ function buildConciliacionDocDefinition(solicitud = {}) {
         pageSize: 'LETTER',
         pageMargins: [85, 70, 85, 85],
         defaultStyle: { 
-            font: 'Roboto', 
-            fontSize: 12, 
-            lineHeight: 1.3 
+            font: 'Calibri', 
+            fontSize: 11, 
+            lineHeight: 1.5 
         },
         content: [],
         styles: {
             header: { 
-                fontSize: 12, 
+                fontSize: 11, 
                 bold: true, 
                 alignment: 'left',
                 margin: [0, 0, 0, 10] 
             },
             body: { 
-                fontSize: 12, 
+                fontSize: 11, 
                 alignment: 'justify',
                 margin: [0, 5, 0, 5]
             },
             section: {
-                fontSize: 12,
+                fontSize: 11,
                 alignment: 'justify',
                 margin: [0, 8, 0, 8]
             }
