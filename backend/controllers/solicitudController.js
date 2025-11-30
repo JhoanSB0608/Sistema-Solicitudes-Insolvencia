@@ -60,40 +60,41 @@ const updateSolicitud = async (req, res) => {
     Object.assign(solicitud, parsedData);
 
     const newAnexosFromFiles = (req.files && req.files.anexos) || [];
-    const finalAnexos = [];
+    
+    // Step 1: Identify which annexes to keep based on client data
+    const clientAnexoNames = anexoDataFromClient ? anexoDataFromClient.map(a => a.name) : [];
 
+    // Step 2: Remove annexes that are no longer in the client's list.
+    // We use .slice() to create a copy for safe iteration while modifying the original array.
+    solicitud.anexos.slice().forEach(existingAnexo => {
+        if (!clientAnexoNames.includes(existingAnexo.filename)) {
+            solicitud.anexos.id(existingAnexo._id).remove();
+        }
+    });
+
+    // Step 3: Iterate client data to update existing or add new annexes.
     if (anexoDataFromClient) {
         for (const anexoFromClient of anexoDataFromClient) {
+            // Find if the anexo already exists in the (now potentially smaller) Mongoose array
+            const anexoToUpdate = solicitud.anexos.find(a => a.filename === anexoFromClient.name);
             const newFile = newAnexosFromFiles.find(f => f.originalname === anexoFromClient.name);
-            
-            if (newFile) {
-                // It's a new file, create a new object. No _id.
-                finalAnexos.push({
+
+            if (anexoToUpdate) {
+                // It exists in the DB and we're keeping it. Just update its description.
+                anexoToUpdate.descripcion = anexoFromClient.descripcion;
+            } else if (newFile) {
+                // It's not in the DB, and it's a new file. Add it.
+                solicitud.anexos.push({
                     filename: newFile.filename,
                     path: newFile.path,
                     mimetype: newFile.mimetype,
                     size: newFile.size,
                     descripcion: anexoFromClient.descripcion,
                 });
-            } else {
-                // It's an existing file. Find it in the original array.
-                const existingAnexo = solicitud.anexos.find(a => a.filename === anexoFromClient.name);
-                if (existingAnexo) {
-                    // Create a new plain object, but copy the _id.
-                    finalAnexos.push({
-                        _id: existingAnexo._id,
-                        filename: existingAnexo.filename,
-                        path: existingAnexo.path,
-                        mimetype: existingAnexo.mimetype,
-                        size: existingAnexo.size,
-                        descripcion: anexoFromClient.descripcion, // The updated description
-                    });
-                }
             }
         }
     }
 
-    solicitud.anexos = finalAnexos; // Overwrite the array
     
     // Construct nombreCompleto for the deudor
     if (solicitud.deudor) {
