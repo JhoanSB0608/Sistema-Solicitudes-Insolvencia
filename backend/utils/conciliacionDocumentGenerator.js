@@ -45,7 +45,8 @@ function buildConciliacionDocDefinition(solicitud = {}) {
         firma = {}, 
         sede = {}, 
         user = {},
-        createdAt 
+        createdAt,
+        anexos 
     } = solicitud;
 
     const docDefinition = {
@@ -53,24 +54,24 @@ function buildConciliacionDocDefinition(solicitud = {}) {
         pageMargins: [85, 70, 85, 85],
         defaultStyle: { 
             font: 'Calibri', 
-            fontSize: 11, 
-            lineHeight: 1.2
+            fontSize: 11.5, 
+            lineHeight: 1.25
         },
         content: [],
         styles: {
             header: { 
-                fontSize: 11, 
+                fontSize: 11.5, 
                 bold: true, 
                 alignment: 'left',
                 margin: [0, 0, 0, 10] 
             },
             body: { 
-                fontSize: 11, 
+                fontSize: 11.5, 
                 alignment: 'justify',
                 margin: [0, 5, 0, 5]
             },
             section: {
-                fontSize: 11,
+                fontSize: 11.5,
                 alignment: 'justify',
                 margin: [0, 8, 0, 8]
             }
@@ -248,17 +249,19 @@ function buildConciliacionDocDefinition(solicitud = {}) {
         margin: [0, 0, 0, 5]
     });
 
-    // Lista de anexos estándar basada en el PDF ejemplo
-    const anexosEstandar = [
-        `Copia de cédula de ciudadanía de ${nombreConvocante}`,
-        `Copia de cédula de ciudadanía de ${nombreConvocado}`,
-        `Registro civil de ${nombreConvocado}`,
-        'Certificado de Cuenta Bancaria',
-        'Poder otorgado'
-    ];
+    // Lista de anexos dinámicos
+    const anexosList = anexos && anexos.length > 0 
+        ? anexos.map(anexo => anexo.filename) 
+        : [
+            `Copia de cédula de ciudadanía de ${nombreConvocante}`,
+            `Copia de cédula de ciudadanía de ${nombreConvocado}`,
+            `Registro civil de ${nombreConvocado}`,
+            'Certificado de Cuenta Bancaria',
+            'Poder otorgado'
+        ];
 
     c.push({
-        ol: anexosEstandar,
+        ol: anexosList,
         margin: [40, 0, 0, 0]
     });
 
@@ -273,9 +276,19 @@ function buildConciliacionDocDefinition(solicitud = {}) {
     c.push({
         text: [
             { text: 'La Accionante:\n', bold: true },
-            `Email: ${safe(convocante.email)}\n\n`,
+            { 
+                text: `Email: ${safe(convocante.email)}\n\n`, 
+                link: safe(convocante.email) ? `mailto:${safe(convocante.email)}` : undefined,
+                color: safe(convocante.email) ? 'blue' : undefined,
+                decoration: safe(convocante.email) ? 'underline' : undefined
+            },
             { text: 'El accionado:\n', bold: true },
-            `Email: ${safe(convocado.email)}`
+            { 
+                text: `Email: ${safe(convocado.email)}`,
+                link: safe(convocado.email) ? `mailto:${safe(convocado.email)}` : undefined,
+                color: safe(convocado.email) ? 'blue' : undefined,
+                decoration: safe(convocado.email) ? 'underline' : undefined
+            }
         ],
         style: 'body',
         margin: [0, 0, 0, 30]
