@@ -50,27 +50,27 @@ function buildConciliacionDocDefinition(solicitud = {}) {
 
     const docDefinition = {
         pageSize: 'LETTER',
-        pageMargins: [80, 70, 80, 70],
+        pageMargins: [85, 70, 85, 85],
         defaultStyle: { 
             font: 'Roboto', 
-            fontSize: 11, 
+            fontSize: 12, 
             lineHeight: 1.3 
         },
         content: [],
         styles: {
             header: { 
-                fontSize: 11, 
+                fontSize: 12, 
                 bold: true, 
                 alignment: 'left',
                 margin: [0, 0, 0, 10] 
             },
             body: { 
-                fontSize: 11, 
+                fontSize: 12, 
                 alignment: 'justify',
                 margin: [0, 5, 0, 5]
             },
             section: {
-                fontSize: 11,
+                fontSize: 12,
                 alignment: 'justify',
                 margin: [0, 8, 0, 8]
             }
@@ -279,7 +279,7 @@ function buildConciliacionDocDefinition(solicitud = {}) {
     c.push({
         text: 'Atentamente;',
         alignment: 'left',
-        margin: [0, 10, 0, 30]
+        margin: [0, 10, 0, 10]
     });
 
     // Firma si existe
