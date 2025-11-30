@@ -55,42 +55,44 @@ const updateSolicitud = async (req, res) => {
     }
 
     // Update fields by assigning the (potentially modified) parsedData
-    // We handle anexos separately, so remove it from parsedData to avoid conflicts
     const anexoDataFromClient = parsedData.anexos;
-    delete parsedData.anexos;
+    delete parsedData.anexos; // <- Crucial step
 
+    // Update all scalar fields etc.
     Object.assign(solicitud, parsedData);
 
-    // Process anexos
+    // Now, handle the anexos array carefully
+    const finalAnexos = [];
     if (anexoDataFromClient) {
-      const newAnexosFromFiles = (req.files && req.files.anexos) || [];
-      
-      const finalAnexos = anexoDataFromClient.map(anexoFromClient => {
-        // Is this a new file? Check if it was just uploaded.
-        const newFile = newAnexosFromFiles.find(f => f.originalname === anexoFromClient.name);
-        if (newFile) {
-          // It's a new file, create a full anexo object
-          return {
-            filename: newFile.filename,
-            path: newFile.path,
-            mimetype: newFile.mimetype,
-            size: newFile.size,
-            descripcion: anexoFromClient.descripcion,
-          };
-        } else {
-          // It's an existing file. Find it in the current solicitud.
-          const existingAnexo = solicitud.anexos.find(a => a.filename === anexoFromClient.name);
-          if (existingAnexo) {
-            // Update its description and return it
-            existingAnexo.descripcion = anexoFromClient.descripcion;
-            return existingAnexo;
-          }
-        }
-        return null; // This anexo from client was not found, might be a removed one.
-      }).filter(Boolean); // Filter out nulls
+        const newAnexosFromFiles = (req.files && req.files.anexos) || [];
 
-      solicitud.anexos = finalAnexos;
+        for (const anexoFromClient of anexoDataFromClient) {
+            // Find if it's a newly uploaded file
+            const newFile = newAnexosFromFiles.find(f => f.originalname === anexoFromClient.name);
+            
+            if (newFile) {
+                // Yes, it's a new file. Create a new object for it.
+                finalAnexos.push({
+                    filename: newFile.filename,
+                    path: newFile.path,
+                    mimetype: newFile.mimetype,
+                    size: newFile.size,
+                    descripcion: anexoFromClient.descripcion,
+                });
+            } else {
+                // No, it's an existing file. Find it in the DB record.
+                const existingAnexo = solicitud.anexos.find(a => a.filename === anexoFromClient.name);
+                if (existingAnexo) {
+                    // Found it. Preserve its data and update the description.
+                    const anexoObject = existingAnexo.toObject();
+                    anexoObject.descripcion = anexoFromClient.descripcion;
+                    finalAnexos.push(anexoObject);
+                }
+            }
+        }
     }
+    // Replace the old array with the newly constructed one.
+    solicitud.anexos = finalAnexos;
     
     // Construct nombreCompleto for the deudor
     if (solicitud.deudor) {
@@ -167,17 +169,20 @@ const createSolicitud = async (req, res) => {
 
     // Handle 'anexos' files
     if (req.files && req.files.anexos) {
-      const anexoDescriptions = parsedData.anexos || [];
+      const anexoInfoFromClient = parsedData.anexos || [];
       dataToSave.anexos = req.files.anexos.map(file => {
-        const descriptionObj = anexoDescriptions.find(d => d.name === file.originalname);
+        const matchingInfo = anexoInfoFromClient.find(info => info.name === file.originalname);
         return {
           filename: file.filename,
           path: file.path,
           mimetype: file.mimetype,
           size: file.size,
-          descripcion: descriptionObj ? descriptionObj.descripcion : ''
+          descripcion: matchingInfo ? matchingInfo.descripcion : '',
         };
       });
+    } else {
+      // If no files are attached, ensure 'anexos' is not the placeholder from the client
+      dataToSave.anexos = [];
     }
 
     // Construct nombreCompleto for the deudor
