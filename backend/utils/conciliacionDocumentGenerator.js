@@ -50,7 +50,7 @@ function buildConciliacionDocDefinition(solicitud = {}) {
 
     const docDefinition = {
         pageSize: 'LETTER',
-        pageMargins: [80, 80, 80, 120],
+        pageMargins: [80, 70, 80, 100],
         defaultStyle: { 
             font: 'Roboto', 
             fontSize: 11, 
@@ -115,22 +115,16 @@ function buildConciliacionDocDefinition(solicitud = {}) {
     const idConvocante = `${safe(convocante.tipoIdentificacion)} No. ${safe(convocante.numeroIdentificacion)} de ${safe(convocante.ciudadExpedicion)}`;
 
     c.push({
-        text: [
-            { text: nombreConvocante, bold: true },
-            `, identificada con ${idConvocante}; mayor de edad y domiciliado en la ciudad de ${safe(convocante.ciudad)}, solicitamos respetuosamente a usted se sirva de celebrar `
-        ],
-        style: 'body'
+    text: [
+        { text: nombreConvocante, bold: true },
+        `, identificado(a) con ${idConvocante}; mayor de edad y domiciliado en la ciudad de ${safe(convocante.ciudad)}, solicitamos respetuosamente a usted se sirva de celebrar `,
+        { text: 'AUDIENCIA DE CONCILIACIÓN EXTRAJUDICIAL EN DERECHO – ', bold: true },
+        { text: safe(infoGeneral.tema).toUpperCase(), bold: true },
+        { text: ' - ', bold: true }
+    ],
+    style: 'body'
     });
 
-    // --- TIPO DE AUDIENCIA ---
-    c.push({
-        text: [
-            { text: 'AUDIENCIA DE CONCILIACIÓN EXTRAJUDICIAL EN DERECHO – ', bold: true },
-            { text: safe(infoGeneral.tema).toUpperCase(), bold: true },
-            { text: ' - ', bold: true }
-        ],
-        style: 'body'
-    });
 
     // --- IDENTIFICACIÓN DEL CONVOCADO ---
     const convocado = convocados[0] || {};
@@ -144,7 +138,7 @@ function buildConciliacionDocDefinition(solicitud = {}) {
         text: [
             'en contra de ',
             { text: nombreConvocado, bold: true },
-            ` identificado con ${idConvocado}; de acuerdo con lo siguiente:`
+            ` identificado(a) con ${idConvocado}; de acuerdo con lo siguiente:`
         ],
         style: 'body',
         margin: [0, 0, 0, 15]
