@@ -1224,7 +1224,6 @@ if (!propuestaPago || propuestaPago.tipoNegociacion !== 'proyeccion') {
       });
 
       c.push({
-        unbreakable: true,
         table: {
           widths: [25, '*', '*', '*', '*', '*', 30, '*'],
           body: proyeccionBody
