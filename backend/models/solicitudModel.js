@@ -262,6 +262,7 @@ const solicitudSchema = new mongoose.Schema({
   informacionFinanciera: infoFinancieraSchema,
   sociedadConyugal: sociedadConyugalSchema,
   propuestaPago: propuestaPagoSchema,
+  projectionData: { type: mongoose.Schema.Types.Mixed },
   anexos: [anexoSchema],
   firma: firmaSchema,
 
