@@ -2,19 +2,20 @@ import axios from 'axios';
 
 const API_URL = 'https://api.systemlex.com.co/api/admin';
 
-// Helper para obtener el token y la configuración
-const getConfig = () => {
+// Helper para obtener el token y la configuración JSON
+const getConfig = (isJson = true) => {
   const userInfo = localStorage.getItem('userInfo');
   const token = userInfo ? JSON.parse(userInfo).token : null;
   if (!token) {
     throw new Error('No autorizado, inicie sesión de nuevo.');
   }
-  return {
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
+  const headers = {
+    Authorization: `Bearer ${token}`,
   };
+  if (isJson) {
+    headers['Content-Type'] = 'application/json';
+  }
+  return { headers };
 };
 
 // Obtener las estadísticas del dashboard
@@ -23,8 +24,22 @@ export const getAdminStats = async () => {
   return data;
 };
 
-// Obtener el historial de solicitudes (con paginación)
-export const getAdminSolicitudes = async (page = 1, limit = 10) => {
-  const { data } = await axios.get(`${API_URL}/solicitudes?page=${page}&limit=${limit}`, getConfig());
+// Obtener el historial de solicitudes (con paginación, filtros y ordenamiento)
+export const getAdminSolicitudes = async ({ pageIndex, pageSize, filters, sorting }) => {
+  const params = new URLSearchParams({
+    page: pageIndex + 1,
+    limit: pageSize,
+    filters: filters || '[]',
+    sorting: sorting || '[]',
+  });
+  const { data } = await axios.get(`${API_URL}/solicitudes?${params.toString()}`, getConfig());
+  return data;
+};
+
+// Subir un anexo a una solicitud existente
+export const uploadAnexo = async ({ id, tipo, formData }) => {
+  // tipo puede ser 'insolvencia' o 'conciliacion'
+  const config = getConfig(false); // false para no setear Content-Type, axios lo hace por nosotros con FormData
+  const { data } = await axios.post(`${API_URL}/upload-anexo/${tipo}/${id}`, formData, config);
   return data;
 };

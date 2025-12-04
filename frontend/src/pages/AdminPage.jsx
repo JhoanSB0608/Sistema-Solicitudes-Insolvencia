@@ -1,7 +1,7 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, Fragment } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { getAdminStats, getAdminSolicitudes } from '../services/adminService';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getAdminStats, getAdminSolicitudes, uploadAnexo } from '../services/adminService';
 import { downloadSolicitudDocument } from '../services/solicitudService';
 import { downloadConciliacionDocument } from '../services/conciliacionService';
 import { toast } from 'react-toastify';
@@ -11,13 +11,14 @@ import {
   getCoreRowModel,
   getPaginationRowModel,
   getSortedRowModel,
+  getExpandedRowModel,
   flexRender,
 } from '@tanstack/react-table';
 import { 
   Box, Grid, Paper, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, 
   Tabs, Tab, CircularProgress, Alert, Stack, IconButton, TablePagination, TextField, useTheme,
   alpha, Card, CardContent, Avatar, Container, Tooltip, Chip, Fade, Grow, Slide, Button,
-  InputAdornment, ButtonGroup, Badge, Divider
+  InputAdornment, ButtonGroup, Badge, Divider, Dialog, DialogTitle, DialogContent, List, ListItem, ListItemText, ListItemIcon, Accordion, AccordionSummary, AccordionDetails, TableFooter
 } from '@mui/material';
 import {
   PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, 
@@ -25,13 +26,13 @@ import {
 } from 'recharts';
 import { useDebounce } from '../hooks/useDebounce';
 import {
-  ArrowUpward, ArrowDownward, People as PeopleIcon, Assignment as AssignmentIcon, 
-  Category as CategoryIcon, TrendingUp as TrendingUpIcon, PictureAsPdf, Description,
-  Dashboard as DashboardIcon, History as HistoryIcon, Group as GroupIcon,
-  Search, FilterList, Refresh, GetApp, Visibility, Analytics, Timeline,
-  AutoGraph, Speed, Star, Lightbulb, Edit as EditIcon
+    ArrowUpward, ArrowDownward, People as PeopleIcon, Assignment as AssignmentIcon,
+    Category as CategoryIcon, TrendingUp as TrendingUpIcon, PictureAsPdf, Description,
+    Dashboard as DashboardIcon, History as HistoryIcon, Group as GroupIcon,
+    Search, FilterList, Refresh, GetApp, Visibility, Analytics, Timeline,
+    AutoGraph, Speed, Star, Lightbulb, Edit as EditIcon, ExpandMore as ExpandMoreIcon,
+    Close as CloseIcon, CloudUpload as CloudUploadIcon, Download as DownloadIcon, KeyboardArrowDown, KeyboardArrowUp, Person, Folder, Handshake, Gavel, Balance, AttachMoney, FamilyRestroom, FoodBank, HomeWork, DirectionsCar, FactCheck
 } from '@mui/icons-material';
-
 // --- Enhanced Dashboard Components ---
 
 import GlassCard from '../components/common/GlassCard';
@@ -242,7 +243,7 @@ const CyclingTypeCard = ({ types, color, icon: IconComponent, index }) => {
                   {currentType.count.toLocaleString()}
                 </Typography>
 
-                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500,  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {currentType._id}
                 </Typography>
               </Box>
@@ -344,7 +345,7 @@ const EnhancedPieChart = ({ data }) => {
             boxShadow: theme.shadows[8]
           }}
         >
-          <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 600,  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {payload[0].name}
           </Typography>
           <Typography variant="body2" color="text.secondary">
@@ -357,7 +358,7 @@ const EnhancedPieChart = ({ data }) => {
   };
 
   return (
-    <ResponsiveContainer width="100%" height={320}>
+    <ResponsiveContainer width="100%" height="100%">
       <PieChart>
         <defs>
           {COLORS.map((color, index) => (
@@ -373,8 +374,8 @@ const EnhancedPieChart = ({ data }) => {
           nameKey="_id" 
           cx="50%" 
           cy="50%" 
-          outerRadius={100}
-          innerRadius={40}
+          outerRadius="80%"
+          innerRadius="50%"
           paddingAngle={2}
           animationBegin={0}
           animationDuration={1200}
@@ -390,10 +391,8 @@ const EnhancedPieChart = ({ data }) => {
         </Pie>
         <RechartsTooltip content={<CustomTooltip />} />
         <Legend 
-          verticalAlign="bottom" 
-          height={36}
           iconType="circle"
-          wrapperStyle={{ fontSize: '12px', fontWeight: 500 }}
+          formatter={(value) => <span style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', display: 'inline-block', maxWidth: '100px', verticalAlign: 'middle' }}>{value}</span>}
         />
       </PieChart>
     </ResponsiveContainer>
@@ -443,15 +442,15 @@ const EnhancedAreaChart = ({ data }) => {
   };
 
   return (
-    <ResponsiveContainer width="100%" height={320}>
-      <AreaChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
+    <ResponsiveContainer width="100%" height="100%">
+      <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
         <defs>
           <linearGradient id="solicitudesAreaGradient" x1="0" y1="0" x2="0" y2="1">
             <stop offset="5%" stopColor={theme.palette.error.main} stopOpacity={0.3}/>
             <stop offset="95%" stopColor={theme.palette.error.main} stopOpacity={0.0}/>
           </linearGradient>
           <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
-            <dropShadow dx="0" dy="4" stdDeviation="8" floodColor={alpha(theme.palette.error.main, 0.3)}/>
+            <feDropShadow dx="0" dy="4" stdDeviation="8" floodColor={alpha(theme.palette.error.main, 0.3)}/>
           </filter>
         </defs>
         <CartesianGrid strokeDasharray="3 3" stroke={alpha(theme.palette.divider, 0.3)} vertical={false} />
@@ -473,7 +472,7 @@ const EnhancedAreaChart = ({ data }) => {
           stroke={theme.palette.error.main}
           strokeWidth={3}
           fill="url(#solicitudesAreaGradient)"
-          filter="url(#shadow)"
+          // filter="url(#shadow)"
           animationDuration={1500}
           animationBegin={200}
         />
@@ -482,7 +481,239 @@ const EnhancedAreaChart = ({ data }) => {
   );
 };
 
-const EnhancedTable = ({ table, isLoading, solicitudesData, navigate, onDownload }) => {
+const DetailItem = ({ label, value }) => (
+    <Grid item xs={12} sm={6}>
+        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
+            {label}
+        </Typography>
+        <Typography variant="body1" sx={{ fontWeight: 600 }}>
+            {value || 'N/A'}
+        </Typography>
+    </Grid>
+);
+
+const DeudorModal = ({ open, onClose, deudor }) => {
+    if (!deudor) return null;
+    return (
+        <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+            <DialogTitle>
+                Información del Deudor
+                <IconButton onClick={onClose} sx={{ position: 'absolute', right: 8, top: 8 }}>
+                    <CloseIcon />
+                </IconButton>
+            </DialogTitle>
+            <DialogContent dividers>
+                <Grid container spacing={2}>
+                    <Grid item xs={12}>
+                        <Typography variant="h6">{deudor.nombreCompleto}</Typography>
+                    </Grid>
+                    <DetailItem label="Tipo y Número de Identificación" value={`${deudor.tipoIdentificacion} - ${deudor.cedula}`} />
+                    <DetailItem label="Lugar de Expedición" value={`${deudor.ciudadExpedicion}, ${deudor.departamentoExpedicion}`} />
+                    <DetailItem label="Teléfono" value={deudor.telefono} />
+                    <DetailItem label="Email" value={deudor.email} />
+                    <DetailItem label="País de Origen" value={deudor.paisOrigen} />
+                    <DetailItem label="Fecha de Nacimiento" value={new Date(deudor.fechaNacimiento).toLocaleDateString()} />
+                    <DetailItem label="Género" value={deudor.genero} />
+                    <DetailItem label="Estado Civil" value={deudor.estadoCivil} />
+                    <DetailItem label="Etnia" value={deudor.etnia} />
+                    <DetailItem label="Discapacidad" value={deudor.discapacidad} />
+                    <DetailItem label="Domicilio" value={`${deudor.domicilio}, ${deudor.ciudad}, ${deudor.departamento}`} />
+                    <DetailItem label="Tipo Persona" value={deudor.tipoPersonaNatural} />
+                </Grid>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
+const AcreedoresModal = ({ open, onClose, acreedores }) => {
+    if (!acreedores) return null;
+    return (
+        <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+            <DialogTitle>
+                Acreedores
+                <IconButton onClick={onClose} sx={{ position: 'absolute', right: 8, top: 8 }}>
+                    <CloseIcon />
+                </IconButton>
+            </DialogTitle>
+            <DialogContent dividers>
+                <TableContainer>
+                    <Table>
+                        <TableHead>
+                            <TableRow>
+                                <TableCell>Nombre del Acreedor</TableCell>
+                                <TableCell>Documento</TableCell>
+                                <TableCell align="right">Capital</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {acreedores.map((item, index) => (
+                                <TableRow key={index}>
+                                    <TableCell>{item.acreedor?.nombreCompleto || 'N/A'}</TableCell>
+                                    <TableCell>{`${item.acreedor?.tipoIdentificacion || ''} - ${item.acreedor?.numeroIdentificacion || ''}`}</TableCell>
+                                    <TableCell align="right">${item.capital?.toLocaleString() || 0}</TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
+const InvolucradosModal = ({ open, onClose, involucrados, title }) => {
+    if (!involucrados) return null;
+    return (
+        <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
+            <DialogTitle>
+                {title}
+                <IconButton onClick={onClose} sx={{ position: 'absolute', right: 8, top: 8 }}>
+                    <CloseIcon />
+                </IconButton>
+            </DialogTitle>
+            <DialogContent dividers>
+                {involucrados.map((p, index) => (
+                    <Box key={index} sx={{ mb: 2, p: 2, border: '1px solid #ddd', borderRadius: 2 }}>
+                        <Typography variant="h6">{`${p.primerNombre} ${p.segundoNombre || ''} ${p.primerApellido} ${p.segundoApellido || ''}`}</Typography>
+                        <Grid container spacing={2}>
+                            <DetailItem label="Tipo Involucrado" value={p.tipoInvolucrado} />
+                            <DetailItem label="Identificación" value={`${p.tipoIdentificacion} ${p.numeroIdentificacion}`} />
+                            <DetailItem label="Lugar de Expedición" value={`${p.ciudadExpedicion}, ${p.departamentoExpedicion}`} />
+                            <DetailItem label="Teléfono" value={p.telefono} />
+                            <DetailItem label="Email" value={p.email} />
+                            <DetailItem label="País de Origen" value={p.paisOrigen} />
+                            <DetailItem label="Fecha de Nacimiento" value={new Date(p.fechaNacimiento).toLocaleDateString()} />
+                            <DetailItem label="Género" value={p.genero} />
+                            <DetailItem label="Estado Civil" value={p.estadoCivil} />
+                            <DetailItem label="Domicilio" value={`${p.domicilio}, ${p.ciudad}, ${p.departamento}`} />
+                        </Grid>
+                    </Box>
+                ))}
+            </DialogContent>
+        </Dialog>
+    );
+};
+
+const AnexosSection = ({ anexos, solicitudId, tipoSolicitud, onUploadSuccess }) => {
+  const fileInputRef = React.useRef(null);
+  const { mutate: uploadFile, isLoading } = useMutation(uploadAnexo, {
+      onSuccess: () => {
+          toast.success("Archivo subido con éxito");
+          onUploadSuccess();
+      },
+      onError: (error) => {
+          handleAxiosError(error);
+      }
+  });
+
+  const handleFileChange = (event) => {
+      const file = event.target.files[0];
+      if (file) {
+          const formData = new FormData();
+          formData.append('anexo', file);
+          uploadFile({ id: solicitudId, tipo: tipoSolicitud.startsWith('Solicitud de Insolvencia') ? 'insolvencia' : 'conciliacion', formData });
+      }
+  };
+
+  const handleDownload = async (anexo) => {
+    const toastId = toast.loading(`Descargando ${anexo.filename}...`);
+    try {
+        const service = tipoSolicitud.startsWith('Solicitud de Insolvencia') ? downloadSolicitudDocument : downloadConciliacionDocument;
+        await service(solicitudId, 'anexo', anexo.filename);
+        toast.update(toastId, { render: "Descarga completada!", type: "success", isLoading: false, autoClose: 3000 });
+    } catch (error) {
+        toast.update(toastId, { render: "Error en la descarga", type: "error", isLoading: false, autoClose: 3000 });
+        handleAxiosError(error);
+    }
+  }
+
+
+  return (
+      <Box>
+          <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              style={{ display: 'none' }}
+          />
+          <Button
+              startIcon={<CloudUploadIcon />}
+              variant="contained"
+              onClick={() => fileInputRef.current.click()}
+              disabled={isLoading}
+              sx={{ mb: 2 }}
+          >
+              {isLoading ? 'Subiendo...' : 'Subir Documento'}
+          </Button>
+          <List>
+              {anexos?.map((anexo, index) => (
+                  <ListItem key={index} secondaryAction={
+                      <IconButton edge="end" aria-label="download" onClick={() => handleDownload(anexo)}>
+                          <DownloadIcon />
+                      </IconButton>
+                  }>
+                      <ListItemIcon><Description /></ListItemIcon>
+                      <ListItemText primary={anexo.filename} secondary={anexo.descripcion || `${(anexo.size / 1024).toFixed(2)} KB`} />
+                  </ListItem>
+              ))}
+          </List>
+      </Box>
+  );
+};
+
+
+const InsolvenciaDetails = ({ solicitud, onUploadSuccess }) => {
+    const gastos = solicitud.informacionFinanciera?.gastosPersonales || {};
+    return (
+        <Box sx={{ p: 2, backgroundColor: '#f9f9f9' }}>
+            <Accordion><AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography>Causas</Typography></AccordionSummary><AccordionDetails>
+                {solicitud.causas?.lista.map((c, i) => <p key={i}><b>{c.tipoCausa}:</b> {c.descripcionCausa}</p>)}
+            </AccordionDetails></Accordion>
+            <Accordion><AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography>Bienes Muebles</Typography></AccordionSummary><AccordionDetails>
+                {solicitud.bienesMuebles?.map((b, i) => <p key={i}>{b.clasificacion} - {b.descripcion} ({b.marca}): ${b.avaluoComercial?.toLocaleString()}</p>)}
+            </AccordionDetails></Accordion>
+            <Accordion><AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography>Bienes Inmuebles</Typography></AccordionSummary><AccordionDetails>
+                 {solicitud.bienesInmuebles?.map((b, i) => <p key={i}>{b.descripcion} - Matrícula: {b.matriculaInmobiliaria}</p>)}
+            </AccordionDetails></Accordion>
+            <Accordion><AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography>Procesos Judiciales</Typography></AccordionSummary><AccordionDetails>
+                {solicitud.informacionFinanciera?.procesosJudiciales?.map((p, i) => <p key={i}>{p.tipoProceso} vs {p.demandado}</p>)}
+            </AccordionDetails></Accordion>
+            <Accordion><AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography>Obligaciones Alimentarias</Typography></AccordionSummary><AccordionDetails>
+                {solicitud.informacionFinanciera?.obligacionesAlimentarias?.map((o, i) => <p key={i}>{o.beneficiario} - Cuantía: ${o.cuantia?.toLocaleString()}</p>)}
+            </AccordionDetails></Accordion>
+            <Accordion><AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography>Gastos de Subsistencia</Typography></AccordionSummary><AccordionDetails>
+                {Object.entries(gastos).map(([key, value]) => value && !key.startsWith('_') && <p key={key}>{key}: ${Number(value).toLocaleString()}</p>)}
+            </AccordionDetails></Accordion>
+            <Accordion><AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography>Propuesta de Pago</Typography></AccordionSummary><AccordionDetails>
+                <p><b>Tipo:</b> {solicitud.propuestaPago?.tipoNegociacion}</p>
+                <p><b>Plazo:</b> {solicitud.propuestaPago?.plazo} meses</p>
+                <p><b>Descripción:</b> {solicitud.propuestaPago?.descripcion}</p>
+            </AccordionDetails></Accordion>
+            <Accordion><AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography>Documentos/Anexos</Typography></AccordionSummary><AccordionDetails>
+                <AnexosSection anexos={solicitud.anexos} solicitudId={solicitud._id} tipoSolicitud={solicitud.tipoSolicitud} onUploadSuccess={onUploadSuccess} />
+            </AccordionDetails></Accordion>
+        </Box>
+    );
+};
+
+const ConciliacionDetails = ({ solicitud, onUploadSuccess }) => (
+    <Box sx={{ p: 2, backgroundColor: '#f9f9f9' }}>
+        <Accordion defaultExpanded><AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography>Hechos</Typography></AccordionSummary><AccordionDetails>
+            {solicitud.hechos?.map((h, i) => <p key={i} dangerouslySetInnerHTML={{ __html: h.descripcion }} />)}
+        </AccordionDetails></Accordion>
+        <Accordion defaultExpanded><AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography>Pretensiones</Typography></AccordionSummary><AccordionDetails>
+            {solicitud.pretensiones?.map((p, i) => <p key={i} dangerouslySetInnerHTML={{ __html: p.descripcion }} />)}
+        </AccordionDetails></Accordion>
+        <Accordion><AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography>Fundamentos</Typography></AccordionSummary><AccordionDetails>
+            <p>No hay datos de fundamentos en la estructura actual.</p>
+        </AccordionDetails></Accordion>
+        <Accordion defaultExpanded><AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography>Documentos/Anexos</Typography></AccordionSummary><AccordionDetails>
+            <AnexosSection anexos={solicitud.anexos} solicitudId={solicitud._id} tipoSolicitud={solicitud.tipoSolicitud} onUploadSuccess={onUploadSuccess} />
+        </AccordionDetails></Accordion>
+    </Box>
+);
+
+const EnhancedTable = ({ table, isLoading, solicitudesData, navigate, onDownload, onOpenModal, onUploadSuccess }) => {
   const theme = useTheme();
 
   const ActionButton = ({ onClick, icon: Icon, tooltip, color = 'primary' }) => (
@@ -516,6 +747,7 @@ const EnhancedTable = ({ table, isLoading, solicitudesData, navigate, onDownload
                   <TableCell 
                     key={header.id} 
                     onClick={header.column.getToggleSortingHandler()}
+                    colSpan={header.colSpan}
                     sx={{ 
                       py: 2,
                       bgcolor: alpha(theme.palette.primary.main, 0.02),
@@ -581,60 +813,38 @@ const EnhancedTable = ({ table, isLoading, solicitudesData, navigate, onDownload
                 </TableCell>
               </TableRow>
             ) : (
-              table.getRowModel().rows.map((row, index) => (
-                <TableRow 
-                  key={row.id} 
-                  sx={{ 
-                    '&:hover': { 
-                      bgcolor: alpha(theme.palette.primary.main, 0.02),
-                      transform: 'scale(1.001)',
-                    },
-                    '&:last-child td': { border: 0 },
-                    transition: 'all 0.2s ease'
-                  }}
-                >
-                  {row.getVisibleCells().map(cell => (
-                    <TableCell 
-                      key={cell.id}
+              table.getRowModel().rows.map((row) => (
+                <Fragment key={row.id}>
+                    <TableRow 
                       sx={{ 
-                        py: 2,
-                        borderBottom: `1px solid ${alpha(theme.palette.divider, 0.5)}`
+                        '& > td': { borderBottom: 'unset' },
+                        '&:hover': { 
+                          bgcolor: alpha(theme.palette.primary.main, 0.02),
+                        },
                       }}
                     >
-                      {cell.column.id === 'actions' ? (
-                        <Stack direction="row" spacing={1} justifyContent="flex-end">
-                          {row.original.tipoSolicitud === 'Solicitud de Insolvencia Económica de Persona Natural No Comerciante' && (
-                            <ActionButton
-                              onClick={() => navigate(`/admin/editar-solicitud/${row.original._id}`)}
-                              icon={EditIcon}
-                              tooltip="Editar Solicitud de Insolvencia"
-                              color="success"
-                            />
-                          )}
-                          {row.original.tipoSolicitud === 'Solicitud de Conciliación Unificada' && (
-                            <ActionButton
-                              onClick={() => navigate(`/admin/editar-conciliacion/${row.original._id}`)}
-                              icon={EditIcon}
-                              tooltip="Editar Solicitud de Conciliación"
-                              color="info"
-                            />
-                          )}
-                          <ActionButton
-                            onClick={() => onDownload(row.original._id, row.original.tipoSolicitud, 'pdf')}
-                            icon={PictureAsPdf}
-                            tooltip="Descargar PDF"
-                            color="error"
-                          />
-                          
-                        </Stack>
-                      ) : (
-                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </Typography>
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
+                    {row.getVisibleCells().map(cell => (
+                      <TableCell 
+                        key={cell.id}
+                        sx={{ 
+                          py: 2,
+                        }}
+                      >
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    ))}
+                    </TableRow>
+                    {row.getIsExpanded() && (
+                        <TableRow>
+                            <TableCell colSpan={row.getVisibleCells().length} sx={{ p: 0 }}>
+                                {row.original.tipoSolicitud.startsWith('Solicitud de Insolvencia') ?
+                                    <InsolvenciaDetails solicitud={row.original} onUploadSuccess={onUploadSuccess} /> :
+                                    <ConciliacionDetails solicitud={row.original} onUploadSuccess={onUploadSuccess} />
+                                }
+                            </TableCell>
+                        </TableRow>
+                    )}
+                </Fragment>
               ))
             )}
           </TableBody>
@@ -643,8 +853,7 @@ const EnhancedTable = ({ table, isLoading, solicitudesData, navigate, onDownload
 
       {/* Enhanced Pagination */}
       <Divider />
-      <Box sx={{ p: 2, bgcolor: alpha(theme.palette.background.default, 0.3) }}>
-        <TablePagination
+      <TablePagination
           component="div"
           count={solicitudesData?.totalRows ?? 0}
           page={table.getState().pagination.pageIndex}
@@ -657,6 +866,7 @@ const EnhancedTable = ({ table, isLoading, solicitudesData, navigate, onDownload
             `${from}-${to} de ${count !== -1 ? count : `más de ${to}`}`
           }
           sx={{
+            borderTop: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
             '& .MuiTablePagination-actions': {
               '& button': {
                 borderRadius: 2,
@@ -667,7 +877,6 @@ const EnhancedTable = ({ table, isLoading, solicitudesData, navigate, onDownload
             }
           }}
         />
-      </Box>
     </GlassCard>
   );
 };
@@ -691,21 +900,34 @@ function TabPanel(props) {
 const AdminPage = () => {
   const theme = useTheme();
   const navigate = useNavigate();
-  const [tabIndex, setTabIndex] = useState(0);
+  const [tabIndex, setTabIndex] = useState(1);
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
   const [localFilters, setLocalFilters] = useState({ tipoSolicitud: '', user: '' });
   const [refreshKey, setRefreshKey] = useState(0);
   const debouncedLocalFilters = useDebounce(localFilters, 500);
+  const [expanded, setExpanded] = useState({});
 
-  const handleDownload = async (solicitudId, tipoSolicitud, format) => {
+  const [modalState, setModalState] = useState({
+      open: false,
+      type: null, // 'deudor', 'acreedores', 'convocantes', 'convocados'
+      data: null
+  });
+
+  const queryClient = useQueryClient();
+
+
+  const handleOpenModal = (type, data) => setModalState({ open: true, type, data });
+  const handleCloseModal = () => setModalState({ open: false, type: null, data: null });
+
+  const handleDownload = async (solicitudId, tipoSolicitud, format, anexo = null) => {
     const toastId = toast.loading(`Descargando documento ${format.toUpperCase()}, por favor espere...`);
     try {
       if (tipoSolicitud === 'Solicitud de Conciliación Unificada') {
-        await downloadConciliacionDocument(solicitudId, format);
+        await downloadConciliacionDocument(solicitudId, format, anexo);
       } else {
-        await downloadSolicitudDocument(solicitudId, format);
+        await downloadSolicitudDocument(solicitudId, format, anexo);
       }
       toast.update(toastId, { 
         render: "¡Descarga Completada!", 
@@ -727,7 +949,7 @@ const AdminPage = () => {
     setPagination(prev => ({ ...prev, pageIndex: 0 }));
   }, [debouncedLocalFilters]);
 
-  const { data: stats, isLoading: isLoadingStats, isError: isErrorStats } = useQuery({ 
+  const { data: stats, isLoading: isLoadingStats, isError: isErrorStats, refetch: refetchStats } = useQuery({ 
     queryKey: ['adminStats', refreshKey], 
     queryFn: getAdminStats,
     staleTime: 30000,
@@ -741,7 +963,8 @@ const AdminPage = () => {
   const { 
     data: solicitudesData, 
     isLoading: isLoadingSolicitudes, 
-    isError: isErrorSolicitudes 
+    isError: isErrorSolicitudes,
+    refetch: refetchSolicitudes,
   } = useQuery({ 
     queryKey: queryKey, 
     queryFn: () => getAdminSolicitudes({ 
@@ -755,24 +978,25 @@ const AdminPage = () => {
     staleTime: 10000,
   });
 
+  const onUploadSuccess = () => {
+    refetchSolicitudes();
+  };
+
+
   const columns = useMemo(() => [
+    {
+        id: 'expander',
+        header: () => null,
+        cell: ({ row }) => (
+            <IconButton size="small" onClick={() => row.toggleExpanded()}>
+                {row.getIsExpanded() ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
+            </IconButton>
+        ),
+    },
     { 
       accessorKey: 'createdAt', 
       header: 'Fecha', 
-      cell: ({ getValue }) => {
-        const date = new Date(getValue());
-        return (
-          <Chip 
-            label={date.toLocaleDateString()} 
-            size="small"
-            sx={{ 
-              bgcolor: alpha(theme.palette.info.main, 0.1),
-              color: theme.palette.info.main,
-              fontWeight: 600
-            }}
-          />
-        );
-      }
+      cell: ({ getValue }) => new Date(getValue()).toLocaleDateString()
     },
     { 
       accessorKey: 'user.name', 
@@ -790,50 +1014,107 @@ const AdminPage = () => {
     },
     { 
       accessorKey: 'tipoSolicitud', 
-      header: 'Tipo de Solicitud',
+      header: 'Tipo',
       cell: ({ getValue }) => {
-        const getTypeColor = (type) => {
-          const colors = {
-            'Conciliación': theme.palette.primary.main,
-            'Insolvencia': theme.palette.error.main,
-            'Restructuración': theme.palette.warning.main,
-            'default': theme.palette.info.main
-          };
-          return colors[type] || colors.default;
-        };
-        
-        const color = getTypeColor(getValue());
-        return (
-          <Chip 
-            label={getValue()} 
-            size="small"
-            sx={{ 
-              bgcolor: alpha(color, 0.1),
-              color: color,
-              fontWeight: 600,
-              borderRadius: 2
-            }}
-          />
-        );
+        const isI = getValue().startsWith("Solicitud de Insolvencia");
+        return <Chip label={isI ? "Insolvencia" : "Conciliación"} size="small" color={isI ? "error" : "primary"}/>
       }
+    },
+    {
+        id: 'deudor',
+        header: 'Deudor/a',
+        cell: ({ row }) => {
+            const { original } = row;
+            if (original.tipoSolicitud.startsWith('Solicitud de Insolvencia')) {
+                return <Button onClick={() => handleOpenModal('deudor', original.deudor)}>{original.deudor?.nombreCompleto}</Button>
+            }
+            return null;
+        }
+    },
+    {
+        id: 'acreedores',
+        header: 'Acreedores',
+        cell: ({ row }) => {
+            const { original } = row;
+            if (original.tipoSolicitud.startsWith('Solicitud de Insolvencia')) {
+                return (
+                    <IconButton onClick={() => handleOpenModal('acreedores', original.acreencias)}>
+                        <GroupIcon />
+                    </IconButton>
+                );
+            }
+            return null;
+        }
+    },
+    {
+        id: 'convocantes',
+        header: 'Convocantes',
+        cell: ({ row }) => {
+            const { original } = row;
+            if (original.tipoSolicitud.startsWith('Solicitud de Conciliación')) {
+                return (
+                    <IconButton onClick={() => handleOpenModal('convocantes', original.convocantes)}>
+                        <PeopleIcon />
+                    </IconButton>
+                );
+            }
+            return null;
+        }
+    },
+    {
+        id: 'convocados',
+        header: 'Convocados',
+        cell: ({ row }) => {
+            const { original } = row;
+            if (original.tipoSolicitud.startsWith('Solicitud de Conciliación')) {
+                return (
+                    <IconButton onClick={() => handleOpenModal('convocados', original.convocados)}>
+                        <PeopleIcon />
+                    </IconButton>
+                );
+            }
+            return null;
+        }
     },
     {
       id: 'actions',
       header: 'Acciones',
+      cell: ({ row }) => {
+        const { original } = row;
+        return (
+            <Stack direction="row" spacing={1}>
+                {original.tipoSolicitud.startsWith('Solicitud de Insolvencia') && (
+                    <Tooltip title="Editar Solicitud de Insolvencia">
+                        <IconButton onClick={() => navigate(`/admin/editar-solicitud/${original._id}`)}><EditIcon /></IconButton>
+                    </Tooltip>
+                )}
+                {original.tipoSolicitud.startsWith('Solicitud de Conciliación') && (
+                    <Tooltip title="Editar Solicitud de Conciliación">
+                        <IconButton onClick={() => navigate(`/admin/editar-conciliacion/${original._id}`)}><EditIcon /></IconButton>
+                    </Tooltip>
+                )}
+                <Tooltip title="Descargar PDF">
+                    <IconButton onClick={() => handleDownload(original._id, original.tipoSolicitud, 'pdf')}><PictureAsPdf /></IconButton>
+                </Tooltip>
+            </Stack>
+        )
+      }
     },
-  ], [theme]);
+  ], [theme, navigate]);
 
   const table = useReactTable({
     data: solicitudesData?.rows ?? [],
     columns,
     pageCount: solicitudesData?.pageCount ?? -1,
-    state: { pagination, sorting, columnFilters },
+    state: { pagination, sorting, columnFilters, expanded },
     onPaginationChange: setPagination,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
+    onExpandedChange: setExpanded,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
+    getExpandedRowModel: getExpandedRowModel(),
     manualPagination: true,
     manualSorting: true,
     manualFiltering: true,
@@ -846,7 +1127,12 @@ const AdminPage = () => {
   };
 
   const handleRefresh = () => {
-    setRefreshKey(prev => prev + 1);
+    if (tabIndex === 0) {
+      refetchStats();
+    }
+    if (tabIndex === 1) {
+      refetchSolicitudes();
+    }
   };
 
   return (
@@ -943,6 +1229,7 @@ const AdminPage = () => {
             <Tabs 
               value={tabIndex} 
               onChange={handleTabChange} 
+              variant="fullWidth"
               sx={{ 
                 px: 2,
                 '& .MuiTab-root': {
@@ -973,7 +1260,6 @@ const AdminPage = () => {
                 icon={<DashboardIcon />} 
                 iconPosition="start" 
                 label="Dashboard" 
-                sx={{ mr: 2 }}
               />
               <Tab 
                 icon={
@@ -1115,6 +1401,8 @@ const AdminPage = () => {
                 solicitudesData={solicitudesData}
                 navigate={navigate}
                 onDownload={handleDownload}
+                onOpenModal={handleOpenModal}
+                onUploadSuccess={onUploadSuccess}
               />
 
               {isErrorSolicitudes && (
@@ -1132,6 +1420,10 @@ const AdminPage = () => {
             </Stack>
           </TabPanel>
         </Stack>
+        <DeudorModal open={modalState.type === 'deudor'} onClose={handleCloseModal} deudor={modalState.data} />
+        <AcreedoresModal open={modalState.type === 'acreedores'} onClose={handleCloseModal} acreedores={modalState.data} />
+        <InvolucradosModal open={modalState.type === 'convocantes'} onClose={handleCloseModal} involucrados={modalState.data} title="Convocantes" />
+        <InvolucradosModal open={modalState.type === 'convocados'} onClose={handleCloseModal} involucrados={modalState.data} title="Convocados" />
       </Container>
     </Box>
   );

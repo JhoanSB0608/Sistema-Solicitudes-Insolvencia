@@ -3316,7 +3316,7 @@ const InsolvenciaForm = ({ onSubmit, resetToken, initialData, isUpdating }) => {
                                           render={({ field, fieldState: { error } }) => (
                                             <GlassTextField
                                               {...field}
-                                              label="Cuantía Mensual"
+                                              label="Cuantía"
                                               type="number"
                                               fullWidth
                                               error={!!error}
