@@ -32,7 +32,7 @@ import {
     Search, FilterList, Refresh, GetApp, Visibility, Analytics, Timeline,
     AutoGraph, Speed, Star, Lightbulb, Edit as EditIcon, ExpandMore as ExpandMoreIcon,
     Close as CloseIcon, CloudUpload as CloudUploadIcon, Download as DownloadIcon, KeyboardArrowDown, KeyboardArrowUp, Person, Folder, Handshake, Gavel, Balance, AttachMoney, FamilyRestroom, FoodBank, HomeWork, DirectionsCar, FactCheck,
-    LocalHospital, School, Receipt, Shield, Home, Business, Security, ShoppingCart, SportsEsports, Wc
+    LocalHospital, School, Receipt, Shield, Home, Business, Security, ShoppingCart, SportsEsports, Wc, Event, Today
 } from '@mui/icons-material';
 // --- Enhanced Dashboard Components ---
 
@@ -1092,25 +1092,61 @@ const InsolvenciaDetails = ({ solicitud, onUploadSuccess }) => {
       </GlassAccordion>
 
       <GlassAccordion title="Propuesta de Pago" icon={AttachMoney}>
-        <Stack spacing={2}>
-          <DetailItem label="Tipo de Negociación" value={solicitud.propuestaPago?.tipoNegociacion} />
-          <DetailItem label="Plazo" value={`${solicitud.propuestaPago?.plazo} meses`} />
-          <Box 
-            sx={{ 
-              p: 2, 
-              borderRadius: 2,
-              background: `linear-gradient(135deg, ${alpha(theme.palette.success.main, 0.05)} 0%, transparent 100%)`,
-              border: `1px solid ${alpha(theme.palette.success.main, 0.1)}`,
-            }}
-          >
-            <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 600 }}>
-              Descripción
-            </Typography>
-            <Typography variant="body1" sx={{ mt: 1 }}>
-              {solicitud.propuestaPago?.descripcion}
-            </Typography>
-          </Box>
-        </Stack>
+        <Grid container spacing={2}>
+            <DetailItem label="Tipo de Negociación" value={solicitud.propuestaPago?.tipoNegociacion} icon={Handshake}/>
+            <DetailItem label="Forma de Pago" value={solicitud.propuestaPago?.formaPago} icon={Receipt} />
+            <DetailItem label="Plazo (meses)" value={solicitud.propuestaPago?.plazo} icon={Timeline}/>
+            <DetailItem label="Interés E.A." value={`${solicitud.propuestaPago?.interesEA || 0}%`} icon={TrendingUpIcon}/>
+            <DetailItem label="Fecha de Inicio" value={solicitud.propuestaPago?.fechaInicioPago ? new Date(solicitud.propuestaPago.fechaInicioPago).toLocaleDateString('es-CO') : 'N/A'} icon={Event}/>
+            <DetailItem label="Día de Pago" value={solicitud.propuestaPago?.diaPago} icon={Today}/>
+        </Grid>
+        
+        {(solicitud.propuestaPago?.descripcion || solicitud.propuestaPago?.descripcionProyeccion) && (
+            <Box sx={{ mt: 2, p: 2, borderRadius: 2, background: `linear-gradient(135deg, ${alpha(theme.palette.info.main, 0.05)} 0%, transparent 100%)`, border: `1px solid ${alpha(theme.palette.info.main, 0.1)}` }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: theme.palette.info.main, mb: 1 }}>
+                    Descripción de la propuesta
+                </Typography>
+                <Typography variant="body2">
+                    {solicitud.propuestaPago.descripcion || solicitud.propuestaPago.descripcionProyeccion}
+                </Typography>
+            </Box>
+        )}
+
+        {solicitud.propuestaPago?.tipoNegociacion === 'proyeccion' && solicitud.projectionData && solicitud.projectionData.length > 0 && (
+            <Box sx={{ mt: 3 }}>
+                <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>Tabla de Proyección de Pagos</Typography>
+                <TableContainer component={Paper} sx={{
+                    borderRadius: 2,
+                    background: `linear-gradient(135deg, ${alpha(theme.palette.background.paper, 0.6)} 0%, ${alpha(theme.palette.background.paper, 0.3)} 100%)`,
+                    border: `1px solid ${alpha(theme.palette.divider, 0.15)}`,
+                }}>
+                    <Table size="small">
+                        <TableHead sx={{ bgcolor: alpha(theme.palette.primary.main, 0.05) }}>
+                            <TableRow>
+                                <TableCell sx={{ fontWeight: 'bold' }}>#</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold' }}>Fecha</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold' }} align="right">Monto Pago</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold' }} align="right">Capital</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold' }} align="right">Interés</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold' }} align="right">Saldo Capital</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {solicitud.projectionData.map((row) => (
+                                <TableRow key={row.pagoNo} sx={{ '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.03) } }}>
+                                    <TableCell>{row.pagoNo}</TableCell>
+                                    <TableCell>{row.fecha}</TableCell>
+                                    <TableCell align="right">{row.montoPago}</TableCell>
+                                    <TableCell align="right">{row.pagoCapital}</TableCell>
+                                    <TableCell align="right">{row.pagoInteres}</TableCell>
+                                    <TableCell align="right">{row.saldoFinalCapital}</TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            </Box>
+        )}
       </GlassAccordion>
 
       <GlassAccordion title="Documentos/Anexos" icon={Folder} defaultExpanded>
