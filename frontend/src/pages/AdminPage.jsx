@@ -620,14 +620,15 @@ const InvolucradosModal = ({ open, onClose, involucrados, title }) => {
 
 const AnexosSection = ({ anexos, solicitudId, tipoSolicitud, onUploadSuccess }) => {
   const fileInputRef = React.useRef(null);
-  const { mutate: uploadFile, isLoading } = useMutation(uploadAnexo, {
-      onSuccess: () => {
-          toast.success("Archivo subido con éxito");
-          onUploadSuccess();
-      },
-      onError: (error) => {
-          handleAxiosError(error);
-      }
+  const { mutate: uploadFile, isLoading } = useMutation({
+    mutationFn: uploadAnexo,
+    onSuccess: () => {
+        toast.success("Archivo subido con éxito");
+        onUploadSuccess();
+    },
+    onError: (error) => {
+        handleAxiosError(error);
+    }
   });
 
   const handleFileChange = (event) => {
