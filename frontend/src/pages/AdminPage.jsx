@@ -493,9 +493,17 @@ const DetailItem = ({ label, value }) => (
 );
 
 const DeudorModal = ({ open, onClose, deudor }) => {
+    const theme = useTheme();
     if (!deudor) return null;
     return (
-        <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+        <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth PaperProps={{
+            sx: {
+                background: `linear-gradient(145deg, ${alpha(theme.palette.background.paper, 0.8)} 0%, ${alpha(theme.palette.background.paper, 0.6)} 100%)`,
+                backdropFilter: 'blur(20px)',
+                border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
+                borderRadius: 3,
+            }
+        }}>
             <DialogTitle>
                 Información del Deudor
                 <IconButton onClick={onClose} sx={{ position: 'absolute', right: 8, top: 8 }}>
@@ -526,9 +534,17 @@ const DeudorModal = ({ open, onClose, deudor }) => {
 };
 
 const AcreedoresModal = ({ open, onClose, acreedores }) => {
+    const theme = useTheme();
     if (!acreedores) return null;
     return (
-        <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+        <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth PaperProps={{
+            sx: {
+                background: `linear-gradient(145deg, ${alpha(theme.palette.background.paper, 0.8)} 0%, ${alpha(theme.palette.background.paper, 0.6)} 100%)`,
+                backdropFilter: 'blur(20px)',
+                border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
+                borderRadius: 3,
+            }
+        }}>
             <DialogTitle>
                 Acreedores
                 <IconButton onClick={onClose} sx={{ position: 'absolute', right: 8, top: 8 }}>
@@ -562,9 +578,17 @@ const AcreedoresModal = ({ open, onClose, acreedores }) => {
 };
 
 const InvolucradosModal = ({ open, onClose, involucrados, title }) => {
+    const theme = useTheme();
     if (!involucrados) return null;
     return (
-        <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
+        <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth PaperProps={{
+            sx: {
+                background: `linear-gradient(145deg, ${alpha(theme.palette.background.paper, 0.8)} 0%, ${alpha(theme.palette.background.paper, 0.6)} 100%)`,
+                backdropFilter: 'blur(20px)',
+                border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
+                borderRadius: 3,
+            }
+        }}>
             <DialogTitle>
                 {title}
                 <IconButton onClick={onClose} sx={{ position: 'absolute', right: 8, top: 8 }}>
@@ -1420,10 +1444,10 @@ const AdminPage = () => {
             </Stack>
           </TabPanel>
         </Stack>
-        <DeudorModal open={modalState.type === 'deudor'} onClose={handleCloseModal} deudor={modalState.data} />
-        <AcreedoresModal open={modalState.type === 'acreedores'} onClose={handleCloseModal} acreedores={modalState.data} />
-        <InvolucradosModal open={modalState.type === 'convocantes'} onClose={handleCloseModal} involucrados={modalState.data} title="Convocantes" />
-        <InvolucradosModal open={modalState.type === 'convocados'} onClose={handleCloseModal} involucrados={modalState.data} title="Convocados" />
+        <DeudorModal open={modalState.type === 'deudor'} onClose={handleCloseModal} deudor={modalState.type === 'deudor' ? modalState.data : null} />
+        <AcreedoresModal open={modalState.type === 'acreedores'} onClose={handleCloseModal} acreedores={modalState.type === 'acreedores' ? modalState.data : []} />
+        <InvolucradosModal open={modalState.type === 'convocantes'} onClose={handleCloseModal} involucrados={modalState.type === 'convocantes' ? modalState.data : []} title="Convocantes" />
+        <InvolucradosModal open={modalState.type === 'convocados'} onClose={handleCloseModal} involucrados={modalState.type === 'convocados' ? modalState.data : []} title="Convocados" />
       </Container>
     </Box>
   );
