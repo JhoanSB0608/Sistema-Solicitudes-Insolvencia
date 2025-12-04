@@ -18,7 +18,7 @@ import {
   Box, Grid, Paper, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, 
   Tabs, Tab, CircularProgress, Alert, Stack, IconButton, TablePagination, TextField, useTheme,
   alpha, Card, CardContent, Avatar, Container, Tooltip, Chip, Fade, Grow, Slide, Button,
-  InputAdornment, ButtonGroup, Badge, Divider, Dialog, DialogTitle, DialogContent, List, ListItem, ListItemText, ListItemIcon, Accordion, AccordionSummary, AccordionDetails, TableFooter, Collapse
+  InputAdornment, ButtonGroup, Badge, Divider, Dialog, DialogTitle, DialogContent, List, ListItem, ListItemText, ListItemIcon, Accordion, AccordionSummary, AccordionDetails, TableFooter
 } from '@mui/material';
 import {
   PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, 
@@ -742,25 +742,18 @@ const EnhancedTable = ({ table, isLoading, solicitudesData, navigate, onDownload
   const theme = useTheme();
 
   const ActionButton = ({ onClick, icon: Icon, tooltip, color = 'primary' }) => (
-    <Tooltip title={tooltip} arrow placement="top">
+    <Tooltip title={tooltip}>
       <IconButton 
         size="small" 
         onClick={onClick}
         sx={{
-          bgcolor: alpha(theme.palette[color].main, 0.08),
+          bgcolor: alpha(theme.palette[color].main, 0.1),
           color: theme.palette[color].main,
-          backdropFilter: 'blur(10px)',
-          border: `1px solid ${alpha(theme.palette[color].main, 0.15)}`,
-          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           '&:hover': {
-            bgcolor: alpha(theme.palette[color].main, 0.15),
-            transform: 'translateY(-2px) scale(1.05)',
-            boxShadow: `0 6px 20px ${alpha(theme.palette[color].main, 0.25)}`,
-            borderColor: alpha(theme.palette[color].main, 0.3),
+            bgcolor: alpha(theme.palette[color].main, 0.2),
+            transform: 'scale(1.1)',
           },
-          '&:active': {
-            transform: 'translateY(0) scale(0.98)',
-          }
+          transition: 'all 0.2s ease'
         }}
       >
         <Icon fontSize="small" />
@@ -770,42 +763,8 @@ const EnhancedTable = ({ table, isLoading, solicitudesData, navigate, onDownload
 
   return (
     <GlassCard>
-      <TableContainer 
-        sx={{ 
-          borderRadius: 4,
-          maxHeight: 'calc(100vh - 400px)',
-          position: 'relative',
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: '100%',
-            background: `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.02)} 0%, transparent 100%)`,
-            pointerEvents: 'none',
-            zIndex: 0,
-          },
-          '&::-webkit-scrollbar': {
-            width: '8px',
-            height: '8px',
-          },
-          '&::-webkit-scrollbar-track': {
-            background: alpha(theme.palette.background.paper, 0.3),
-            borderRadius: '4px',
-            backdropFilter: 'blur(5px)',
-          },
-          '&::-webkit-scrollbar-thumb': {
-            background: `linear-gradient(180deg, ${alpha(theme.palette.primary.main, 0.4)}, ${alpha(theme.palette.secondary.main, 0.4)})`,
-            borderRadius: '4px',
-            border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
-            '&:hover': {
-              background: `linear-gradient(180deg, ${alpha(theme.palette.primary.main, 0.6)}, ${alpha(theme.palette.secondary.main, 0.6)})`,
-            }
-          }
-        }}
-      >
-        <Table stickyHeader>
+      <TableContainer sx={{ borderRadius: 3 }}>
+        <Table>
           <TableHead>
             {table.getHeaderGroups().map(headerGroup => (
               <TableRow key={headerGroup.id}>
@@ -815,70 +774,33 @@ const EnhancedTable = ({ table, isLoading, solicitudesData, navigate, onDownload
                     onClick={header.column.getToggleSortingHandler()}
                     colSpan={header.colSpan}
                     sx={{ 
-                      py: 2.5,
-                      px: 3,
-                      background: `linear-gradient(145deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, ${alpha(theme.palette.primary.main, 0.02)} 100%)`,
-                      backdropFilter: 'blur(15px) saturate(180%)',
-                      WebkitBackdropFilter: 'blur(15px) saturate(180%)',
-                      borderBottom: `2px solid ${alpha(theme.palette.primary.main, 0.12)}`,
+                      py: 2,
+                      bgcolor: alpha(theme.palette.primary.main, 0.02),
+                      borderBottom: `2px solid ${alpha(theme.palette.primary.main, 0.1)}`,
                       cursor: header.column.getCanSort() ? 'pointer' : 'default',
-                      position: 'relative',
-                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                      '&::before': {
-                        content: '""',
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        height: '1px',
-                        background: `linear-gradient(90deg, transparent, ${alpha(theme.palette.common.white, 0.1)}, transparent)`,
-                      },
                       '&:hover': header.column.getCanSort() ? {
-                        background: `linear-gradient(145deg, ${alpha(theme.palette.primary.main, 0.08)} 0%, ${alpha(theme.palette.primary.main, 0.04)} 100%)`,
-                        transform: 'translateY(-1px)',
-                        '&::after': {
-                          content: '""',
-                          position: 'absolute',
-                          bottom: 0,
-                          left: 0,
-                          right: 0,
-                          height: '2px',
-                          background: `linear-gradient(90deg, transparent, ${theme.palette.primary.main}, transparent)`,
-                          opacity: 0.6,
-                        }
+                        bgcolor: alpha(theme.palette.primary.main, 0.05),
                       } : {}
                     }}
                   >
                     <Stack direction="row" alignItems="center" spacing={1}>
-                      <Typography 
-                        variant="subtitle2" 
-                        sx={{ 
-                          fontWeight: 700, 
-                          color: theme.palette.text.primary,
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.5px',
-                          fontSize: '0.8rem'
-                        }}
-                      >
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700, color: theme.palette.text.primary }}>
                         {flexRender(header.column.columnDef.header, header.getContext())}
                       </Typography>
                       {header.column.getCanSort() && (
-                        <Box 
-                          sx={{ 
-                            display: 'flex', 
-                            flexDirection: 'column',
-                            opacity: header.column.getIsSorted() ? 1 : 0.3,
-                            transition: 'all 0.3s ease',
-                            transform: header.column.getIsSorted() ? 'scale(1.1)' : 'scale(1)',
-                          }}
-                        >
+                        <Box sx={{ 
+                          display: 'flex', 
+                          flexDirection: 'column',
+                          opacity: header.column.getIsSorted() ? 1 : 0.3,
+                          transition: 'opacity 0.2s ease'
+                        }}>
                           {{ 
                             asc: <ArrowUpward fontSize="small" sx={{ color: theme.palette.primary.main }} />, 
                             desc: <ArrowDownward fontSize="small" sx={{ color: theme.palette.primary.main }} /> 
                           }[header.column.getIsSorted()] ?? 
                           <Stack spacing={-0.5}>
-                            <ArrowUpward sx={{ fontSize: 14 }} />
-                            <ArrowDownward sx={{ fontSize: 14 }} />
+                            <ArrowUpward fontSize="small" />
+                            <ArrowDownward fontSize="small" />
                           </Stack>
                           }
                         </Box>
@@ -892,54 +814,10 @@ const EnhancedTable = ({ table, isLoading, solicitudesData, navigate, onDownload
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell 
-                  colSpan={table.getHeaderGroups()[0].headers.length} 
-                  align="center" 
-                  sx={{ 
-                    py: 12,
-                    background: `linear-gradient(145deg, ${alpha(theme.palette.background.paper, 0.4)} 0%, ${alpha(theme.palette.background.paper, 0.2)} 100%)`,
-                    backdropFilter: 'blur(15px)',
-                    border: 'none',
-                  }}
-                >
-                  <Stack alignItems="center" spacing={3}>
-                    <Box
-                      sx={{
-                        position: 'relative',
-                        width: 80,
-                        height: 80,
-                      }}
-                    >
-                      <CircularProgress 
-                        size={80} 
-                        thickness={3}
-                        sx={{
-                          color: theme.palette.primary.main,
-                          position: 'absolute',
-                        }}
-                      />
-                      <CircularProgress 
-                        size={60} 
-                        thickness={3}
-                        sx={{
-                          color: theme.palette.secondary.main,
-                          position: 'absolute',
-                          left: 10,
-                          top: 10,
-                        }}
-                      />
-                    </Box>
-                    <Typography 
-                      variant="h6" 
-                      color="text.secondary"
-                      sx={{
-                        fontWeight: 600,
-                        background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
-                        backgroundClip: 'text',
-                        WebkitBackgroundClip: 'text',
-                        color: 'transparent',
-                      }}
-                    >
+                <TableCell colSpan={table.getHeaderGroups()[0].headers.length} align="center" sx={{ py: 8 }}>
+                  <Stack alignItems="center" spacing={2}>
+                    <CircularProgress size={40} thickness={4} />
+                    <Typography variant="body2" color="text.secondary">
                       Cargando datos...
                     </Typography>
                   </Stack>
@@ -947,190 +825,50 @@ const EnhancedTable = ({ table, isLoading, solicitudesData, navigate, onDownload
               </TableRow>
             ) : table.getRowModel().rows.length === 0 ? (
               <TableRow>
-                <TableCell 
-                  colSpan={table.getHeaderGroups()[0].headers.length} 
-                  align="center" 
-                  sx={{ 
-                    py: 12,
-                    background: `linear-gradient(145deg, ${alpha(theme.palette.background.paper, 0.4)} 0%, ${alpha(theme.palette.background.paper, 0.2)} 100%)`,
-                    backdropFilter: 'blur(15px)',
-                    border: 'none',
-                  }}
-                >
-                  <Fade in={true} timeout={800}>
-                    <Stack alignItems="center" spacing={3}>
-                      <Box
-                        sx={{
-                          width: 100,
-                          height: 100,
-                          borderRadius: '50%',
-                          background: `linear-gradient(145deg, ${alpha(theme.palette.primary.main, 0.1)}, ${alpha(theme.palette.secondary.main, 0.1)})`,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          backdropFilter: 'blur(10px)',
-                          border: `2px solid ${alpha(theme.palette.primary.main, 0.2)}`,
-                          boxShadow: `0 8px 32px ${alpha(theme.palette.primary.main, 0.15)}`,
-                        }}
-                      >
-                        <AssignmentIcon 
-                          sx={{ 
-                            fontSize: 48, 
-                            color: alpha(theme.palette.text.disabled, 0.5)
-                          }} 
-                        />
-                      </Box>
-                      <Box textAlign="center">
-                        <Typography 
-                          variant="h6" 
-                          color="text.secondary"
-                          sx={{ fontWeight: 600, mb: 1 }}
-                        >
-                          No se encontraron registros
-                        </Typography>
-                        <Typography variant="body2" color="text.disabled">
-                          Intenta ajustar los filtros de búsqueda
-                        </Typography>
-                      </Box>
-                    </Stack>
-                  </Fade>
+                <TableCell colSpan={table.getHeaderGroups()[0].headers.length} align="center" sx={{ py: 8 }}>
+                  <Stack alignItems="center" spacing={2}>
+                    <AssignmentIcon sx={{ fontSize: 48, color: theme.palette.text.disabled }} />
+                    <Typography variant="h6" color="text.secondary">
+                      No se encontraron registros
+                    </Typography>
+                    <Typography variant="body2" color="text.disabled">
+                      Intenta ajustar los filtros de búsqueda
+                    </Typography>
+                  </Stack>
                 </TableCell>
               </TableRow>
             ) : (
-              table.getRowModel().rows.map((row, index) => (
+              table.getRowModel().rows.map((row) => (
                 <Fragment key={row.id}>
-                  <TableRow 
-                    sx={{ 
-                      position: 'relative',
-                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                      '&::before': {
-                        content: '""',
-                        position: 'absolute',
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        height: '1px',
-                        background: `linear-gradient(90deg, transparent, ${alpha(theme.palette.divider, 0.3)}, transparent)`,
-                        opacity: 1,
-                        transition: 'opacity 0.3s ease',
-                      },
-                      '&:hover': {
-                        background: `linear-gradient(145deg, ${alpha(theme.palette.primary.main, 0.04)} 0%, ${alpha(theme.palette.secondary.main, 0.02)} 100%)`,
-                        backdropFilter: 'blur(10px)',
-                        transform: 'scale(1.001)',
-                        boxShadow: `
-                          0 4px 20px ${alpha(theme.palette.primary.main, 0.08)},
-                          inset 0 1px 0 ${alpha(theme.palette.common.white, 0.1)}
-                        `,
-                        '&::before': {
-                          opacity: 0,
+                    <TableRow 
+                      sx={{ 
+                        '& > td': { borderBottom: 'unset' },
+                        '&:hover': { 
+                          bgcolor: alpha(theme.palette.primary.main, 0.02),
                         },
-                        '&::after': {
-                          content: '""',
-                          position: 'absolute',
-                          left: 0,
-                          top: 0,
-                          bottom: 0,
-                          width: '4px',
-                          background: `linear-gradient(180deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
-                          borderRadius: '0 4px 4px 0',
-                          boxShadow: `0 0 20px ${alpha(theme.palette.primary.main, 0.5)}`,
-                        }
-                      },
-                      ...(row.getIsExpanded() && {
-                        background: `linear-gradient(145deg, ${alpha(theme.palette.primary.main, 0.06)} 0%, ${alpha(theme.palette.secondary.main, 0.03)} 100%)`,
-                        backdropFilter: 'blur(15px)',
-                        boxShadow: `
-                          inset 0 2px 8px ${alpha(theme.palette.primary.main, 0.1)},
-                          0 4px 20px ${alpha(theme.palette.primary.main, 0.08)}
-                        `,
-                        '&::after': {
-                          content: '""',
-                          position: 'absolute',
-                          left: 0,
-                          top: 0,
-                          bottom: 0,
-                          width: '4px',
-                          background: `linear-gradient(180deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
-                          borderRadius: '0 4px 4px 0',
-                          boxShadow: `0 0 20px ${alpha(theme.palette.primary.main, 0.5)}`,
-                        }
-                      })
-                    }}
-                  >
+                      }}
+                    >
                     {row.getVisibleCells().map(cell => (
                       <TableCell 
                         key={cell.id}
                         sx={{ 
                           py: 2,
-                          px: 3,
-                          borderBottom: 'none',
                         }}
                       >
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </TableCell>
                     ))}
-                  </TableRow>
-                  {row.getIsExpanded() && (
-                    <TableRow>
-                      <TableCell 
-                        colSpan={row.getVisibleCells().length} 
-                        sx={{ 
-                          p: 0,
-                          background: `linear-gradient(145deg, ${alpha(theme.palette.background.paper, 0.6)} 0%, ${alpha(theme.palette.background.paper, 0.4)} 100%)`,
-                          backdropFilter: 'blur(25px) saturate(180%)',
-                          WebkitBackdropFilter: 'blur(25px) saturate(180%)',
-                          borderTop: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
-                          borderBottom: `2px solid ${alpha(theme.palette.primary.main, 0.12)}`,
-                          position: 'relative',
-                          '&::before': {
-                            content: '""',
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            height: '1px',
-                            background: `linear-gradient(90deg, transparent, ${alpha(theme.palette.primary.main, 0.3)}, transparent)`,
-                          },
-                          '&::after': {
-                            content: '""',
-                            position: 'absolute',
-                            bottom: 0,
-                            left: 0,
-                            right: 0,
-                            height: '1px',
-                            background: `linear-gradient(90deg, transparent, ${alpha(theme.palette.secondary.main, 0.3)}, transparent)`,
-                          }
-                        }}
-                      >
-                        <Collapse in={row.getIsExpanded()} timeout={400}>
-                          <Box
-                            sx={{
-                              p: 3,
-                              background: `linear-gradient(145deg, ${alpha(theme.palette.background.paper, 0.3)} 0%, transparent 100%)`,
-                              position: 'relative',
-                              '&::before': {
-                                content: '""',
-                                position: 'absolute',
-                                top: 0,
-                                left: 0,
-                                width: '4px',
-                                height: '100%',
-                                background: `linear-gradient(180deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
-                                borderRadius: '0 2px 2px 0',
-                                opacity: 0.5,
-                              }
-                            }}
-                          >
-                            {row.original.tipoSolicitud.startsWith('Solicitud de Insolvencia') ?
-                              <InsolvenciaDetails solicitud={row.original} onUploadSuccess={onUploadSuccess} /> :
-                              <ConciliacionDetails solicitud={row.original} onUploadSuccess={onUploadSuccess} />
-                            }
-                          </Box>
-                        </Collapse>
-                      </TableCell>
                     </TableRow>
-                  )}
+                    {row.getIsExpanded() && (
+                        <TableRow>
+                            <TableCell colSpan={row.getVisibleCells().length} sx={{ p: 0 }}>
+                                {row.original.tipoSolicitud.startsWith('Solicitud de Insolvencia') ?
+                                    <InsolvenciaDetails solicitud={row.original} onUploadSuccess={onUploadSuccess} /> :
+                                    <ConciliacionDetails solicitud={row.original} onUploadSuccess={onUploadSuccess} />
+                                }
+                            </TableCell>
+                        </TableRow>
+                    )}
                 </Fragment>
               ))
             )}
@@ -1139,32 +877,8 @@ const EnhancedTable = ({ table, isLoading, solicitudesData, navigate, onDownload
       </TableContainer>
 
       {/* Enhanced Pagination */}
-      <Divider 
-        sx={{ 
-          borderColor: 'transparent',
-          height: '2px',
-          background: `linear-gradient(90deg, transparent, ${alpha(theme.palette.primary.main, 0.15)}, transparent)`,
-        }} 
-      />
-      <Box
-        sx={{
-          background: `linear-gradient(145deg, ${alpha(theme.palette.background.paper, 0.6)} 0%, ${alpha(theme.palette.background.paper, 0.4)} 100%)`,
-          backdropFilter: 'blur(15px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(15px) saturate(180%)',
-          borderTop: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
-          position: 'relative',
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: '1px',
-            background: `linear-gradient(90deg, transparent, ${alpha(theme.palette.common.white, 0.1)}, transparent)`,
-          }
-        }}
-      >
-        <TablePagination
+      <Divider />
+      <TablePagination
           component="div"
           count={solicitudesData?.totalRows ?? 0}
           page={table.getState().pagination.pageIndex}
@@ -1177,53 +891,17 @@ const EnhancedTable = ({ table, isLoading, solicitudesData, navigate, onDownload
             `${from}-${to} de ${count !== -1 ? count : `más de ${to}`}`
           }
           sx={{
-            '& .MuiTablePagination-toolbar': {
-              px: 3,
-              py: 2,
-            },
-            '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
-              fontWeight: 600,
-              color: theme.palette.text.secondary,
-            },
-            '& .MuiTablePagination-select': {
-              borderRadius: 2,
-              background: `linear-gradient(145deg, ${alpha(theme.palette.background.paper, 0.6)} 0%, ${alpha(theme.palette.background.paper, 0.4)} 100%)`,
-              backdropFilter: 'blur(10px)',
-              border: `1px solid ${alpha(theme.palette.primary.main, 0.15)}`,
-              px: 1.5,
-              py: 0.5,
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              '&:hover': {
-                background: `linear-gradient(145deg, ${alpha(theme.palette.primary.main, 0.1)} 0%, ${alpha(theme.palette.primary.main, 0.05)} 100%)`,
-                borderColor: alpha(theme.palette.primary.main, 0.3),
-                transform: 'translateY(-1px)',
-                boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.15)}`,
-              }
-            },
+            borderTop: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
             '& .MuiTablePagination-actions': {
               '& button': {
                 borderRadius: 2,
-                background: `linear-gradient(145deg, ${alpha(theme.palette.background.paper, 0.6)} 0%, ${alpha(theme.palette.background.paper, 0.4)} 100%)`,
-                backdropFilter: 'blur(10px)',
-                border: `1px solid ${alpha(theme.palette.primary.main, 0.15)}`,
-                margin: '0 4px',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                '&:hover:not(.Mui-disabled)': {
-                  background: `linear-gradient(145deg, ${alpha(theme.palette.primary.main, 0.12)} 0%, ${alpha(theme.palette.primary.main, 0.08)} 100%)`,
-                  borderColor: alpha(theme.palette.primary.main, 0.3),
-                  transform: 'translateY(-2px)',
-                  boxShadow: `0 6px 16px ${alpha(theme.palette.primary.main, 0.2)}`,
-                },
-                '&.Mui-disabled': {
-                  opacity: 0.3,
-                  background: alpha(theme.palette.background.paper, 0.2),
-                  borderColor: alpha(theme.palette.divider, 0.1),
+                '&:hover': {
+                  bgcolor: alpha(theme.palette.primary.main, 0.1),
                 }
               }
             }
           }}
         />
-      </Box>
     </GlassCard>
   );
 };
