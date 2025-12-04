@@ -2,5 +2,8 @@
   "dependencies": {
     "@types/react-signature-canvas": "^1.0.7",
     "react-signature-canvas": "^1.1.0-alpha.2"
+  },
+  "devDependencies": {
+    "baseline-browser-mapping": "^2.9.0"
   }
 }

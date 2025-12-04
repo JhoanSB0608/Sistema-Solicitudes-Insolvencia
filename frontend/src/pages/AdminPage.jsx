@@ -18,7 +18,7 @@ import {
   Box, Grid, Paper, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, 
   Tabs, Tab, CircularProgress, Alert, Stack, IconButton, TablePagination, TextField, useTheme,
   alpha, Card, CardContent, Avatar, Container, Tooltip, Chip, Fade, Grow, Slide, Button,
-  InputAdornment, ButtonGroup, Badge, Divider, Dialog, DialogTitle, DialogContent, List, ListItem, ListItemText, ListItemIcon, Accordion, AccordionSummary, AccordionDetails, TableFooter
+  InputAdornment, ButtonGroup, Badge, Divider, Dialog, DialogTitle, DialogContent, List, ListItem, ListItemText, ListItemIcon, Accordion, AccordionSummary, AccordionDetails, TableFooter, Collapse
 } from '@mui/material';
 import {
   PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, 
