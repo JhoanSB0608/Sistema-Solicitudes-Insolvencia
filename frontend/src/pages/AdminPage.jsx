@@ -481,144 +481,287 @@ const EnhancedAreaChart = ({ data }) => {
   );
 };
 
-const DetailItem = ({ label, value }) => (
-    <Grid item xs={12} sm={6}>
-        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
-            {label}
-        </Typography>
-        <Typography variant="body1" sx={{ fontWeight: 600 }}>
-            {value || 'N/A'}
-        </Typography>
-    </Grid>
-);
-
-const DeudorModal = ({ open, onClose, deudor }) => {
-    const theme = useTheme();
-    if (!deudor) return null;
-    return (
-        <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth PaperProps={{
-            sx: {
-                background: `linear-gradient(145deg, ${alpha(theme.palette.background.paper, 0.8)} 0%, ${alpha(theme.palette.background.paper, 0.6)} 100%)`,
-                backdropFilter: 'blur(20px)',
-                border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
-                borderRadius: 3,
-            }
-        }}>
-            <DialogTitle>
-                Información del Deudor
-                <IconButton onClick={onClose} sx={{ position: 'absolute', right: 8, top: 8 }}>
-                    <CloseIcon />
-                </IconButton>
-            </DialogTitle>
-            <DialogContent dividers>
-                <Grid container spacing={2}>
-                    <Grid item xs={12}>
-                        <Typography variant="h6">{deudor.nombreCompleto}</Typography>
-                    </Grid>
-                    <DetailItem label="Tipo y Número de Identificación" value={`${deudor.tipoIdentificacion} - ${deudor.cedula}`} />
-                    <DetailItem label="Lugar de Expedición" value={`${deudor.ciudadExpedicion}, ${deudor.departamentoExpedicion}`} />
-                    <DetailItem label="Teléfono" value={deudor.telefono} />
-                    <DetailItem label="Email" value={deudor.email} />
-                    <DetailItem label="País de Origen" value={deudor.paisOrigen} />
-                    <DetailItem label="Fecha de Nacimiento" value={new Date(deudor.fechaNacimiento).toLocaleDateString()} />
-                    <DetailItem label="Género" value={deudor.genero} />
-                    <DetailItem label="Estado Civil" value={deudor.estadoCivil} />
-                    <DetailItem label="Etnia" value={deudor.etnia} />
-                    <DetailItem label="Discapacidad" value={deudor.discapacidad} />
-                    <DetailItem label="Domicilio" value={`${deudor.domicilio}, ${deudor.ciudad}, ${deudor.departamento}`} />
-                    <DetailItem label="Tipo Persona" value={deudor.tipoPersonaNatural} />
-                </Grid>
-            </DialogContent>
-        </Dialog>
-    );
+const GlassModal = ({ open, onClose, title, children, maxWidth = "md" }) => {
+  const theme = useTheme();
+  return (
+    <Dialog 
+      open={open} 
+      onClose={onClose} 
+      maxWidth={maxWidth} 
+      fullWidth 
+      PaperProps={{
+        sx: {
+          background: `linear-gradient(145deg, ${alpha(theme.palette.background.paper, 0.85)} 0%, ${alpha(theme.palette.background.paper, 0.7)} 100%)`,
+          backdropFilter: 'blur(40px) saturate(180%)',
+          border: `1px solid ${alpha(theme.palette.primary.main, 0.15)}`,
+          borderRadius: 4,
+          boxShadow: `0 8px 32px ${alpha(theme.palette.common.black, 0.37)}`,
+          overflow: 'hidden',
+        }
+      }}
+      BackdropProps={{
+        sx: {
+          backdropFilter: 'blur(8px)',
+          backgroundColor: alpha(theme.palette.common.black, 0.5),
+        }
+      }}
+    >
+      <DialogTitle 
+        sx={{ 
+          borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+          background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.08)} 0%, ${alpha(theme.palette.secondary.main, 0.08)} 100%)`,
+          py: 3,
+        }}
+      >
+        <Stack direction="row" alignItems="center" justifyContent="space-between">
+          <Typography variant="h5" sx={{ fontWeight: 700 }}>
+            {title}
+          </Typography>
+          <IconButton 
+            onClick={onClose}
+            sx={{
+              bgcolor: alpha(theme.palette.error.main, 0.1),
+              '&:hover': {
+                bgcolor: alpha(theme.palette.error.main, 0.2),
+                transform: 'rotate(90deg)',
+              },
+              transition: 'all 0.3s ease',
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </Stack>
+      </DialogTitle>
+      <DialogContent 
+        sx={{ 
+          py: 3,
+          background: `linear-gradient(to bottom, ${alpha(theme.palette.background.default, 0.3)} 0%, transparent 100%)`,
+        }}
+      >
+        {children}
+      </DialogContent>
+    </Dialog>
+  );
 };
 
+const DetailItem = ({ label, value, icon: Icon }) => {
+  const theme = useTheme();
+  return (
+    <Grid item xs={12} sm={6}>
+      <Box 
+        sx={{ 
+          p: 2, 
+          borderRadius: 2,
+          background: `linear-gradient(135deg, ${alpha(theme.palette.background.paper, 0.4)} 0%, ${alpha(theme.palette.background.paper, 0.1)} 100%)`,
+          border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+          transition: 'all 0.3s ease',
+          '&:hover': {
+            transform: 'translateY(-2px)',
+            boxShadow: `0 4px 16px ${alpha(theme.palette.primary.main, 0.15)}`,
+            border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
+          }
+        }}
+      >
+        <Stack direction="row" spacing={1.5} alignItems="center">
+          {Icon && (
+            <Avatar 
+              sx={{ 
+                width: 32, 
+                height: 32, 
+                bgcolor: alpha(theme.palette.primary.main, 0.1),
+                color: theme.palette.primary.main
+              }}
+            >
+              <Icon sx={{ fontSize: 18 }} />
+            </Avatar>
+          )}
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              {label}
+            </Typography>
+            <Typography variant="body1" sx={{ fontWeight: 700, mt: 0.5 }}>
+              {value || 'N/A'}
+            </Typography>
+          </Box>
+        </Stack>
+      </Box>
+    </Grid>
+  );
+};
+
+const DeudorModal = ({ open, onClose, deudor }) => {
+  if (!deudor) return null;
+  return (
+    <GlassModal open={open} onClose={onClose} title="Información del Deudor" maxWidth="lg">
+      <Stack spacing={3}>
+        <Box 
+          sx={{ 
+            p: 3, 
+            borderRadius: 3,
+            background: `linear-gradient(135deg, ${alpha('#1976d2', 0.1)} 0%, ${alpha('#9c27b0', 0.1)} 100%)`,
+            border: `1px solid ${alpha('#1976d2', 0.2)}`,
+          }}
+        >
+          <Stack direction="row" alignItems="center" spacing={2}>
+            <Avatar 
+              sx={{ 
+                width: 64, 
+                height: 64, 
+                bgcolor: alpha('#1976d2', 0.2),
+                fontSize: '1.5rem',
+                fontWeight: 800,
+              }}
+            >
+              {deudor.nombreCompleto?.charAt(0) || 'D'}
+            </Avatar>
+            <Box>
+              <Typography variant="h5" sx={{ fontWeight: 800 }}>
+                {deudor.nombreCompleto}
+              </Typography>
+              <Chip 
+                label={`${deudor.tipoIdentificacion} - ${deudor.cedula}`}
+                size="small"
+                sx={{ mt: 1 }}
+              />
+            </Box>
+          </Stack>
+        </Box>
+
+        <Grid container spacing={2}>
+          <DetailItem label="Lugar de Expedición" value={`${deudor.ciudadExpedicion}, ${deudor.departamentoExpedicion}`} icon={Person} />
+          <DetailItem label="Teléfono" value={deudor.telefono} icon={Person} />
+          <DetailItem label="Email" value={deudor.email} icon={Person} />
+          <DetailItem label="País de Origen" value={deudor.paisOrigen} icon={Person} />
+          <DetailItem label="Fecha de Nacimiento" value={new Date(deudor.fechaNacimiento).toLocaleDateString()} icon={Person} />
+          <DetailItem label="Género" value={deudor.genero} icon={Person} />
+          <DetailItem label="Estado Civil" value={deudor.estadoCivil} icon={Person} />
+          <DetailItem label="Etnia" value={deudor.etnia} icon={Person} />
+          <DetailItem label="Discapacidad" value={deudor.discapacidad} icon={Person} />
+          <DetailItem label="Domicilio" value={`${deudor.domicilio}, ${deudor.ciudad}, ${deudor.departamento}`} icon={Person} />
+          <DetailItem label="Tipo Persona" value={deudor.tipoPersonaNatural} icon={Person} />
+        </Grid>
+      </Stack>
+    </GlassModal>
+  );
+};
+
+
 const AcreedoresModal = ({ open, onClose, acreedores }) => {
-    const theme = useTheme();
-    if (!acreedores) return null;
-    return (
-        <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth PaperProps={{
-            sx: {
-                background: `linear-gradient(145deg, ${alpha(theme.palette.background.paper, 0.8)} 0%, ${alpha(theme.palette.background.paper, 0.6)} 100%)`,
-                backdropFilter: 'blur(20px)',
-                border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
-                borderRadius: 3,
-            }
-        }}>
-            <DialogTitle>
-                Acreedores
-                <IconButton onClick={onClose} sx={{ position: 'absolute', right: 8, top: 8 }}>
-                    <CloseIcon />
-                </IconButton>
-            </DialogTitle>
-            <DialogContent dividers>
-                <TableContainer>
-                    <Table>
-                        <TableHead>
-                            <TableRow>
-                                <TableCell>Nombre del Acreedor</TableCell>
-                                <TableCell>Documento</TableCell>
-                                <TableCell align="right">Capital</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {acreedores.map((item, index) => (
-                                <TableRow key={index}>
-                                    <TableCell>{item.acreedor?.nombreCompleto || 'N/A'}</TableCell>
-                                    <TableCell>{`${item.acreedor?.tipoIdentificacion || ''} - ${item.acreedor?.numeroIdentificacion || ''}`}</TableCell>
-                                    <TableCell align="right">${item.capital?.toLocaleString() || 0}</TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
-            </DialogContent>
-        </Dialog>
-    );
+  const theme = useTheme();
+  if (!acreedores) return null;
+  return (
+    <GlassModal open={open} onClose={onClose} title="Acreedores" maxWidth="lg">
+      <TableContainer 
+        sx={{ 
+          borderRadius: 3,
+          background: `linear-gradient(135deg, ${alpha(theme.palette.background.paper, 0.4)} 0%, ${alpha(theme.palette.background.paper, 0.1)} 100%)`,
+          border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+        }}
+      >
+        <Table>
+          <TableHead>
+            <TableRow sx={{ bgcolor: alpha(theme.palette.primary.main, 0.05) }}>
+              <TableCell sx={{ fontWeight: 700, borderBottom: `2px solid ${alpha(theme.palette.primary.main, 0.1)}` }}>Nombre del Acreedor</TableCell>
+              <TableCell sx={{ fontWeight: 700, borderBottom: `2px solid ${alpha(theme.palette.primary.main, 0.1)}` }}>Documento</TableCell>
+              <TableCell align="right" sx={{ fontWeight: 700, borderBottom: `2px solid ${alpha(theme.palette.primary.main, 0.1)}` }}>Capital</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {acreedores.map((item, index) => (
+              <TableRow 
+                key={index}
+                sx={{
+                  '&:hover': {
+                    bgcolor: alpha(theme.palette.primary.main, 0.03),
+                  },
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <TableCell>{item.acreedor?.nombreCompleto || 'N/A'}</TableCell>
+                <TableCell>{`${item.acreedor?.tipoIdentificacion || ''} - ${item.acreedor?.numeroIdentificacion || ''}`}</TableCell>
+                <TableCell align="right">
+                  <Chip 
+                    label={`$${item.capital?.toLocaleString() || 0}`}
+                    color="success"
+                    size="small"
+                    sx={{ fontWeight: 700 }}
+                  />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </GlassModal>
+  );
 };
 
 const InvolucradosModal = ({ open, onClose, involucrados, title }) => {
-    const theme = useTheme();
-    if (!involucrados) return null;
-    return (
-        <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth PaperProps={{
-            sx: {
-                background: `linear-gradient(145deg, ${alpha(theme.palette.background.paper, 0.8)} 0%, ${alpha(theme.palette.background.paper, 0.6)} 100%)`,
-                backdropFilter: 'blur(20px)',
-                border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
-                borderRadius: 3,
-            }
-        }}>
-            <DialogTitle>
-                {title}
-                <IconButton onClick={onClose} sx={{ position: 'absolute', right: 8, top: 8 }}>
-                    <CloseIcon />
-                </IconButton>
-            </DialogTitle>
-            <DialogContent dividers>
-                {involucrados.map((p, index) => (
-                    <Box key={index} sx={{ mb: 2, p: 2, border: '1px solid #ddd', borderRadius: 2 }}>
-                        <Typography variant="h6">{`${p.primerNombre} ${p.segundoNombre || ''} ${p.primerApellido} ${p.segundoApellido || ''}`}</Typography>
-                        <Grid container spacing={2}>
-                            <DetailItem label="Tipo Involucrado" value={p.tipoInvolucrado} />
-                            <DetailItem label="Identificación" value={`${p.tipoIdentificacion} ${p.numeroIdentificacion}`} />
-                            <DetailItem label="Lugar de Expedición" value={`${p.ciudadExpedicion}, ${p.departamentoExpedicion}`} />
-                            <DetailItem label="Teléfono" value={p.telefono} />
-                            <DetailItem label="Email" value={p.email} />
-                            <DetailItem label="País de Origen" value={p.paisOrigen} />
-                            <DetailItem label="Fecha de Nacimiento" value={new Date(p.fechaNacimiento).toLocaleDateString()} />
-                            <DetailItem label="Género" value={p.genero} />
-                            <DetailItem label="Estado Civil" value={p.estadoCivil} />
-                            <DetailItem label="Domicilio" value={`${p.domicilio}, ${p.ciudad}, ${p.departamento}`} />
-                        </Grid>
-                    </Box>
-                ))}
-            </DialogContent>
-        </Dialog>
-    );
+  const theme = useTheme();
+  if (!involucrados) return null;
+  return (
+    <GlassModal open={open} onClose={onClose} title={title} maxWidth="lg">
+      <Stack spacing={3}>
+        {involucrados.map((p, index) => (
+          <Box 
+            key={index} 
+            sx={{ 
+              p: 3, 
+              borderRadius: 3,
+              background: `linear-gradient(135deg, ${alpha(theme.palette.background.paper, 0.6)} 0%, ${alpha(theme.palette.background.paper, 0.3)} 100%)`,
+              border: `1px solid ${alpha(theme.palette.divider, 0.15)}`,
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                transform: 'translateX(8px)',
+                boxShadow: `0 8px 24px ${alpha(theme.palette.primary.main, 0.2)}`,
+              }
+            }}
+          >
+            <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
+              <Avatar 
+                sx={{ 
+                  width: 56, 
+                  height: 56, 
+                  bgcolor: alpha(theme.palette.secondary.main, 0.15),
+                  color: theme.palette.secondary.main,
+                  fontWeight: 800,
+                  fontSize: '1.25rem',
+                }}
+              >
+                {p.primerNombre?.charAt(0)}{p.primerApellido?.charAt(0)}
+              </Avatar>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 800 }}>
+                  {`${p.primerNombre} ${p.segundoNombre || ''} ${p.primerApellido} ${p.segundoApellido || ''}`}
+                </Typography>
+                <Chip 
+                  label={p.tipoInvolucrado}
+                  size="small"
+                  color="primary"
+                  sx={{ mt: 0.5 }}
+                />
+              </Box>
+            </Stack>
+            <Grid container spacing={2}>
+              <DetailItem label="Identificación" value={`${p.tipoIdentificacion} ${p.numeroIdentificacion}`} />
+              <DetailItem label="Lugar de Expedición" value={`${p.ciudadExpedicion}, ${p.departamentoExpedicion}`} />
+              <DetailItem label="Teléfono" value={p.telefono} />
+              <DetailItem label="Email" value={p.email} />
+              <DetailItem label="País de Origen" value={p.paisOrigen} />
+              <DetailItem label="Fecha de Nacimiento" value={new Date(p.fechaNacimiento).toLocaleDateString()} />
+              <DetailItem label="Género" value={p.genero} />
+              <DetailItem label="Estado Civil" value={p.estadoCivil} />
+              <DetailItem label="Domicilio" value={`${p.domicilio}, ${p.ciudad}, ${p.departamento}`} />
+            </Grid>
+          </Box>
+        ))}
+      </Stack>
+    </GlassModal>
+  );
 };
 
 const AnexosSection = ({ anexos, solicitudId, tipoSolicitud, onUploadSuccess }) => {
+  const theme = useTheme();
   const fileInputRef = React.useRef(null);
   const { mutate: uploadFile, isLoading } = useMutation({
     mutationFn: uploadAnexo,
@@ -652,91 +795,375 @@ const AnexosSection = ({ anexos, solicitudId, tipoSolicitud, onUploadSuccess }) 
     }
   }
 
-
   return (
-      <Box>
-          <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileChange}
-              style={{ display: 'none' }}
-          />
-          <Button
-              startIcon={<CloudUploadIcon />}
-              variant="contained"
-              onClick={() => fileInputRef.current.click()}
-              disabled={isLoading}
-              sx={{ mb: 2 }}
+    <Box>
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        style={{ display: 'none' }}
+      />
+      <Button
+        startIcon={<CloudUploadIcon />}
+        variant="contained"
+        onClick={() => fileInputRef.current.click()}
+        disabled={isLoading}
+        sx={{ 
+          mb: 3,
+          borderRadius: 3,
+          textTransform: 'none',
+          fontWeight: 600,
+          py: 1.5,
+          background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+          boxShadow: `0 4px 16px ${alpha(theme.palette.primary.main, 0.3)}`,
+          '&:hover': {
+            transform: 'translateY(-2px)',
+            boxShadow: `0 6px 20px ${alpha(theme.palette.primary.main, 0.4)}`,
+          },
+          transition: 'all 0.3s ease',
+        }}
+      >
+        {isLoading ? 'Subiendo...' : 'Subir Documento'}
+      </Button>
+      <List>
+        {anexos?.map((anexo, index) => (
+          <ListItem 
+            key={index}
+            sx={{
+              mb: 1,
+              borderRadius: 2,
+              background: `linear-gradient(135deg, ${alpha(theme.palette.background.paper, 0.4)} 0%, ${alpha(theme.palette.background.paper, 0.1)} 100%)`,
+              border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+              '&:hover': {
+                border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
+                transform: 'translateX(4px)',
+              },
+              transition: 'all 0.3s ease',
+            }}
+            secondaryAction={
+              <IconButton 
+                edge="end" 
+                onClick={() => handleDownload(anexo)}
+                sx={{
+                  bgcolor: alpha(theme.palette.success.main, 0.1),
+                  '&:hover': {
+                    bgcolor: alpha(theme.palette.success.main, 0.2),
+                    transform: 'scale(1.1)',
+                  },
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <DownloadIcon />
+              </IconButton>
+            }
           >
-              {isLoading ? 'Subiendo...' : 'Subir Documento'}
-          </Button>
-          <List>
-              {anexos?.map((anexo, index) => (
-                  <ListItem key={index} secondaryAction={
-                      <IconButton edge="end" aria-label="download" onClick={() => handleDownload(anexo)}>
-                          <DownloadIcon />
-                      </IconButton>
-                  }>
-                      <ListItemIcon><Description /></ListItemIcon>
-                      <ListItemText primary={anexo.filename} secondary={anexo.descripcion || `${(anexo.size / 1024).toFixed(2)} KB`} />
-                  </ListItem>
-              ))}
-          </List>
-      </Box>
+            <ListItemIcon>
+              <Avatar sx={{ bgcolor: alpha(theme.palette.info.main, 0.1), color: theme.palette.info.main }}>
+                <Description />
+              </Avatar>
+            </ListItemIcon>
+            <ListItemText 
+              primary={<Typography sx={{ fontWeight: 600 }}>{anexo.filename}</Typography>}
+              secondary={anexo.descripcion || `${(anexo.size / 1024).toFixed(2)} KB`} 
+            />
+          </ListItem>
+        ))}
+      </List>
+    </Box>
   );
 };
 
-
-const InsolvenciaDetails = ({ solicitud, onUploadSuccess }) => {
-    const gastos = solicitud.informacionFinanciera?.gastosPersonales || {};
-    return (
-        <Box sx={{ p: 2, backgroundColor: '#f9f9f9' }}>
-            <Accordion><AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography>Causas</Typography></AccordionSummary><AccordionDetails>
-                {solicitud.causas?.lista.map((c, i) => <p key={i}><b>{c.tipoCausa}:</b> {c.descripcionCausa}</p>)}
-            </AccordionDetails></Accordion>
-            <Accordion><AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography>Bienes Muebles</Typography></AccordionSummary><AccordionDetails>
-                {solicitud.bienesMuebles?.map((b, i) => <p key={i}>{b.clasificacion} - {b.descripcion} ({b.marca}): ${b.avaluoComercial?.toLocaleString()}</p>)}
-            </AccordionDetails></Accordion>
-            <Accordion><AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography>Bienes Inmuebles</Typography></AccordionSummary><AccordionDetails>
-                 {solicitud.bienesInmuebles?.map((b, i) => <p key={i}>{b.descripcion} - Matrícula: {b.matriculaInmobiliaria}</p>)}
-            </AccordionDetails></Accordion>
-            <Accordion><AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography>Procesos Judiciales</Typography></AccordionSummary><AccordionDetails>
-                {solicitud.informacionFinanciera?.procesosJudiciales?.map((p, i) => <p key={i}>{p.tipoProceso} vs {p.demandado}</p>)}
-            </AccordionDetails></Accordion>
-            <Accordion><AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography>Obligaciones Alimentarias</Typography></AccordionSummary><AccordionDetails>
-                {solicitud.informacionFinanciera?.obligacionesAlimentarias?.map((o, i) => <p key={i}>{o.beneficiario} - Cuantía: ${o.cuantia?.toLocaleString()}</p>)}
-            </AccordionDetails></Accordion>
-            <Accordion><AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography>Gastos de Subsistencia</Typography></AccordionSummary><AccordionDetails>
-                {Object.entries(gastos).map(([key, value]) => value && !key.startsWith('_') && <p key={key}>{key}: ${Number(value).toLocaleString()}</p>)}
-            </AccordionDetails></Accordion>
-            <Accordion><AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography>Propuesta de Pago</Typography></AccordionSummary><AccordionDetails>
-                <p><b>Tipo:</b> {solicitud.propuestaPago?.tipoNegociacion}</p>
-                <p><b>Plazo:</b> {solicitud.propuestaPago?.plazo} meses</p>
-                <p><b>Descripción:</b> {solicitud.propuestaPago?.descripcion}</p>
-            </AccordionDetails></Accordion>
-            <Accordion><AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography>Documentos/Anexos</Typography></AccordionSummary><AccordionDetails>
-                <AnexosSection anexos={solicitud.anexos} solicitudId={solicitud._id} tipoSolicitud={solicitud.tipoSolicitud} onUploadSuccess={onUploadSuccess} />
-            </AccordionDetails></Accordion>
-        </Box>
-    );
+const GlassAccordion = ({ title, icon: Icon, children, defaultExpanded = false }) => {
+  const theme = useTheme();
+  return (
+    <Accordion 
+      defaultExpanded={defaultExpanded}
+      sx={{
+        background: `linear-gradient(135deg, ${alpha(theme.palette.background.paper, 0.5)} 0%, ${alpha(theme.palette.background.paper, 0.2)} 100%)`,
+        backdropFilter: 'blur(20px)',
+        border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+        borderRadius: '12px !important',
+        mb: 2,
+        '&:before': { display: 'none' },
+        boxShadow: `0 4px 16px ${alpha(theme.palette.common.black, 0.08)}`,
+        transition: 'all 0.3s ease',
+        '&:hover': {
+          border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
+          transform: 'translateY(-2px)',
+          boxShadow: `0 8px 24px ${alpha(theme.palette.common.black, 0.12)}`,
+        }
+      }}
+    >
+      <AccordionSummary 
+        expandIcon={<ExpandMoreIcon />}
+        sx={{
+          borderRadius: '12px',
+          '&.Mui-expanded': {
+            borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+          }
+        }}
+      >
+        <Stack direction="row" alignItems="center" spacing={2}>
+          {Icon && (
+            <Avatar sx={{ bgcolor: alpha(theme.palette.primary.main, 0.1), color: theme.palette.primary.main, width: 36, height: 36 }}>
+              <Icon sx={{ fontSize: 20 }} />
+            </Avatar>
+          )}
+          <Typography sx={{ fontWeight: 700, fontSize: '1.1rem' }}>{title}</Typography>
+        </Stack>
+      </AccordionSummary>
+      <AccordionDetails sx={{ pt: 2 }}>
+        {children}
+      </AccordionDetails>
+    </Accordion>
+  );
 };
 
-const ConciliacionDetails = ({ solicitud, onUploadSuccess }) => (
-    <Box sx={{ p: 2, backgroundColor: '#f9f9f9' }}>
-        <Accordion defaultExpanded><AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography>Hechos</Typography></AccordionSummary><AccordionDetails>
-            {solicitud.hechos?.map((h, i) => <p key={i} dangerouslySetInnerHTML={{ __html: h.descripcion }} />)}
-        </AccordionDetails></Accordion>
-        <Accordion defaultExpanded><AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography>Pretensiones</Typography></AccordionSummary><AccordionDetails>
-            {solicitud.pretensiones?.map((p, i) => <p key={i} dangerouslySetInnerHTML={{ __html: p.descripcion }} />)}
-        </AccordionDetails></Accordion>
-        <Accordion><AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography>Fundamentos</Typography></AccordionSummary><AccordionDetails>
-            <p>No hay datos de fundamentos en la estructura actual.</p>
-        </AccordionDetails></Accordion>
-        <Accordion defaultExpanded><AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography>Documentos/Anexos</Typography></AccordionSummary><AccordionDetails>
-            <AnexosSection anexos={solicitud.anexos} solicitudId={solicitud._id} tipoSolicitud={solicitud.tipoSolicitud} onUploadSuccess={onUploadSuccess} />
-        </AccordionDetails></Accordion>
+const InsolvenciaDetails = ({ solicitud, onUploadSuccess }) => {
+  const theme = useTheme();
+  const gastos = solicitud.informacionFinanciera?.gastosPersonales || {};
+  
+  return (
+    <Box sx={{ p: 3 }}>
+      <GlassAccordion title="Causas" icon={Gavel} defaultExpanded>
+        <Stack spacing={2}>
+          {solicitud.causas?.lista.map((c, i) => (
+            <Box 
+              key={i}
+              sx={{ 
+                p: 2, 
+                borderRadius: 2,
+                background: `linear-gradient(135deg, ${alpha(theme.palette.info.main, 0.05)} 0%, transparent 100%)`,
+                border: `1px solid ${alpha(theme.palette.info.main, 0.1)}`,
+              }}
+            >
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: theme.palette.info.main, mb: 1 }}>
+                {c.tipoCausa}
+              </Typography>
+              <Typography variant="body2">{c.descripcionCausa}</Typography>
+            </Box>
+          ))}
+        </Stack>
+      </GlassAccordion>
+
+      <GlassAccordion title="Bienes Muebles" icon={DirectionsCar}>
+        <Stack spacing={2}>
+          {solicitud.bienesMuebles?.map((b, i) => (
+            <Box 
+              key={i}
+              sx={{ 
+                p: 2, 
+                borderRadius: 2,
+                background: `linear-gradient(135deg, ${alpha(theme.palette.success.main, 0.05)} 0%, transparent 100%)`,
+                border: `1px solid ${alpha(theme.palette.success.main, 0.1)}`,
+              }}
+            >
+              <Stack direction="row" justifyContent="space-between" alignItems="center">
+                <Box>
+                  <Typography sx={{ fontWeight: 700 }}>{b.clasificacion} - {b.descripcion}</Typography>
+                  <Typography variant="body2" color="text.secondary">Marca: {b.marca}</Typography>
+                </Box>
+                <Chip 
+                  label={`$${b.avaluoComercial?.toLocaleString()}`}
+                  color="success"
+                  sx={{ fontWeight: 700 }}
+                />
+              </Stack>
+            </Box>
+          ))}
+        </Stack>
+      </GlassAccordion>
+
+      <GlassAccordion title="Bienes Inmuebles" icon={HomeWork}>
+        <Stack spacing={2}>
+          {solicitud.bienesInmuebles?.map((b, i) => (
+            <Box 
+              key={i}
+              sx={{ 
+                p: 2, 
+                borderRadius: 2,
+                background: `linear-gradient(135deg, ${alpha(theme.palette.warning.main, 0.05)} 0%, transparent 100%)`,
+                border: `1px solid ${alpha(theme.palette.warning.main, 0.1)}`,
+              }}
+            >
+              <Typography sx={{ fontWeight: 700 }}>{b.descripcion}</Typography>
+              <Typography variant="body2" color="text.secondary">Matrícula: {b.matriculaInmobiliaria}</Typography>
+            </Box>
+          ))}
+        </Stack>
+      </GlassAccordion>
+
+      <GlassAccordion title="Procesos Judiciales" icon={Balance}>
+        <Stack spacing={2}>
+          {solicitud.informacionFinanciera?.procesosJudiciales?.map((p, i) => (
+            <Box 
+              key={i}
+              sx={{ 
+                p: 2, 
+                borderRadius: 2,
+                background: `linear-gradient(135deg, ${alpha(theme.palette.error.main, 0.05)} 0%, transparent 100%)`,
+                border: `1px solid ${alpha(theme.palette.error.main, 0.1)}`,
+              }}
+            >
+              <Typography sx={{ fontWeight: 700 }}>{p.tipoProceso}</Typography>
+              <Typography variant="body2">vs {p.demandado}</Typography>
+            </Box>
+          ))}
+        </Stack>
+      </GlassAccordion>
+
+      <GlassAccordion title="Obligaciones Alimentarias" icon={FamilyRestroom}>
+        <Stack spacing={2}>
+          {solicitud.informacionFinanciera?.obligacionesAlimentarias?.map((o, i) => (
+            <Box 
+              key={i}
+              sx={{ 
+                p: 2, 
+                borderRadius: 2,
+                background: `linear-gradient(135deg, ${alpha(theme.palette.secondary.main, 0.05)} 0%, transparent 100%)`,
+                border: `1px solid ${alpha(theme.palette.secondary.main, 0.1)}`,
+              }}
+            >
+              <Stack direction="row" justifyContent="space-between" alignItems="center">
+                <Typography sx={{ fontWeight: 700 }}>{o.beneficiario}</Typography>
+                <Chip 
+                  label={`$${o.cuantia?.toLocaleString()}`}
+                  color="secondary"
+                  sx={{ fontWeight: 700 }}
+                />
+              </Stack>
+            </Box>
+          ))}
+        </Stack>
+      </GlassAccordion>
+
+      <GlassAccordion title="Gastos de Subsistencia" icon={FoodBank}>
+        <Grid container spacing={2}>
+          {Object.entries(gastos).map(([key, value]) => 
+            value && !key.startsWith('_') && (
+              <Grid item xs={12} sm={6} key={key}>
+                <Box 
+                  sx={{ 
+                    p: 2, 
+                    borderRadius: 2,
+                    background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, transparent 100%)`,
+                    border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
+                  }}
+                >
+                  <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 600 }}>
+                    {key}
+                  </Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 800, mt: 0.5 }}>
+                    ${Number(value).toLocaleString()}
+                  </Typography>
+                </Box>
+              </Grid>
+            )
+          )}
+        </Grid>
+      </GlassAccordion>
+
+      <GlassAccordion title="Propuesta de Pago" icon={AttachMoney}>
+        <Stack spacing={2}>
+          <DetailItem label="Tipo de Negociación" value={solicitud.propuestaPago?.tipoNegociacion} />
+          <DetailItem label="Plazo" value={`${solicitud.propuestaPago?.plazo} meses`} />
+          <Box 
+            sx={{ 
+              p: 2, 
+              borderRadius: 2,
+              background: `linear-gradient(135deg, ${alpha(theme.palette.success.main, 0.05)} 0%, transparent 100%)`,
+              border: `1px solid ${alpha(theme.palette.success.main, 0.1)}`,
+            }}
+          >
+            <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 600 }}>
+              Descripción
+            </Typography>
+            <Typography variant="body1" sx={{ mt: 1 }}>
+              {solicitud.propuestaPago?.descripcion}
+            </Typography>
+          </Box>
+        </Stack>
+      </GlassAccordion>
+
+      <GlassAccordion title="Documentos/Anexos" icon={Folder} defaultExpanded>
+        <AnexosSection 
+          anexos={solicitud.anexos} 
+          solicitudId={solicitud._id} 
+          tipoSolicitud={solicitud.tipoSolicitud} 
+          onUploadSuccess={onUploadSuccess} 
+        />
+      </GlassAccordion>
     </Box>
-);
+  );
+};
+
+const ConciliacionDetails = ({ solicitud, onUploadSuccess }) => {
+  const theme = useTheme();
+  
+  return (
+    <Box sx={{ p: 3 }}>
+      <GlassAccordion title="Hechos" icon={FactCheck} defaultExpanded>
+        <Stack spacing={2}>
+          {solicitud.hechos?.map((h, i) => (
+            <Box 
+              key={i}
+              sx={{ 
+                p: 2, 
+                borderRadius: 2,
+                background: `linear-gradient(135deg, ${alpha(theme.palette.info.main, 0.05)} 0%, transparent 100%)`,
+                border: `1px solid ${alpha(theme.palette.info.main, 0.1)}`,
+              }}
+            >
+              <Typography dangerouslySetInnerHTML={{ __html: h.descripcion }} />
+            </Box>
+          ))}
+        </Stack>
+      </GlassAccordion>
+
+      <GlassAccordion title="Pretensiones" icon={Handshake} defaultExpanded>
+        <Stack spacing={2}>
+          {solicitud.pretensiones?.map((p, i) => (
+            <Box 
+              key={i}
+              sx={{ 
+                p: 2, 
+                borderRadius: 2,
+                background: `linear-gradient(135deg, ${alpha(theme.palette.success.main, 0.05)} 0%, transparent 100%)`,
+                border: `1px solid ${alpha(theme.palette.success.main, 0.1)}`,
+              }}
+            >
+              <Typography dangerouslySetInnerHTML={{ __html: p.descripcion }} />
+            </Box>
+          ))}
+        </Stack>
+      </GlassAccordion>
+
+      <GlassAccordion title="Fundamentos" icon={Balance}>
+        <Box 
+          sx={{ 
+            p: 2, 
+            borderRadius: 2,
+            background: `linear-gradient(135deg, ${alpha(theme.palette.warning.main, 0.05)} 0%, transparent 100%)`,
+            border: `1px solid ${alpha(theme.palette.warning.main, 0.1)}`,
+          }}
+        >
+          <Typography variant="body2" color="text.secondary">
+            No hay datos de fundamentos en la estructura actual.
+          </Typography>
+        </Box>
+      </GlassAccordion>
+
+      <GlassAccordion title="Documentos/Anexos" icon={Folder} defaultExpanded>
+        <AnexosSection 
+          anexos={solicitud.anexos} 
+          solicitudId={solicitud._id} 
+          tipoSolicitud={solicitud.tipoSolicitud} 
+          onUploadSuccess={onUploadSuccess} 
+        />
+      </GlassAccordion>
+    </Box>
+  )
+};
 
 const EnhancedTable = ({ table, isLoading, solicitudesData, navigate, onDownload, onOpenModal, onUploadSuccess }) => {
   const theme = useTheme();
