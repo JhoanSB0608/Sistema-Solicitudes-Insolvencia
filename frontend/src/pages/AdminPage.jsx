@@ -31,7 +31,8 @@ import {
     Dashboard as DashboardIcon, History as HistoryIcon, Group as GroupIcon,
     Search, FilterList, Refresh, GetApp, Visibility, Analytics, Timeline,
     AutoGraph, Speed, Star, Lightbulb, Edit as EditIcon, ExpandMore as ExpandMoreIcon,
-    Close as CloseIcon, CloudUpload as CloudUploadIcon, Download as DownloadIcon, KeyboardArrowDown, KeyboardArrowUp, Person, Folder, Handshake, Gavel, Balance, AttachMoney, FamilyRestroom, FoodBank, HomeWork, DirectionsCar, FactCheck
+    Close as CloseIcon, CloudUpload as CloudUploadIcon, Download as DownloadIcon, KeyboardArrowDown, KeyboardArrowUp, Person, Folder, Handshake, Gavel, Balance, AttachMoney, FamilyRestroom, FoodBank, HomeWork, DirectionsCar, FactCheck,
+    LocalHospital, School, Receipt, Shield, Home, Business, Security, ShoppingCart, SportsEsports, Wc
 } from '@mui/icons-material';
 // --- Enhanced Dashboard Components ---
 
@@ -922,6 +923,30 @@ const GlassAccordion = ({ title, icon: Icon, children, defaultExpanded = false }
 const InsolvenciaDetails = ({ solicitud, onUploadSuccess }) => {
   const theme = useTheme();
   const gastos = solicitud.informacionFinanciera?.gastosPersonales || {};
+
+  const gastosConfig = {
+    alimentacion: { label: 'Alimentación', icon: FoodBank },
+    salud: { label: 'Salud', icon: LocalHospital },
+    arriendo: { label: 'Arriendo', icon: Home },
+    serviciosPublicos: { label: 'Servicios Públicos', icon: Receipt },
+    educacion: { label: 'Educación', icon: School },
+    transporte: { label: 'Transporte', icon: DirectionsCar },
+    conservacionBienes: { label: 'Conservación de Bienes', icon: Shield },
+    cuotaLeasingHabitacional: { label: 'Leasing Habitacional', icon: HomeWork },
+    arriendoOficina: { label: 'Arriendo Oficina', icon: Business },
+    cuotaSeguridadSocial: { label: 'Seguridad Social', icon: Security },
+    cuotaAdminPropiedadHorizontal: { label: 'Admin. Prop. Horizontal', icon: HomeWork },
+    cuotaLeasingVehiculo: { label: 'Leasing Vehículo', icon: DirectionsCar },
+    cuotaLeasingOficina: { label: 'Leasing Oficina', icon: Business },
+    seguros: { label: 'Seguros', icon: Shield },
+    vestuario: { label: 'Vestuario', icon: ShoppingCart },
+    recreacion: { label: 'Recreación', icon: SportsEsports },
+    gastosPersonasCargo: { label: 'Personas a Cargo', icon: Wc },
+    gastosProcedimientoInsolvencia: { label: 'Gastos del Procedimiento', icon: Gavel },
+    otros: { label: 'Otros', icon: AttachMoney }
+  };
+
+  const totalGastos = Object.values(gastos).reduce((sum, value) => sum + (Number(value) || 0), 0);
   
   return (
     <Box sx={{ p: 3 }}>
@@ -1037,27 +1062,30 @@ const InsolvenciaDetails = ({ solicitud, onUploadSuccess }) => {
         </Stack>
       </GlassAccordion>
 
-      <GlassAccordion title="Gastos de Subsistencia" icon={FoodBank}>
+      <GlassAccordion title={`Gastos de Subsistencia (Total: $${totalGastos.toLocaleString()})`} icon={FoodBank}>
         <Grid container spacing={2}>
+            <Grid item xs={12}>
+                <GlassCard sx={{ 
+                    background: `linear-gradient(135deg, ${alpha(theme.palette.success.main, 0.15)} 0%, ${alpha(theme.palette.info.main, 0.15)} 100%)`,
+                    border: `1px solid ${alpha(theme.palette.success.main, 0.2)}`,
+                    textAlign: 'center'
+                }}>
+                    <CardContent>
+                        <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.secondary' }}>Total de Gastos Mensuales</Typography>
+                        <Typography variant="h4" sx={{ fontWeight: 800, color: theme.palette.success.dark }}>
+                            ${totalGastos.toLocaleString()}
+                        </Typography>
+                    </CardContent>
+                </GlassCard>
+            </Grid>
           {Object.entries(gastos).map(([key, value]) => 
-            value && !key.startsWith('_') && (
-              <Grid item xs={12} sm={6} key={key}>
-                <Box 
-                  sx={{ 
-                    p: 2, 
-                    borderRadius: 2,
-                    background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, transparent 100%)`,
-                    border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
-                  }}
-                >
-                  <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 600 }}>
-                    {key}
-                  </Typography>
-                  <Typography variant="h6" sx={{ fontWeight: 800, mt: 0.5 }}>
-                    ${Number(value).toLocaleString()}
-                  </Typography>
-                </Box>
-              </Grid>
+            value != null && !key.startsWith('_') && (
+              <DetailItem 
+                key={key} 
+                label={gastosConfig[key]?.label || key}
+                value={`$${Number(value).toLocaleString()}`}
+                icon={gastosConfig[key]?.icon}
+              />
             )
           )}
         </Grid>
@@ -1136,21 +1164,6 @@ const ConciliacionDetails = ({ solicitud, onUploadSuccess }) => {
             </Box>
           ))}
         </Stack>
-      </GlassAccordion>
-
-      <GlassAccordion title="Fundamentos" icon={Balance}>
-        <Box 
-          sx={{ 
-            p: 2, 
-            borderRadius: 2,
-            background: `linear-gradient(135deg, ${alpha(theme.palette.warning.main, 0.05)} 0%, transparent 100%)`,
-            border: `1px solid ${alpha(theme.palette.warning.main, 0.1)}`,
-          }}
-        >
-          <Typography variant="body2" color="text.secondary">
-            No hay datos de fundamentos en la estructura actual.
-          </Typography>
-        </Box>
       </GlassAccordion>
 
       <GlassAccordion title="Documentos/Anexos" icon={Folder} defaultExpanded>
