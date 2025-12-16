@@ -12,6 +12,7 @@ const {
   BorderStyle,
   VerticalAlign,
   PageBreak,
+  ImageRun,
 } = require('docx');
 const moment = require('moment');
 const { Unidades } = require('./numeroALetras');
@@ -598,10 +599,10 @@ async function generateSolicitudDocx(solicitud = {}) {
         },
         page: {
           margin: {
-            top: 1346, // ~0.95in
-            right: 567, // ~0.4in
-            bottom: 2126, // ~1.5in
-            left: 567, // ~0.4in
+            top: 1900, // 95pt
+            right: 800, // 40pt
+            bottom: 3000, // 150pt
+            left: 800, // 40pt
           },
         },
       },
@@ -613,4 +614,196 @@ async function generateSolicitudDocx(solicitud = {}) {
   return buffer;
 }
 
-module.exports = { generateSolicitudDocx };
+const generateConciliacionDocx = async (solicitud = {}) => {
+  const {
+    infoGeneral = {},
+    convocantes = [],
+    convocados = [],
+    hechos = [],
+    pretensiones = [],
+    firma = {},
+    sede = {},
+    anexos
+  } = solicitud;
+
+  const FONT_SIZE_12PT = 24;
+
+  const createConciliacionTextRun = (text, options = {}) => new TextRun({
+    text: String(text),
+    font: FONT_FAMILY,
+    size: FONT_SIZE_12PT,
+    ...options
+  });
+
+  const createConciliacionParagraph = (children, options = {}) => new Paragraph({
+    children,
+    spacing: { after: 100, line: 300, lineRule: "auto" }, // 1.25 line height for 12pt font
+    ...options
+  });
+
+  const children = [];
+
+  // --- ENCABEZADO ---
+  children.push(createConciliacionParagraph([createConciliacionTextRun('Señores')]));
+  children.push(createConciliacionParagraph([createConciliacionTextRun(safe(sede.entidadPromotora).toUpperCase(), { bold: true })]));
+  children.push(createConciliacionParagraph([createConciliacionTextRun(`${safe(sede.sedeCentro).toUpperCase()} - ${safe(sede.ciudad).toUpperCase()}`)]));
+  children.push(createConciliacionParagraph([createConciliacionTextRun('')]));
+
+  // --- REFERENCIA ---
+  children.push(createConciliacionParagraph([
+    createConciliacionTextRun('REF. ', { bold: true }),
+    createConciliacionTextRun('SOLICITUD CONCILIACIÓN EXTRAJUDICIAL EN DERECHO ', { bold: true }),
+  ]));
+  children.push(createConciliacionParagraph([createConciliacionTextRun('')]));
+
+  // --- IDENTIFICACIÓN ---
+  const convocante = convocantes[0] || {};
+  const nombreConvocante = convocante.tipoInvolucrado === 'Persona Jurídica'
+    ? safe(convocante.razonSocial)
+    : `${safe(convocante.primerNombre)} ${safe(convocante.segundoNombre)} ${safe(convocante.primerApellido)} ${safe(convocante.segundoApellido)}`.trim().toUpperCase();
+  const idConvocante = `${safe(convocante.tipoIdentificacion)} No. ${safe(convocante.numeroIdentificacion)} de ${safe(convocante.ciudadExpedicion)}`;
+
+  const convocado = convocados[0] || {};
+  const nombreConvocado = convocado.tipoInvolucrado === 'Persona Jurídica'
+    ? safe(convocado.razonSocial)
+    : `${safe(convocado.primerNombre)} ${safe(convocado.segundoNombre)} ${safe(convocado.primerApellido)} ${safe(convocado.segundoApellido)}`.trim().toUpperCase();
+  const idConvocado = `${safe(convocado.tipoIdentificacion)} No. ${safe(convocado.numeroIdentificacion)} de ${safe(convocado.ciudadExpedicion)}`;
+
+  children.push(createConciliacionParagraph([
+    createConciliacionTextRun(nombreConvocante, { bold: true }),
+    createConciliacionTextRun(`, identificado(a) con ${idConvocante}; mayor de edad y domiciliado en la ciudad de ${safe(convocante.ciudad)}, solicitamos respetuosamente a usted se sirva de celebrar `),
+    createConciliacionTextRun('AUDIENCIA DE CONCILIACIÓN EXTRAJUDICIAL EN DERECHO – ', { bold: true }),
+    createConciliacionTextRun(safe(infoGeneral.tema).toUpperCase(), { bold: true }),
+    createConciliacionTextRun(' - ', { bold: true }),
+    createConciliacionTextRun('en contra de '),
+    createConciliacionTextRun(nombreConvocado, { bold: true }),
+    createConciliacionTextRun(` identificado(a) con ${idConvocado}; de acuerdo con lo siguiente:`)
+  ], { alignment: AlignmentType.JUSTIFIED }));
+  children.push(createConciliacionParagraph([createConciliacionTextRun('')]));
+
+  // --- HECHOS ---
+  children.push(createConciliacionParagraph([createConciliacionTextRun('HECHOS', { bold: true })], { alignment: AlignmentType.CENTER, spacing: { before: 300, after: 100 } }));
+
+  hechos.forEach((h, idx) => {
+    const numero = ['PRIMERO', 'SEGUNDO', 'TERCERO', 'CUARTO', 'QUINTO'][idx] || `${idx + 1}`;
+    const descripcion = (h.descripcion || '').replace(/<[^>]+>/g, '');
+    children.push(createConciliacionParagraph([
+      createConciliacionTextRun(`${numero} – `, { bold: true }),
+      createConciliacionTextRun(descripcion)
+    ], { alignment: AlignmentType.JUSTIFIED, spacing: { before: 100, after: 100 } }));
+  });
+  children.push(createConciliacionParagraph([createConciliacionTextRun('')]));
+
+  // --- PETICIONES ---
+  children.push(createConciliacionParagraph([createConciliacionTextRun('PETICIONES', { bold: true })], { alignment: AlignmentType.CENTER, spacing: { before: 400, after: 100 } }));
+
+  pretensiones.forEach((p, idx) => {
+    const numero = ['PRIMERA', 'SEGUNDA', 'TERCERA', 'CUARTA'][idx] || `${idx + 1}`;
+    const descripcion = (p.descripcion || '').replace(/<[^>]+>/g, '');
+    children.push(createConciliacionParagraph([
+      createConciliacionTextRun(`${numero}: `, { bold: true }),
+      createConciliacionTextRun(descripcion)
+    ], { alignment: AlignmentType.JUSTIFIED, spacing: { before: 100, after: 100 } }));
+  });
+  children.push(createConciliacionParagraph([createConciliacionTextRun('')]));
+
+  // --- FUNDAMENTOS DE DERECHO ---
+  children.push(createConciliacionParagraph([createConciliacionTextRun('FUNDAMENTOS DE DERECHO', { bold: true })], { alignment: AlignmentType.CENTER, spacing: { before: 400, after: 100 } }));
+  children.push(createConciliacionParagraph([
+    createConciliacionTextRun('El artículo 44 de la Constitución Política de Colombia; Títulos XII y XXI del Código Civil; Ley 27 de 1977; Ley 1098 del 2006; artículo 133 a 159 del decreto 2737 de 1989; Ley 75 del 1968; artículo 390 y siguientes del Código General del Proceso y demás normas concordantes.')
+  ], { alignment: AlignmentType.JUSTIFIED }));
+  children.push(createConciliacionParagraph([createConciliacionTextRun('')]));
+
+  // --- ANEXOS ---
+  children.push(createConciliacionParagraph([createConciliacionTextRun('ANEXOS', { bold: true })], { alignment: AlignmentType.CENTER, spacing: { before: 400, after: 100 } }));
+  children.push(createConciliacionParagraph([createConciliacionTextRun('Anexo los siguientes documentos')]));
+
+  const anexosList = anexos && anexos.length > 0
+    ? anexos.map(anexo => `${anexo.descripcion} - ${anexo.filename}`)
+    : [
+        `Copia de cédula de ciudadanía de ${nombreConvocante}`,
+        `Copia de cédula de ciudadanía de ${nombreConvocado}`,
+        `Registro civil de ${nombreConvocado}`,
+        'Certificado de Cuenta Bancaria',
+        'Poder otorgado'
+      ];
+  
+  anexosList.forEach(item => {
+      children.push(createConciliacionParagraph([createConciliacionTextRun(item)], { bullet: { level: 0 }}));
+  });
+  children.push(createConciliacionParagraph([createConciliacionTextRun('')]));
+
+  // --- NOTIFICACIONES ---
+  children.push(createConciliacionParagraph([createConciliacionTextRun('NOTIFICACIONES', { bold: true })], { alignment: AlignmentType.CENTER, spacing: { before: 400, after: 100 } }));
+  children.push(createConciliacionParagraph([
+    createConciliacionTextRun('La Accionante:', { bold: true }),
+  ]));
+  children.push(createConciliacionParagraph([
+    createConciliacionTextRun(`Email: ${safe(convocante.email)}`),
+  ]));
+  children.push(createConciliacionParagraph([createConciliacionTextRun('')]));
+  children.push(createConciliacionParagraph([
+    createConciliacionTextRun('El accionado:', { bold: true }),
+  ]));
+  children.push(createConciliacionParagraph([
+    createConciliacionTextRun(`Email: ${safe(convocado.email)}`),
+  ]));
+  children.push(createConciliacionParagraph([createConciliacionTextRun('')], { spacing: { after: 600 } }));
+
+  // --- FIRMA ---
+  children.push(createConciliacionParagraph([createConciliacionTextRun('Atentamente;')]));
+  children.push(createConciliacionParagraph([createConciliacionTextRun('')], { spacing: { after: 200 } }));
+
+  if (firma && firma.data) {
+    const base64Data = firma.data.split('base64,').pop();
+    if (base64Data) {
+        try {
+            children.push(createConciliacionParagraph([new ImageRun({
+                data: Buffer.from(base64Data, 'base64'),
+                transformation: {
+                    width: 200,
+                    height: 100,
+                },
+            })]));
+        } catch (e) {
+            console.error("Error processing signature image for DOCX:", e);
+        }
+    }
+  }
+
+  children.push(createConciliacionParagraph([createConciliacionTextRun('')])); 
+  
+  children.push(createConciliacionParagraph([
+      createConciliacionTextRun(nombreConvocante, { bold: true }),
+  ]));
+  children.push(createConciliacionParagraph([
+    createConciliacionTextRun(`Cédula de Ciudadanía No. ${safe(convocante.numeroIdentificacion)} de ${safe(convocante.ciudadExpedicion)}.`)
+  ]));
+
+  const doc = new Document({
+    creator: 'SystemLex',
+    title: `Conciliacion - ${nombreConvocante}`,
+    sections: [{
+      properties: {
+        pageSize: {
+          width: 12240, // LETTER width in dxa (8.5in * 1440)
+          height: 15840, // LETTER height in dxa (11in * 1440)
+        },
+        page: {
+          margin: {
+            top: 1400, // 70pt
+            right: 1700, // 85pt
+            bottom: 1700, // 85pt
+            left: 1700, // 85pt
+          },
+        },
+      },
+      children,
+    }],
+  });
+
+  return Packer.toBuffer(doc);
+};
+
+
+module.exports = { generateSolicitudDocx, generateConciliacionDocx };

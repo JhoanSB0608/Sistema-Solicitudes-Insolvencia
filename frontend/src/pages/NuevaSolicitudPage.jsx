@@ -355,6 +355,44 @@ const NuevaSolicitudPage = () => {
                         }} />
                       ) : 'Descargar PDF'}
                     </Button>
+                    <Button
+                      variant="contained"
+                      startIcon={isDownloading.docx ? null : <DescriptionIcon />}
+                      onClick={() => handleDownload('docx')}
+                      disabled={!createdSolicitudId || isDownloading.docx}
+                      sx={{
+                        borderRadius: '12px',
+                        py: 1.2,
+                        px: 3,
+                        background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+                        fontWeight: 600,
+                        textTransform: 'none',
+                        boxShadow: `0 4px 16px ${alpha(theme.palette.primary.main, 0.3)}`,
+                        '&:hover': {
+                          background: `linear-gradient(135deg, ${theme.palette.primary.dark}, ${theme.palette.secondary.dark})`,
+                          transform: 'translateY(-2px)',
+                          boxShadow: `0 6px 20px ${alpha(theme.palette.primary.main, 0.4)}`,
+                        },
+                        '&:disabled': {
+                          background: 'rgba(0, 0, 0, 0.12)',
+                        }
+                      }}
+                    >
+                      {isDownloading.docx ? (
+                        <Box sx={{ 
+                          width: 20, 
+                          height: 20, 
+                          border: '2px solid rgba(255,255,255,0.3)',
+                          borderTop: '2px solid white',
+                          borderRadius: '50%',
+                          animation: 'spin 1s linear infinite',
+                          '@keyframes spin': {
+                            '0%': { transform: 'rotate(0deg)' },
+                            '100%': { transform: 'rotate(360deg)' },
+                          }
+                        }} />
+                      ) : 'Descargar DOCX'}
+                    </Button>
                   </Stack>
                 </Alert>
               </GlassCard>

@@ -2,6 +2,7 @@ const Conciliacion = require('../models/conciliacionModel');
 const fs = require('fs');
 
 const { generateConciliacionPdf } = require('../utils/conciliacionDocumentGenerator');
+const { generateConciliacionDocx } = require('../utils/docxGenerator');
 
 const createConciliacion = async (req, res) => {
   try {
@@ -74,12 +75,24 @@ const getConciliacionDocumento = async (req, res) => {
     if (!solicitud.user || (solicitud.user._id.toString() !== req.user._id.toString() && !req.user.isAdmin)) {
         return res.status(401).json({ message: 'No autorizado para ver este documento' });
     }
+    
+    const format = req.query.format || 'pdf';
 
-    const buffer = await generateConciliacionPdf(solicitud);
-    const filename = `conciliacion-${solicitud._id}.pdf`;
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`);
-    res.send(buffer);
+    if (format === 'pdf') {
+        const buffer = await generateConciliacionPdf(solicitud);
+        const filename = `conciliacion-${solicitud._id}.pdf`;
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`);
+        res.send(buffer);
+    } else if (format === 'docx') {
+        const buffer = await generateConciliacionDocx(solicitud);
+        const filename = `conciliacion-${solicitud._id}.docx`;
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+        res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`);
+        res.send(buffer);
+    } else {
+        return res.status(400).json({ message: `Formato de documento no soportado: ${format}` });
+    }
 
   } catch (error) {
     console.error('Error al generar el documento de conciliación:', error);
