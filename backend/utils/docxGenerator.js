@@ -257,46 +257,137 @@ async function generateSolicitudDocx(solicitud = {}) {
   children.push(createBorderedTable(resumenRows, [25, 15, 10, 15, 15, 10, 10]));
   children.push(createParagraph([createTextRun('')]));
 
-  // ========== 3. DETALLE DE ACREENCIAS ========== 
-  children.push(createParagraph([new PageBreak()]));
-  children.push(createHeading('3. DETALLE DE LAS ACREENCIAS:'));
-  children.push(createParagraph([createTextRun('Se presenta una relación completa y actualizada de todos los acreedores, en el orden de prelación de créditos que señalan los Artículos 2488 y siguientes del Código Civil y con corte al último día calendario del mes inmediatamente anterior a aquel en que se presenta la solicitud:')], { alignment: AlignmentType.JUSTIFIED }));
-  
-  acreencias.forEach((a, idx) => {
-    const nombreAcreedor = (a.acreedor && (typeof a.acreedor === 'object' ? (a.acreedor.nombre || '') : a.acreedor)) || 'No reporta';
-    const detalleData = [
-        ['Nombre', nombreAcreedor],
-        ['Tipo de Documento', a.tipoDoc],
-        ['No. de Documento', safe((a.acreedor && (a.acreedor.nit || a.acreedor.nitCc || a.acreedor.documento)) || a.documento || '')],
-        ['Dirección de notificación judicial', (a.acreedor && a.acreedor.direccion) || safe(a.direccion)],
-        ['País', 'Colombia'],
-        ['Departamento', (a.acreedor && a.acreedor.departamento) || safe(a.departamento,)],
-        ['Ciudad', (a.acreedor && a.acreedor.ciudad) || safe(a.ciudad,)],
-        ['Dirección de notificación electrónica', (a.acreedor && a.acreedor.email) || safe(a.email)],
-        ['Teléfono', (a.acreedor && a.acreedor.telefono) || safe(a.telefono)],
-        ['Tipo de Acreencia', safe(a.tipoAcreencia)],
-        ['Naturaleza del crédito', safe(a.naturalezaCredito)],
-        ['Crédito en condición de legalmente postergado (Artículo 572A,\nCausal 1)', a.creditoPostergado ? 'SI' : 'NO'],
-        ['Descripción del crédito', safe(a.descripcionCredito)],
-        ['Valor en capital', formatCurrency(a.capital)],
-        ['Valor en interés corriente', a.valorTotalInteresCorriente > 0 ? formatCurrency(a.valorTotalInteresCorriente) : 'Se desconoce esta información'],
-        ['Tasa de interés corriente', safe(a.tasaInteresCorriente)],
-        ['Tipo de interés corriente', safe(a.tipoInteresCorriente)],
-        ['Cuantía total de la obligación', formatCurrency((Number(a.capital||0) + Number(a.valorTotalInteresCorriente||0) + Number(a.valorTotalInteresMoratorio||0)))],
-        ['¿El pago del crédito se está realizando mediante libranza o\ncualquier otro tipo de descuento por nómina?', a.pagoPorLibranza ? 'SI' : 'NO'],
-        ['Número de días en mora', a.creditoEnMora ? 'Más de 90 días' : ''],
-        ['Más de 90 días en mora', a.creditoEnMora ? 'SI' : 'No'],
-        ['Valor en interes moratorio', a.valorTotalInteresMoratorio > 0 ? formatCurrency(a.valorTotalInteresMoratorio) : 'Se desconoce esta información'],
-        ['Tasa de interés moratorio', safe(a.tasaInteresMoratorio)],
-        ['Tipo de interés moratorio', safe(a.tipoInteresMoratorio)],
-        ['Fecha de otorgamiento', formatDate(a.fechaOtorgamiento) + '.'],
-        ['Fecha de vencimiento', formatDate(a.fechaVencimiento) + '.']
-    ];
-    const tableRows = detalleData.map(([label, value]) => new TableRow({ children: [createCell([createParagraph([createTextRun(label)])]), createCell([createParagraph([createTextRun(value)])])] }));
-    tableRows.unshift(new TableRow({ children: [createCell([createParagraph([createTextRun(`Acreencia No. ${idx + 1}`, { bold: true })], { alignment: AlignmentType.CENTER })], { gridSpan: 2 })] }));
-    children.push(createBorderedTable(tableRows, [50, 50]));
-    children.push(createParagraph([createTextRun('')]));
-  });
+ // ========== 3. DETALLE DE ACREENCIAS ==========
+children.push(createParagraph([new PageBreak()]));
+children.push(createHeading('3. DETALLE DE LAS ACREENCIAS:'));
+children.push(
+  createParagraph(
+    [
+      createTextRun(
+        'Se presenta una relación completa y actualizada de todos los acreedores, en el orden de prelación de créditos que señalan los Artículos 2488 y siguientes del Código Civil y con corte al último día calendario del mes inmediatamente anterior a aquel en que se presenta la solicitud:'
+      ),
+    ],
+    { alignment: AlignmentType.JUSTIFIED }
+  )
+);
+
+acreencias.forEach((a, idx) => {
+  const nombreAcreedor =
+    (a.acreedor &&
+      (typeof a.acreedor === 'object'
+        ? a.acreedor.nombre || ''
+        : a.acreedor)) ||
+    'No reporta';
+
+  const detalleData = [
+    ['Nombre', nombreAcreedor],
+    ['Tipo de Documento', a.tipoDoc],
+    [
+      'No. de Documento',
+      safe(
+        (a.acreedor &&
+          (a.acreedor.nit ||
+            a.acreedor.nitCc ||
+            a.acreedor.documento)) ||
+          a.documento ||
+          ''
+      ),
+    ],
+    [
+      'Dirección de notificación judicial',
+      (a.acreedor && a.acreedor.direccion) || safe(a.direccion),
+    ],
+    ['País', 'Colombia'],
+    [
+      'Departamento',
+      (a.acreedor && a.acreedor.departamento) || safe(a.departamento),
+    ],
+    [
+      'Ciudad',
+      (a.acreedor && a.acreedor.ciudad) || safe(a.ciudad),
+    ],
+    [
+      'Dirección de notificación electrónica',
+      (a.acreedor && a.acreedor.email) || safe(a.email),
+    ],
+    [
+      'Teléfono',
+      (a.acreedor && a.acreedor.telefono) || safe(a.telefono),
+    ],
+    ['Tipo de Acreencia', safe(a.tipoAcreencia)],
+    ['Naturaleza del crédito', safe(a.naturalezaCredito)],
+    [
+      'Crédito en condición de legalmente postergado (Artículo 572A,\nCausal 1)',
+      a.creditoPostergado ? 'SI' : 'NO',
+    ],
+    ['Descripción del crédito', safe(a.descripcionCredito)],
+    ['Valor en capital', formatCurrency(a.capital)],
+    [
+      'Valor en interés corriente',
+      a.valorTotalInteresCorriente > 0
+        ? formatCurrency(a.valorTotalInteresCorriente)
+        : 'Se desconoce esta información',
+    ],
+    ['Tasa de interés corriente', safe(a.tasaInteresCorriente)],
+    ['Tipo de interés corriente', safe(a.tipoInteresCorriente)],
+    [
+      'Cuantía total de la obligación',
+      formatCurrency(
+        Number(a.capital || 0) +
+          Number(a.valorTotalInteresCorriente || 0) +
+          Number(a.valorTotalInteresMoratorio || 0)
+      ),
+    ],
+    [
+      '¿El pago del crédito se está realizando mediante libranza o\ncualquier otro tipo de descuento por nómina?',
+      a.pagoPorLibranza ? 'SI' : 'NO',
+    ],
+    ['Número de días en mora', a.creditoEnMora ? 'Más de 90 días' : ''],
+    ['Más de 90 días en mora', a.creditoEnMora ? 'SI' : 'NO'],
+    [
+      'Valor en interes moratorio',
+      a.valorTotalInteresMoratorio > 0
+        ? formatCurrency(a.valorTotalInteresMoratorio)
+        : 'Se desconoce esta información',
+    ],
+    ['Tasa de interés moratorio', safe(a.tasaInteresMoratorio)],
+    ['Tipo de interés moratorio', safe(a.tipoInteresMoratorio)],
+    ['Fecha de otorgamiento', `${formatDate(a.fechaOtorgamiento)}.`],
+    ['Fecha de vencimiento', `${formatDate(a.fechaVencimiento)}.`],
+  ];
+
+  const tableRows = detalleData.map(
+    ([label, value]) =>
+      new TableRow({
+        children: [
+          createCell([createParagraph([createTextRun(label)])]),
+          createCell([createParagraph([createTextRun(value)])]),
+        ],
+      })
+  );
+
+  tableRows.unshift(
+    new TableRow({
+      children: [
+        createCell(
+          [
+            createParagraph(
+              [createTextRun(`Acreencia No. ${idx + 1}`, { bold: true })],
+              { alignment: AlignmentType.CENTER }
+            ),
+          ],
+          {
+            gridSpan: 2,
+            verticalAlign: VerticalAlign.CENTER,
+          }
+        ),
+      ],
+    })
+  );
+
+  children.push(createBorderedTable(tableRows, [50, 50]));
+  children.push(createParagraph([createTextRun('')]));
+});
 
   // ========== 4. BIENES ========== 
   children.push(createHeading('4. RELACIÓN E INVENTARIO DE LOS BIENES MUEBLES E INMUEBLES:'));
