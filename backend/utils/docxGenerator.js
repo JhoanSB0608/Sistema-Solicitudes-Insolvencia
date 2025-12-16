@@ -293,7 +293,7 @@ async function generateSolicitudDocx(solicitud = {}) {
         ['Fecha de vencimiento', formatDate(a.fechaVencimiento) + '.']
     ];
     const tableRows = detalleData.map(([label, value]) => new TableRow({ children: [createCell([createParagraph([createTextRun(label)])]), createCell([createParagraph([createTextRun(value)])])] }));
-    tableRows.unshift(new TableRow({ children: [createCell([createParagraph([createTextRun(`Acreencia No. ${idx + 1}`, { bold: true })], { alignment: AlignmentType.CENTER })], { columnSpan: 2 })] }));
+    tableRows.unshift(new TableRow({ cantSplit: true, children: [createCell([createParagraph([createTextRun(`Acreencia No. ${idx + 1}`, { bold: true })], { alignment: AlignmentType.CENTER })], { columnSpan: 2 })] }));
     children.push(createBorderedTable(tableRows, [50, 50]));
     children.push(createParagraph([createTextRun('')]));
   });
