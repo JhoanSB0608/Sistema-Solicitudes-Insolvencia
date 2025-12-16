@@ -257,6 +257,7 @@ async function generateSolicitudDocx(solicitud = {}) {
   children.push(createBorderedTable(resumenRows, [25, 15, 10, 15, 15, 10, 10]));
 
   // ========== 3. DETALLE DE ACREENCIAS ========== 
+  children.push(createParagraph([new PageBreak()]));
   children.push(createHeading('3. DETALLE DE LAS ACREENCIAS:'));
   children.push(createParagraph([createTextRun('Se presenta una relación completa y actualizada de todos los acreedores, en el orden de prelación de créditos que señalan los Artículos 2488 y siguientes del Código Civil y con corte al último día calendario del mes inmediatamente anterior a aquel en que se presenta la solicitud:')], { alignment: AlignmentType.JUSTIFIED }));
   
