@@ -318,6 +318,7 @@ const tableRows = detalleData.map(
   });
 
   // ========== 4. BIENES ========== 
+  children.push(createParagraph([new PageBreak()]));
   children.push(createHeading('4. RELACIÓN E INVENTARIO DE LOS BIENES MUEBLES E INMUEBLES:'));
   children.push(createParagraph([createTextRun('Se presenta una relación completa y detallada de los bienes muebles e inmuebles:')], { alignment: AlignmentType.JUSTIFIED, indentation: { left: 720 } }));
   children.push(createHeading('4.1 Bienes Muebles', true));
@@ -471,6 +472,7 @@ const tableRows = detalleData.map(
   children.push(createParagraph([createTextRun('')]));
 
   // ========== 10. PROPUESTA DE PAGO ========== 
+  children.push(createParagraph([new PageBreak()]));
   children.push(createHeading('10. PROPUESTA DE PAGO:'));
   if (!propuestaPago || propuestaPago.tipoNegociacion !== 'proyeccion') {
       children.push(createParagraph([createTextRun('No se presenta una propuesta de pago proyectada.')], { indentation: { left: 720 } }));
@@ -620,7 +622,7 @@ const tableRows = detalleData.map(
           margin: {
             top: 1900, 
             right: 800,
-            bottom: 2700,
+            bottom: 2800,
             left: 800,
           },
         },
