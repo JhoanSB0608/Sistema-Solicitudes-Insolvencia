@@ -27,7 +27,7 @@ import {
 import { useDebounce } from '../hooks/useDebounce';
 import {
     ArrowUpward, ArrowDownward, People as PeopleIcon, Assignment as AssignmentIcon,
-    Category as CategoryIcon, TrendingUp as TrendingUpIcon, PictureAsPdf, Description,
+    Category as CategoryIcon, TrendingUp as TrendingUpIcon, PictureAsPdf, Description as DescriptionIcon,
     Dashboard as DashboardIcon, History as HistoryIcon, Group as GroupIcon,
     Search, FilterList, Refresh, GetApp, Visibility, Analytics, Timeline,
     AutoGraph, Speed, Star, Lightbulb, Edit as EditIcon, ExpandMore as ExpandMoreIcon,
@@ -860,7 +860,7 @@ const AnexosSection = ({ anexos, solicitudId, tipoSolicitud, onUploadSuccess }) 
           >
             <ListItemIcon>
               <Avatar sx={{ bgcolor: alpha(theme.palette.info.main, 0.1), color: theme.palette.info.main }}>
-                <Description />
+                <DescriptionIcon />
               </Avatar>
             </ListItemIcon>
             <ListItemText 
@@ -1600,7 +1600,7 @@ const AdminPage = () => {
                     <IconButton onClick={() => handleDownload(original._id, original.tipoSolicitud, 'pdf')}><PictureAsPdf /></IconButton>
                 </Tooltip>
                 <Tooltip title="Descargar DOCX">
-                    <IconButton onClick={() => handleDownload(original._id, original.tipoSolicitud, 'docx')}><Description /></IconButton>
+                    <IconButton onClick={() => handleDownload(original._id, original.tipoSolicitud, 'docx')}><DescriptionIcon /></IconButton>
                 </Tooltip>
             </Stack>
         )

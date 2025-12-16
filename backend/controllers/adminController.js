@@ -73,7 +73,7 @@ const getStats = async (req, res) => {
 // @access  Private/Admin
 const getSolicitudes = async (req, res) => {
   try {
-    const { pageIndex = 0, pageSize = 10, filters = '[]', sorting = '[]' } = req.query;
+    const { page = 1, limit = 10, filters = '[]', sorting = '[]' } = req.query;
     
     // Build query and sort options from request
     const parsedFilters = JSON.parse(filters);
@@ -119,14 +119,16 @@ const getSolicitudes = async (req, res) => {
     });
     
     const totalRows = countInsolvencia + countConciliacion;
+    const pageIndex = parseInt(page) - 1;
+    const pageSize = parseInt(limit);
     const pagedResults = combinedResults.slice(
-      parseInt(pageIndex) * parseInt(pageSize),
-      (parseInt(pageIndex) + 1) * parseInt(pageSize)
+      pageIndex * pageSize,
+      (pageIndex + 1) * pageSize
     );
 
     res.json({ 
       rows: pagedResults, 
-      pageCount: Math.ceil(totalRows / parseInt(pageSize)),
+      pageCount: Math.ceil(totalRows / pageSize),
       totalRows: totalRows,
     });
   } catch (error) {
