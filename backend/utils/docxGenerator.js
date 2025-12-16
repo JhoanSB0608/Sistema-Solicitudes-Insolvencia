@@ -146,10 +146,10 @@ async function generateSolicitudDocx(solicitud = {}) {
       createHeaderCell('ACREEDORES'),
       createHeaderCell('CAPITAL'),
       createHeaderCell('QUÓRUM'),
-      createHeaderCell('INTERÉS\nCORRIENTE'),
-      createHeaderCell('INTERÉS DE\nMORA'),
-      createHeaderCell('OTROS\nCONCEPTOS\nCAUSADOS'),
-      createHeaderCell('DÍAS EN\nMORA'),
+      createHeaderCell('INTERÉS\n CORRIENTE'),
+      createHeaderCell('INTERÉS DE\n MORA'),
+      createHeaderCell('OTROS\n CONCEPTOS\n CAUSADOS'),
+      createHeaderCell('DÍAS EN\n MORA'),
     ],
     tableHeader: true,
   });
@@ -255,14 +255,15 @@ async function generateSolicitudDocx(solicitud = {}) {
   }));
 
   children.push(createBorderedTable(resumenRows, [25, 15, 10, 15, 15, 10, 10]));
-  children.push(createParagraph([createTextRun('')]));
 
   // ========== 3. DETALLE DE ACREENCIAS ========== 
-  children.push(createParagraph([new PageBreak()]));
   children.push(createHeading('3. DETALLE DE LAS ACREENCIAS:'));
   children.push(createParagraph([createTextRun('Se presenta una relación completa y actualizada de todos los acreedores, en el orden de prelación de créditos que señalan los Artículos 2488 y siguientes del Código Civil y con corte al último día calendario del mes inmediatamente anterior a aquel en que se presenta la solicitud:')], { alignment: AlignmentType.JUSTIFIED }));
   
   acreencias.forEach((a, idx) => {
+    if (idx > 0) {
+      children.push(new Paragraph({children: [new PageBreak()]}));
+    }
     const nombreAcreedor = (a.acreedor && (typeof a.acreedor === 'object' ? (a.acreedor.nombre || '') : a.acreedor)) || 'No reporta';
     const detalleData = [
         ['Nombre', nombreAcreedor],
