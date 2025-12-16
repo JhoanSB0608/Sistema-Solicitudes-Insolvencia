@@ -812,7 +812,7 @@ const generateConciliacionDocx = async (solicitud = {}) => {
           margin: {
             top: 1200,
             right: 1700,
-            bottom: 1200,
+            bottom: 600,
             left: 1700,
           },
         },
