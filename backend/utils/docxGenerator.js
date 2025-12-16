@@ -255,6 +255,7 @@ async function generateSolicitudDocx(solicitud = {}) {
   }));
 
   children.push(createBorderedTable(resumenRows, [25, 15, 10, 15, 15, 10, 10]));
+  children.push(createParagraph([createTextRun('')]));
 
   // ========== 3. DETALLE DE ACREENCIAS ========== 
   children.push(createParagraph([new PageBreak()]));
@@ -793,10 +794,10 @@ const generateConciliacionDocx = async (solicitud = {}) => {
         },
         page: {
           margin: {
-            top: 1400, // 70pt
-            right: 1700, // 85pt
-            bottom: 1400, // 70pt
-            left: 1700, // 85pt
+            top: 1200,
+            right: 1700,
+            bottom: 1200,
+            left: 1700,
           },
         },
       },
