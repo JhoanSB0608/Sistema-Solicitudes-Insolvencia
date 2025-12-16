@@ -618,10 +618,10 @@ const tableRows = detalleData.map(
         },
         page: {
           margin: {
-            top: 1900, // 95pt
-            right: 800, // 40pt
-            bottom: 3000, // 150pt
-            left: 800, // 40pt
+            top: 1900, 
+            right: 800,
+            bottom: 1900,
+            left: 800,
           },
         },
       },
@@ -810,10 +810,10 @@ const generateConciliacionDocx = async (solicitud = {}) => {
         },
         page: {
           margin: {
-            top: 1200,
-            right: 1700,
-            bottom: 600,
-            left: 1700,
+            top: 1900, 
+            right: 800,
+            bottom: 1900,
+            left: 800,
           },
         },
       },
