@@ -263,9 +263,6 @@ async function generateSolicitudDocx(solicitud = {}) {
   children.push(createParagraph([createTextRun('Se presenta una relación completa y actualizada de todos los acreedores, en el orden de prelación de créditos que señalan los Artículos 2488 y siguientes del Código Civil y con corte al último día calendario del mes inmediatamente anterior a aquel en que se presenta la solicitud:')], { alignment: AlignmentType.JUSTIFIED }));
   
   acreencias.forEach((a, idx) => {
-    if (idx > 0) {
-        children.push(new Paragraph({ children: [new PageBreak()] }));
-    }
     const nombreAcreedor = (a.acreedor && (typeof a.acreedor === 'object' ? (a.acreedor.nombre || '') : a.acreedor)) || 'No reporta';
     const detalleData = [
         ['Nombre', nombreAcreedor],
@@ -296,7 +293,7 @@ async function generateSolicitudDocx(solicitud = {}) {
         ['Fecha de vencimiento', formatDate(a.fechaVencimiento) + '.']
     ];
     const tableRows = detalleData.map(([label, value]) => new TableRow({ cantSplit: true, children: [createCell([createParagraph([createTextRun(label)])]), createCell([createParagraph([createTextRun(value)])])] }));
-    tableRows.unshift(new TableRow({ cantSplit: true, children: [createCell([createParagraph([createTextRun(`Acreencia No. ${idx + 1}`, { bold: true })], { alignment: AlignmentType.CENTER })], { gridSpan: 2 })] }));
+    tableRows.unshift(new TableRow({ cantSplit: true, children: [createCell([createParagraph([createTextRun(`Acreencia No. ${idx + 1}`, { bold: true })], { alignment: AlignmentType.CENTER })], { columnSpan: 2 })] }));
     children.push(createBorderedTable(tableRows, [50, 50]));
     children.push(createParagraph([createTextRun('')]));
   });
