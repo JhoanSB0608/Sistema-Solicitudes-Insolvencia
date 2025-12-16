@@ -180,7 +180,7 @@ async function generateSolicitudDocx(solicitud = {}) {
   classOrder.forEach(className => {
     if (groupedAcreencias[className]) {
       resumenRows.push(new TableRow({
-        children: [createCell([createParagraph([createTextRun(className, { bold: true })], { alignment: AlignmentType.CENTER })], { gridSpan: 7 })],
+        children: [createCell([createParagraph([createTextRun(className, { bold: true })], { alignment: AlignmentType.CENTER })], { columnSpan: 7 })],
       }));
 
       let classTotalCapital = 0;
@@ -250,7 +250,7 @@ async function generateSolicitudDocx(solicitud = {}) {
       createCell([createParagraph([createTextRun('TOTAL DEL CAPITAL EN MORA POR MÁS DE 90 DÍAS\n(No aplica a créditos cuyo pago se esté realizando mediante libranza o descuento por nómina)', { bold: true })])]),
       createCell([createParagraph([createTextRun(formatCurrency(capitalEnMora), { bold: true })], { alignment: AlignmentType.RIGHT })]),
       createCell([createParagraph([createTextRun(moraPorcentaje, { bold: true })], { alignment: AlignmentType.CENTER })]),
-      createCell([createParagraph([])], { gridSpan: 4 }),
+      createCell([createParagraph([])], { columnSpan: 4 }),
     ],
   }));
 
@@ -377,7 +377,7 @@ acreencias.forEach((a, idx) => {
             ),
           ],
           {
-            gridSpan: 2,
+            columnSpan: 2,
             verticalAlign: VerticalAlign.CENTER,
           }
         ),
@@ -404,7 +404,7 @@ acreencias.forEach((a, idx) => {
             ['Avalúo Comercial Estimado', formatCurrency(b.avaluoComercial)]
         ];
         const tableRows = bienData.map(([label, value]) => new TableRow({ children: [createCell([createParagraph([createTextRun(label)])]), createCell([createParagraph([createTextRun(value)])])] }));
-        tableRows.unshift(new TableRow({ children: [createCell([createParagraph([createTextRun(`Bien Mueble No. ${i + 1}`, { bold: true })], { alignment: AlignmentType.CENTER })], { gridSpan: 2 })] }));
+        tableRows.unshift(new TableRow({ children: [createCell([createParagraph([createTextRun(`Bien Mueble No. ${i + 1}`, { bold: true })], { alignment: AlignmentType.CENTER })], { columnSpan: 2 })] }));
         children.push(createBorderedTable(tableRows, [50, 50]));
         children.push(createParagraph([createTextRun('')]));
     });
@@ -424,7 +424,7 @@ acreencias.forEach((a, idx) => {
             ['Afectado a Vivienda Familiar', b.afectadoVivienda ? 'SI' : 'NO']
         ];
         const tableRows = bienData.map(([label, value]) => new TableRow({ children: [createCell([createParagraph([createTextRun(label)])]), createCell([createParagraph([createTextRun(value)])])] }));
-        tableRows.unshift(new TableRow({ children: [createCell([createParagraph([createTextRun(`Bien Inmueble No. ${i + 1}`, { bold: true })], { alignment: AlignmentType.CENTER })], { gridSpan: 2 })] }));
+        tableRows.unshift(new TableRow({ children: [createCell([createParagraph([createTextRun(`Bien Inmueble No. ${i + 1}`, { bold: true })], { alignment: AlignmentType.CENTER })], { columnSpan: 2 })] }));
         children.push(createBorderedTable(tableRows, [50, 50]));
         children.push(createParagraph([createTextRun('')]));
     });
@@ -450,7 +450,7 @@ acreencias.forEach((a, idx) => {
               ['Dirección Juzgado', safe(p.direccionJuzgado)]
           ];
           const tableRows = procesoData.map(([label, value]) => new TableRow({ children: [createCell([createParagraph([createTextRun(label, {size: FONT_SIZE_SMALL})])]), createCell([createParagraph([createTextRun(value, {size: FONT_SIZE_SMALL})])])] }));
-          tableRows.unshift(new TableRow({ children: [createCell([createParagraph([createTextRun(`Proceso Judicial No. ${safe(p.radicado)}`, { bold: true })], { alignment: AlignmentType.CENTER })], { gridSpan: 2 })] }));
+          tableRows.unshift(new TableRow({ children: [createCell([createParagraph([createTextRun(`Proceso Judicial No. ${safe(p.radicado)}`, { bold: true })], { alignment: AlignmentType.CENTER })], { columnSpan: 2 })] }));
           children.push(createBorderedTable(tableRows, [50, 50]));
           children.push(createParagraph([createTextRun('')]));
       });
@@ -478,7 +478,7 @@ acreencias.forEach((a, idx) => {
               ['Correo Electrónico del Beneficiario', safe(o.emailBeneficiario)]
           ];
           const tableRows = obligacionData.map(([label, value]) => new TableRow({ children: [createCell([createParagraph([createTextRun(label, {size: FONT_SIZE_SMALL})])]), createCell([createParagraph([createTextRun(value, {size: FONT_SIZE_SMALL})])])] }));
-          tableRows.unshift(new TableRow({ children: [createCell([createParagraph([createTextRun(`Obligación Alimentaria No. ${idx + 1}`, { bold: true })], { alignment: AlignmentType.CENTER })], { gridSpan: 2 })] }));
+          tableRows.unshift(new TableRow({ children: [createCell([createParagraph([createTextRun(`Obligación Alimentaria No. ${idx + 1}`, { bold: true })], { alignment: AlignmentType.CENTER })], { columnSpan: 2 })] }));
           children.push(createBorderedTable(tableRows, [50, 50]));
           children.push(createParagraph([createTextRun('')]));
       });
@@ -498,7 +498,7 @@ acreencias.forEach((a, idx) => {
       }
   }
   if (gastosRows.length === 0) {
-      gastosRows.push(new TableRow({ children: [createCell([createParagraph([createTextRun('No se reportan gastos.', {size: FONT_SIZE_SMALL})], { alignment: AlignmentType.CENTER })], { gridSpan: 2 })] }));
+      gastosRows.push(new TableRow({ children: [createCell([createParagraph([createTextRun('No se reportan gastos.', {size: FONT_SIZE_SMALL})], { alignment: AlignmentType.CENTER })], { columnSpan: 2 })] }));
   } else {
       gastosRows.push(new TableRow({ children: [createCell([createParagraph([createTextRun('TOTAL GASTOS', { bold: true, size: FONT_SIZE_SMALL })])]), createCell([createParagraph([createTextRun(formatCurrency(totalGastos), { bold: true, size: FONT_SIZE_SMALL })])])] }));
   }
@@ -520,7 +520,7 @@ acreencias.forEach((a, idx) => {
   ];
   const ingresosRowsTable = ingresosData.map(([label, value]) => new TableRow({ children: [createCell([createParagraph([createTextRun(label, {size: FONT_SIZE_SMALL})])]), createCell([createParagraph([createTextRun(value, {size: FONT_SIZE_SMALL})])])] }));
   ingresosRowsTable.push(new TableRow({ children: [createCell([createParagraph([createTextRun('TOTAL DE INGRESOS MENSUALES', { bold: true, size: FONT_SIZE_SMALL })])]), createCell([createParagraph([createTextRun(typeof otrasActividades === 'number' ? formatCurrency(ingresosMensuales) : formatCurrency(actPrincipal), { bold: true, size: FONT_SIZE_SMALL })])])] }));
-  ingresosRowsTable.unshift(new TableRow({ children: [createCell([createParagraph([createTextRun('Ingresos', { bold: true })], { alignment: AlignmentType.CENTER })], { gridSpan: 2 })] }));
+  ingresosRowsTable.unshift(new TableRow({ children: [createCell([createParagraph([createTextRun('Ingresos', { bold: true })], { alignment: AlignmentType.CENTER })], { columnSpan: 2 })] }));
   children.push(createBorderedTable(ingresosRowsTable, [50, 50]));
   children.push(createParagraph([createTextRun('')]));
 
@@ -538,7 +538,7 @@ acreencias.forEach((a, idx) => {
       conyugalData.push(['Tengo o he tenido sociedad conyugal o patrimonial vigente', 'No']);
   }
   const conyugalRowsTable = conyugalData.map(([label, value]) => new TableRow({ children: [createCell([createParagraph([createTextRun(label)])]), createCell([createParagraph([createTextRun(value)])])] }));
-  conyugalRowsTable.unshift(new TableRow({ children: [createCell([createParagraph([createTextRun('Sociedad Conyugal o Patrimonial', { bold: true })], { alignment: AlignmentType.CENTER })], { gridSpan: 2 })] }));
+  conyugalRowsTable.unshift(new TableRow({ children: [createCell([createParagraph([createTextRun('Sociedad Conyugal o Patrimonial', { bold: true })], { alignment: AlignmentType.CENTER })], { columnSpan: 2 })] }));
   children.push(createBorderedTable(conyugalRowsTable, [50, 50]));
   children.push(createParagraph([createTextRun('')]));
 
@@ -565,7 +565,7 @@ acreencias.forEach((a, idx) => {
               const formaPago = propuestaPago.formaPago;
 
               const detalleBody = [
-                  new TableRow({ children: [createCell([createParagraph([createTextRun(`Tabla de Detalle de Proyección - ${className}`, { bold: true })], { alignment: AlignmentType.CENTER })], { gridSpan: 2 })] }),
+                  new TableRow({ children: [createCell([createParagraph([createTextRun(`Tabla de Detalle de Proyección - ${className}`, { bold: true })], { alignment: AlignmentType.CENTER })], { columnSpan: 2 })] }),
                   new TableRow({ children: [createCell([createParagraph([createTextRun('Capital Adeudado', { bold: true })])]), createCell([createParagraph([createTextRun(formatCurrency(capital))], { alignment: AlignmentType.RIGHT })])] }),
                   new TableRow({ children: [createCell([createParagraph([createTextRun('Fecha de Inicio', { bold: true })])]), createCell([createParagraph([createTextRun(formatDate(startDate))], { alignment: AlignmentType.RIGHT })])] }),
                   new TableRow({ children: [createCell([createParagraph([createTextRun('Forma de Pago', { bold: true })])]), createCell([createParagraph([createTextRun(formaPago || 'Cuota Fija')], { alignment: AlignmentType.RIGHT })])] }),
@@ -584,8 +584,8 @@ acreencias.forEach((a, idx) => {
               }
 
               const distribBody = [
-                  new TableRow({ children: [createCell([createParagraph([createTextRun(`Distribución de la cuota fija - ${className}`, { bold: true })], { alignment: AlignmentType.CENTER })], { gridSpan: 5 })] }),
-                  new TableRow({ children: [createCell([createParagraph([createTextRun('Cuota fija de pago:', { bold: true })])]), createCell([createParagraph([createTextRun(formatCurrency(cuotaFija), { bold: true })])], { gridSpan: 4 })] }),
+                  new TableRow({ children: [createCell([createParagraph([createTextRun(`Distribución de la cuota fija - ${className}`, { bold: true })], { alignment: AlignmentType.CENTER })], { columnSpan: 5 })] }),
+                  new TableRow({ children: [createCell([createParagraph([createTextRun('Cuota fija de pago:', { bold: true })])]), createCell([createParagraph([createTextRun(formatCurrency(cuotaFija), { bold: true })])], { columnSpan: 4 })] }),
                   new TableRow({ children: [createHeaderCell('Acreedor', FONT_SIZE_SMALL), createHeaderCell('Descripción', FONT_SIZE_SMALL), createHeaderCell('Capital Actualizado', FONT_SIZE_SMALL), createHeaderCell('Porcentaje', FONT_SIZE_SMALL), createHeaderCell('Distribución', FONT_SIZE_SMALL)] }),
               ];
               classAcreencias.forEach(a => {
@@ -606,7 +606,7 @@ acreencias.forEach((a, idx) => {
               children.push(createParagraph([createTextRun('')]));
 
               const proyeccionBody = [
-                  new TableRow({ children: [createCell([createParagraph([createTextRun(`Tabla de Proyección de Pagos - ${className}`, { bold: true })], { alignment: AlignmentType.CENTER })], { gridSpan: 8 })] }),
+                  new TableRow({ children: [createCell([createParagraph([createTextRun(`Tabla de Proyección de Pagos - ${className}`, { bold: true })], { alignment: AlignmentType.CENTER })], { columnSpan: 8 })] }),
                   new TableRow({ children: [createHeaderCell('Pago No.', FONT_SIZE_VERY_SMALL), createHeaderCell('Saldo Capital', FONT_SIZE_VERY_SMALL), createHeaderCell('Pago Capital', FONT_SIZE_VERY_SMALL), createHeaderCell('Pago Interés', FONT_SIZE_VERY_SMALL), createHeaderCell('Monto de Pago', FONT_SIZE_VERY_SMALL), createHeaderCell('Saldo Final Capital', FONT_SIZE_VERY_SMALL), createHeaderCell('Plazo en días', FONT_SIZE_VERY_SMALL), createHeaderCell('Fecha', FONT_SIZE_VERY_SMALL)] }),
               ];
               let saldo = capital;
