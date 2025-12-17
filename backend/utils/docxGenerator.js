@@ -264,7 +264,6 @@ async function generateSolicitudDocx(solicitud = {}) {
   children.push(createParagraph([createTextRun('Se presenta una relación completa y actualizada de todos los acreedores, en el orden de prelación de créditos que señalan los Artículos 2488 y siguientes del Código Civil y con corte al último día calendario del mes inmediatamente anterior a aquel en que se presenta la solicitud:')], { alignment: AlignmentType.JUSTIFIED }));
   
   acreencias.forEach((a, idx) => {
-    children.push(createParagraph([new PageBreak()]));
     const nombreAcreedor = (a.acreedor && (typeof a.acreedor === 'object' ? (a.acreedor.nombre || '') : a.acreedor)) || 'No reporta';
     const detalleData = [
         ['Nombre', nombreAcreedor],
@@ -624,7 +623,7 @@ const tableRows = detalleData.map(
           margin: {
             top: 1900, 
             right: 800,
-            bottom: 2720,
+            bottom: 2730,
             left: 800,
           },
         },
