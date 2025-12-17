@@ -218,58 +218,66 @@ const updateConciliacion = async (req, res) => {
     
     const parsedData = JSON.parse(req.body.solicitudData);
 
-     // Signature file handling
+    // Signature file handling
     if (req.files && req.files.firma && req.files.firma[0]) {
       const signatureFile = req.files.firma[0];
-      const fileContent = fs.readFileSync(signatureFile.path);
-      const base64Image = `data:${signatureFile.mimetype};base64,${fileContent.toString('base64')}`;
-      parsedData.firma = {
+      // Simply store the path, do not read or delete the file.
+      conciliacion.firma = {
         source: 'upload',
-        data: base64Image,
         name: signatureFile.originalname,
         url: signatureFile.path,
       };
-      fs.unlinkSync(signatureFile.path);
+    } else if (parsedData.firma) {
+      conciliacion.firma = parsedData.firma;
     }
 
-    const anexoDataFromClient = parsedData.anexos;
-    delete parsedData.anexos;
+    // --- Defensive Update ---
+    // Explicitly update fields instead of using Object.assign
+    conciliacion.sede = parsedData.sede;
+    conciliacion.infoGeneral = parsedData.infoGeneral;
+    conciliacion.convocantes = parsedData.convocantes;
+    conciliacion.convocados = parsedData.convocados;
+    conciliacion.hechos = parsedData.hechos;
+    conciliacion.pretensiones = parsedData.pretensiones;
+    conciliacion.markModified('sede');
+    conciliacion.markModified('infoGeneral');
+    conciliacion.markModified('convocantes');
+    conciliacion.markModified('convocados');
+    conciliacion.markModified('hechos');
+    conciliacion.markModified('pretensiones');
+    conciliacion.markModified('firma');
 
-    Object.assign(conciliacion, parsedData);
-
+    // --- Anexos Sync Logic ---
+    const anexoDataFromClient = parsedData.anexos || [];
     const newAnexosFromFiles = (req.files && req.files.anexos) || [];
     
-    // Get a list of annex filenames from the client
-    const clientAnexoNames = anexoDataFromClient ? anexoDataFromClient.map(a => a.name) : [];
+    const clientAnexoFilenames = anexoDataFromClient.map(a => a.name);
 
     // Remove annexes that are no longer in the client's list
-    conciliacion.anexos.slice().forEach(existingAnexo => {
-        if (!clientAnexoNames.includes(existingAnexo.filename)) {
-            conciliacion.anexos.id(existingAnexo._id).remove();
-        }
-    });
+    conciliacion.anexos = conciliacion.anexos.filter(existingAnexo => 
+        clientAnexoFilenames.includes(existingAnexo.filename)
+    );
 
     // Update existing ones and add new ones
-    if (anexoDataFromClient) {
-        for (const anexoFromClient of anexoDataFromClient) {
-            const existingAnexo = conciliacion.anexos.find(a => a.filename === anexoFromClient.name);
-            const newFile = newAnexosFromFiles.find(f => f.originalname === anexoFromClient.name);
+    for (const anexoFromClient of anexoDataFromClient) {
+        const existingAnexo = conciliacion.anexos.find(a => a.filename === anexoFromClient.name);
+        const newFile = newAnexosFromFiles.find(f => f.originalname === anexoFromClient.name);
 
-            if (existingAnexo) {
-                // It exists, so just update the description.
-                existingAnexo.descripcion = anexoFromClient.descripcion;
-            } else if (newFile) {
-                // It doesn't exist and it's a new file, so add it.
-                conciliacion.anexos.push({
-                    filename: newFile.filename,
-                    path: newFile.path,
-                    mimetype: newFile.mimetype,
-                    size: newFile.size,
-                    descripcion: anexoFromClient.descripcion,
-                });
-            }
+        if (existingAnexo) {
+            // It exists, so just update the description.
+            existingAnexo.descripcion = anexoFromClient.descripcion;
+        } else if (newFile) {
+            // It doesn't exist and it's a new file, so add it.
+            conciliacion.anexos.push({
+                filename: newFile.filename,
+                path: newFile.path,
+                mimetype: newFile.mimetype,
+                size: newFile.size,
+                descripcion: anexoFromClient.descripcion,
+            });
         }
     }
+    conciliacion.markModified('anexos');
     
     const updatedConciliacion = await conciliacion.save();
     res.json(updatedConciliacion);
