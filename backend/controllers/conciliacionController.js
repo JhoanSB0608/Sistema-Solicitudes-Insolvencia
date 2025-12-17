@@ -1,51 +1,8 @@
 const Conciliacion = require('../models/conciliacionModel');
 const fs = require('fs');
-const path = require('path');
 
 const { generateConciliacionPdf } = require('../utils/conciliacionDocumentGenerator');
 const { generateConciliacionDocx } = require('../utils/docxGenerator');
-
-const getAnexo = async (req, res) => {
-  try {
-    const solicitud = await Conciliacion.findById(req.params.id).populate('user');
-
-    if (!solicitud) {
-      return res.status(404).json({ message: 'Solicitud no encontrada' });
-    }
-
-    // Security check
-    if (!solicitud.user || (solicitud.user._id.toString() !== req.user._id.toString() && !req.user.isAdmin)) {
-        return res.status(401).json({ message: 'No autorizado para ver este documento' });
-    }
-    
-    const anexo = solicitud.anexos.find(a => a.filename === req.params.filename);
-
-    if (!anexo) {
-        return res.status(404).json({ message: 'Anexo no encontrado' });
-    }
-
-    const filePath = path.resolve(__dirname, '..', anexo.path);
-    
-    if (fs.existsSync(filePath)) {
-        res.download(filePath, anexo.filename, (err) => {
-            if (err) {
-                console.error('Error al descargar el archivo:', err);
-                if (!res.headersSent) {
-                    res.status(500).json({ message: 'Error en el servidor al descargar el archivo.', error: err.message });
-                }
-            }
-        });
-    } else {
-        return res.status(404).json({ message: 'Archivo de anexo no encontrado en el servidor' });
-    }
-
-  } catch (error) {
-    console.error('Error al obtener el anexo:', error);
-    if (!res.headersSent) {
-      res.status(500).json({ message: 'Error en el servidor al obtener el anexo.', error: error.message });
-    }
-  }
-};
 
 const createConciliacion = async (req, res) => {
   try {
@@ -57,37 +14,41 @@ const createConciliacion = async (req, res) => {
 
     const parsedData = JSON.parse(req.body.solicitudData);
     
-    // Handle firma file from memory buffer
+    // If a signature file was uploaded, process it and overwrite the 'firma' field
     if (req.files && req.files.firma && req.files.firma[0]) {
       const signatureFile = req.files.firma[0];
+      const fileContent = fs.readFileSync(signatureFile.path);
+      const base64Image = `data:${signatureFile.mimetype};base64,${fileContent.toString('base64')}`;
+      
       parsedData.firma = {
         source: 'upload',
+        data: base64Image, // Storing as base64
         name: signatureFile.originalname,
-        dataUrl: `data:${signatureFile.mimetype};base64,${signatureFile.buffer.toString('base64')}`,
+        url: signatureFile.path, // also storing path for reference, though it will be deleted
       };
+
+      fs.unlinkSync(signatureFile.path); // Clean up uploaded file from temp storage
     }
     
     const dataToSave = parsedData;
     dataToSave.user = req.user._id;
 
-    // Handle 'anexos' files from memory buffer
+    // Handle 'anexos' files by merging descriptions with file data
+    const anexoInfoFromClient = parsedData.anexos ? [...parsedData.anexos] : [];
+    let finalAnexos = [];
     if (req.files && req.files.anexos) {
-      const anexoInfoFromClient = parsedData.anexos || [];
-      dataToSave.anexos = req.files.anexos.map(file => {
+      finalAnexos = req.files.anexos.map(file => {
         const matchingInfo = anexoInfoFromClient.find(info => info.name === file.originalname);
-        const dataUrl = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
-
         return {
-          filename: file.originalname,
+          filename: file.filename,
+          path: file.path,
           mimetype: file.mimetype,
           size: file.size,
           descripcion: matchingInfo ? matchingInfo.descripcion : '',
-          dataUrl: dataUrl,
         };
       });
-    } else {
-      dataToSave.anexos = [];
     }
+    dataToSave.anexos = finalAnexos;
 
     const conciliacion = new Conciliacion(dataToSave);
     const createdConciliacion = await conciliacion.save();
@@ -141,42 +102,6 @@ const getConciliacionDocumento = async (req, res) => {
   }
 };
 
-const getConciliacionAnexo = async (req, res) => {
-  try {
-    const solicitud = await Conciliacion.findById(req.params.id).populate('user');
-
-    if (!solicitud) {
-      return res.status(404).json({ message: 'Solicitud de conciliación no encontrada' });
-    }
-
-    // Security check
-    if (!solicitud.user || (solicitud.user._id.toString() !== req.user._id.toString() && !req.user.isAdmin)) {
-        return res.status(401).json({ message: 'No autorizado para ver este documento' });
-    }
-    
-    const anexo = solicitud.anexos.find(a => a.filename === req.params.filename);
-
-    if (!anexo || !anexo.dataUrl) {
-        return res.status(404).json({ message: 'Anexo no encontrado o no contiene datos.' });
-    }
-
-    // Decode the base64 data URL
-    const parts = anexo.dataUrl.split(';base64,');
-    const mimeType = parts[0].split(':')[1];
-    const fileContents = Buffer.from(parts[1], 'base64');
-
-    res.setHeader('Content-Type', mimeType);
-    res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(anexo.filename)}`);
-    res.send(fileContents);
-
-  } catch (error) {
-    console.error('Error al obtener el anexo de conciliación:', error);
-    if (!res.headersSent) {
-      res.status(500).json({ message: 'Error en el servidor al obtener el anexo.', error: error.message });
-    }
-  }
-};
-
 const getConciliacionById = async (req, res) => {
   try {
     const conciliacion = await Conciliacion.findById(req.params.id).populate('user', 'name email');
@@ -208,63 +133,58 @@ const updateConciliacion = async (req, res) => {
     
     const parsedData = JSON.parse(req.body.solicitudData);
 
-    // Signature file handling from memory buffer
+    // Signature file handling
     if (req.files && req.files.firma && req.files.firma[0]) {
       const signatureFile = req.files.firma[0];
-      conciliacion.firma = {
+      const fileContent = fs.readFileSync(signatureFile.path);
+      const base64Image = `data:${signatureFile.mimetype};base64,${fileContent.toString('base64')}`;
+      parsedData.firma = {
         source: 'upload',
+        data: base64Image,
         name: signatureFile.originalname,
-        dataUrl: `data:${signatureFile.mimetype};base64,${signatureFile.buffer.toString('base64')}`,
+        url: signatureFile.path,
       };
-    } else if (parsedData.firma) {
-      conciliacion.firma = parsedData.firma;
+      fs.unlinkSync(signatureFile.path);
     }
-    conciliacion.markModified('firma');
 
+    const anexoDataFromClient = parsedData.anexos;
+    delete parsedData.anexos;
 
-    // Assign all other top-level fields from parsed data
-    const fieldsToUpdate = ['sede', 'infoGeneral', 'convocantes', 'convocados', 'hechos', 'pretensiones'];
-    fieldsToUpdate.forEach(field => {
-        if(parsedData[field]) {
-            conciliacion[field] = parsedData[field];
-            conciliacion.markModified(field);
-        }
-    });
+    Object.assign(conciliacion, parsedData);
 
-    // --- Robust Anexos Sync Logic (Store in DB from Memory) ---
     const newAnexosFromFiles = (req.files && req.files.anexos) || [];
-    const anexoDataFromClient = parsedData.anexos || [];
-    const clientAnexoFilenames = anexoDataFromClient.map(a => a.name);
-
-    // 1. Filter out deleted annexes
-    conciliacion.anexos = conciliacion.anexos.filter(existingAnexo => 
-        clientAnexoFilenames.includes(existingAnexo.filename)
-    );
-
-    // 2. Update descriptions
-    conciliacion.anexos.forEach(existingAnexo => {
-        const anexoFromClient = anexoDataFromClient.find(a => a.name === existingAnexo.filename);
-        if (anexoFromClient) {
-            existingAnexo.descripcion = anexoFromClient.descripcion;
-        }
-    });
-
-    // 3. Add new annexes (from memory buffer)
-    newAnexosFromFiles.forEach(newFile => {
-        const anexoFromClient = anexoDataFromClient.find(a => a.name === newFile.originalname);
-        if (anexoFromClient) {
-            const dataUrl = `data:${newFile.mimetype};base64,${newFile.buffer.toString('base64')}`;
-            conciliacion.anexos.push({
-                filename: newFile.originalname,
-                mimetype: newFile.mimetype,
-                size: newFile.size,
-                descripcion: anexoFromClient.descripcion,
-                dataUrl: dataUrl,
-            });
-        }
-    });
     
-    conciliacion.markModified('anexos');
+    // Get a list of annex filenames from the client
+    const clientAnexoNames = anexoDataFromClient ? anexoDataFromClient.map(a => a.name) : [];
+
+    // Remove annexes that are no longer in the client's list
+    conciliacion.anexos.slice().forEach(existingAnexo => {
+        if (!clientAnexoNames.includes(existingAnexo.filename)) {
+            conciliacion.anexos.id(existingAnexo._id).remove();
+        }
+    });
+
+    // Update existing ones and add new ones
+    if (anexoDataFromClient) {
+        for (const anexoFromClient of anexoDataFromClient) {
+            const existingAnexo = conciliacion.anexos.find(a => a.filename === anexoFromClient.name);
+            const newFile = newAnexosFromFiles.find(f => f.originalname === anexoFromClient.name);
+
+            if (existingAnexo) {
+                // It exists, so just update the description.
+                existingAnexo.descripcion = anexoFromClient.descripcion;
+            } else if (newFile) {
+                // It doesn't exist and it's a new file, so add it.
+                conciliacion.anexos.push({
+                    filename: newFile.filename,
+                    path: newFile.path,
+                    mimetype: newFile.mimetype,
+                    size: newFile.size,
+                    descripcion: anexoFromClient.descripcion,
+                });
+            }
+        }
+    }
     
     const updatedConciliacion = await conciliacion.save();
     res.json(updatedConciliacion);
@@ -279,4 +199,4 @@ const updateConciliacion = async (req, res) => {
   }
 };
 
-module.exports = { createConciliacion, getConciliacionDocumento, getConciliacionAnexo, getConciliacionById, updateConciliacion, getAnexo };
+module.exports = { createConciliacion, getConciliacionDocumento, getConciliacionById, updateConciliacion };

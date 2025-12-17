@@ -7,13 +7,19 @@ const {
   getSolicitudDocumento, 
   getMisSolicitudes,
   getSolicitudById,
-  updateSolicitud,
-  getAnexo
+  updateSolicitud
 } = require('../controllers/solicitudController.js');
 const { protect } = require('../middleware/authMiddleware.js');
 
 // Multer config for file uploads
-const storage = multer.memoryStorage();
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/');
+  },
+  filename: function (req, file, cb) {
+    cb(null, `${file.fieldname}-${Date.now()}${path.extname(file.originalname)}`);
+  }
+});
 
 const upload = multer({ storage: storage });
 
@@ -31,6 +37,5 @@ router.route('/:id')
   .put(protect, uploadFields, updateSolicitud);
 
 router.route('/:id/documento').get(protect, getSolicitudDocumento);
-router.route('/:id/anexo/:filename').get(protect, getAnexo);
 
 module.exports = router;

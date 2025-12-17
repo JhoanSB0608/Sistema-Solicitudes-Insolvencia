@@ -1,44 +1,7 @@
 const Solicitud = require('../models/solicitudModel');
 const fs = require('fs');
-const path = require('path');
 const { generateSolicitudPdf } = require('../utils/documentGenerator');
 const { generateSolicitudDocx } = require('../utils/docxGenerator');
-
-const getAnexo = async (req, res) => {
-  try {
-    const solicitud = await Solicitud.findById(req.params.id).populate('user');
-
-    if (!solicitud) {
-      return res.status(404).json({ message: 'Solicitud no encontrada' });
-    }
-
-    // Security check
-    if (!solicitud.user || (solicitud.user._id.toString() !== req.user._id.toString() && !req.user.isAdmin)) {
-        return res.status(401).json({ message: 'No autorizado para ver este documento' });
-    }
-    
-    const anexo = solicitud.anexos.find(a => a.filename === req.params.filename);
-
-    if (!anexo || !anexo.dataUrl) {
-        return res.status(404).json({ message: 'Anexo no encontrado o no contiene datos.' });
-    }
-
-    // Decode the base64 data URL
-    const parts = anexo.dataUrl.split(';base64,');
-    const mimeType = parts[0].split(':')[1];
-    const fileContents = Buffer.from(parts[1], 'base64');
-
-    res.setHeader('Content-Type', mimeType);
-    res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(anexo.filename)}`);
-    res.send(fileContents);
-
-  } catch (error) {
-    console.error('Error al obtener el anexo:', error);
-    if (!res.headersSent) {
-      res.status(500).json({ message: 'Error en el servidor al obtener el anexo.', error: error.message });
-    }
-  }
-};
 
 const getSolicitudById = async (req, res) => {
   try {
@@ -67,74 +30,73 @@ const updateSolicitud = async (req, res) => {
       return res.status(404).json({ message: 'Solicitud no encontrada' });
     }
 
-    // Security check
+    // Security check: User can only update their own documents unless they are an admin
     if (solicitud.user.toString() !== req.user._id.toString() && !req.user.isAdmin) {
       return res.status(401).json({ message: 'No autorizado para actualizar esta solicitud' });
     }
     
     const parsedData = JSON.parse(req.body.solicitudData);
 
-    // Signature file handling from memory buffer
+    // If a new signature file was uploaded, process it and overwrite the 'firma' field in parsedData
     if (req.files && req.files.firma && req.files.firma[0]) {
       const signatureFile = req.files.firma[0];
-      solicitud.firma = {
+      const fileContent = fs.readFileSync(signatureFile.path);
+      const base64Image = `data:${signatureFile.mimetype};base64,${fileContent.toString('base64')}`;
+      
+      parsedData.firma = {
         source: 'upload',
+        data: base64Image,
         name: signatureFile.originalname,
-        dataUrl: `data:${signatureFile.mimetype};base64,${signatureFile.buffer.toString('base64')}`,
+        url: signatureFile.path,
       };
-    } else if (parsedData.firma) {
-      solicitud.firma = parsedData.firma;
+      
+      // Clean up the uploaded file as it's now stored as base64
+      fs.unlinkSync(signatureFile.path);
     }
-    solicitud.markModified('firma');
 
-    // Assign other top-level fields
-    const fieldsToUpdate = [
-      'deudor', 'sede', 'causas', 'acreencias', 'bienesMuebles', 
-      'bienesInmuebles', 'noPoseeBienes', 'informacionFinanciera', 
-      'sociedadConyugal', 'propuestaPago', 'projectionData'
-    ];
-    fieldsToUpdate.forEach(field => {
-      if (parsedData[field] !== undefined) {
-        solicitud[field] = parsedData[field];
-        solicitud.markModified(field);
-      }
-    });
+    const anexoDataFromClient = parsedData.anexos;
+    delete parsedData.anexos;
 
-    // --- Robust Anexos Sync Logic (Store in DB from Memory) ---
+    Object.assign(solicitud, parsedData);
+
     const newAnexosFromFiles = (req.files && req.files.anexos) || [];
-    const anexoDataFromClient = parsedData.anexos || [];
-    const clientAnexoFilenames = anexoDataFromClient.map(a => a.name);
+    
+    // Step 1: Identify which annexes to keep based on client data
+    const clientAnexoNames = anexoDataFromClient ? anexoDataFromClient.map(a => a.name) : [];
 
-    // 1. Filter out deleted annexes
-    solicitud.anexos = solicitud.anexos.filter(existingAnexo => 
-        clientAnexoFilenames.includes(existingAnexo.filename)
-    );
-
-    // 2. Update descriptions
-    solicitud.anexos.forEach(existingAnexo => {
-        const anexoFromClient = anexoDataFromClient.find(a => a.name === existingAnexo.filename);
-        if (anexoFromClient) {
-            existingAnexo.descripcion = anexoFromClient.descripcion;
+    // Step 2: Remove annexes that are no longer in the client's list.
+    // We use .slice() to create a copy for safe iteration while modifying the original array.
+    solicitud.anexos.slice().forEach(existingAnexo => {
+        if (!clientAnexoNames.includes(existingAnexo.filename)) {
+            solicitud.anexos.id(existingAnexo._id).remove();
         }
     });
 
-    // 3. Add new annexes (from memory buffer)
-    newAnexosFromFiles.forEach(newFile => {
-        const anexoFromClient = anexoDataFromClient.find(a => a.name === newFile.originalname);
-        if (anexoFromClient) {
-            const dataUrl = `data:${newFile.mimetype};base64,${newFile.buffer.toString('base64')}`;
-            solicitud.anexos.push({
-                filename: newFile.originalname,
-                mimetype: newFile.mimetype,
-                size: newFile.size,
-                descripcion: anexoFromClient.descripcion,
-                dataUrl: dataUrl,
-            });
+    // Step 3: Iterate client data to update existing or add new annexes.
+    if (anexoDataFromClient) {
+        for (const anexoFromClient of anexoDataFromClient) {
+            // Find if the anexo already exists in the (now potentially smaller) Mongoose array
+            const anexoToUpdate = solicitud.anexos.find(a => a.filename === anexoFromClient.name);
+            const newFile = newAnexosFromFiles.find(f => f.originalname === anexoFromClient.name);
+
+            if (anexoToUpdate) {
+                // It exists in the DB and we're keeping it. Just update its description.
+                anexoToUpdate.descripcion = anexoFromClient.descripcion;
+            } else if (newFile) {
+                // It's not in the DB, and it's a new file. Add it.
+                solicitud.anexos.push({
+                    filename: newFile.filename,
+                    path: newFile.path,
+                    mimetype: newFile.mimetype,
+                    size: newFile.size,
+                    descripcion: anexoFromClient.descripcion,
+                });
+            }
         }
-    });
+    }
+
     
-    solicitud.markModified('anexos');
-    
+    // Construct nombreCompleto for the deudor
     if (solicitud.deudor) {
       solicitud.deudor.nombreCompleto = [
         solicitud.deudor.primerNombre,
@@ -181,35 +143,47 @@ const createSolicitud = async (req, res) => {
 
     const parsedData = JSON.parse(req.body.solicitudData);
     
-    // Handle firma file from memory buffer
+    // If a signature file was uploaded, process it and overwrite the 'firma' field
     if (req.files && req.files.firma && req.files.firma[0]) {
       const signatureFile = req.files.firma[0];
+      const fileContent = fs.readFileSync(signatureFile.path);
+      const base64Image = `data:${signatureFile.mimetype};base64,${fileContent.toString('base64')}`;
+      
       parsedData.firma = {
         source: 'upload',
+        data: base64Image,
         name: signatureFile.originalname,
-        dataUrl: `data:${signatureFile.mimetype};base64,${signatureFile.buffer.toString('base64')}`,
+        url: signatureFile.path,
       };
+
+      // Clean up the uploaded file as it's now stored as base64
+      fs.unlinkSync(signatureFile.path);
     }
     
+    // Start with the parsed data as the base
     const dataToSave = parsedData;
-    dataToSave.user = req.user._id;
 
-    // Handle 'anexos' files from memory buffer
+    // Add properties that are not in the parsedData
+    dataToSave.user = req.user._id;
+    if (req.body.tipoSolicitud) {
+      dataToSave.tipoSolicitud = req.body.tipoSolicitud;
+    }
+
+    // Handle 'anexos' files
     if (req.files && req.files.anexos) {
       const anexoInfoFromClient = parsedData.anexos || [];
       dataToSave.anexos = req.files.anexos.map(file => {
         const matchingInfo = anexoInfoFromClient.find(info => info.name === file.originalname);
-        const dataUrl = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
-
         return {
-          filename: file.originalname,
+          filename: file.filename,
+          path: file.path,
           mimetype: file.mimetype,
           size: file.size,
           descripcion: matchingInfo ? matchingInfo.descripcion : '',
-          dataUrl: dataUrl,
         };
       });
     } else {
+      // If no files are attached, ensure 'anexos' is not the placeholder from the client
       dataToSave.anexos = [];
     }
 
@@ -284,4 +258,4 @@ const getSolicitudDocumento = async (req, res) => {
   }
 };
 
-module.exports = { createSolicitud, getSolicitudDocumento, getMisSolicitudes, getSolicitudById, updateSolicitud, getAnexo };
+module.exports = { createSolicitud, getSolicitudDocumento, getMisSolicitudes, getSolicitudById, updateSolicitud };
