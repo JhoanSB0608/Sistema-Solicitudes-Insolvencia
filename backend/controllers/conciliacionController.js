@@ -1,5 +1,6 @@
 const Conciliacion = require('../models/conciliacionModel');
 const fs = require('fs');
+const path = require('path');
 
 const { generateConciliacionPdf } = require('../utils/conciliacionDocumentGenerator');
 const { generateConciliacionDocx } = require('../utils/docxGenerator');
@@ -121,7 +122,7 @@ const getConciliacionAnexo = async (req, res) => {
         return res.status(404).json({ message: 'Anexo no encontrado' });
     }
 
-    const filePath = anexo.path;
+    const filePath = path.resolve(__dirname, '..', anexo.path);
     
     if (fs.existsSync(filePath)) {
         res.download(filePath, anexo.filename, (err) => {
