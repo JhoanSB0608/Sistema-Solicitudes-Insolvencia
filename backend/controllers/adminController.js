@@ -136,4 +136,41 @@ const getSolicitudes = async (req, res) => {
   }
 };
 
-module.exports = { getStats, getSolicitudes };
+const uploadAnexo = async (req, res) => {
+  const { tipo, id } = req.params;
+  
+  if (!req.file) {
+    return res.status(400).json({ message: 'No se ha subido ningún archivo.' });
+  }
+
+  try {
+    let document;
+    const Model = tipo === 'insolvencia' ? Solicitud : Conciliacion;
+    
+    document = await Model.findById(id);
+
+    if (!document) {
+      return res.status(404).json({ message: 'Documento no encontrado.' });
+    }
+
+    const newAnexo = {
+      filename: req.file.filename,
+      path: req.file.path,
+      mimetype: req.file.mimetype,
+      size: req.file.size,
+      descripcion: req.body.descripcion || req.file.originalname, // Use description from body or default to original name
+    };
+
+    document.anexos.push(newAnexo);
+    
+    const updatedDocument = await document.save();
+    
+    res.status(200).json(updatedDocument);
+
+  } catch (error) {
+    console.error(`Error al subir anexo para ${tipo}:`, error);
+    res.status(500).json({ message: 'Error en el servidor al subir el anexo.', error: error.message });
+  }
+};
+
+module.exports = { getStats, getSolicitudes, uploadAnexo };

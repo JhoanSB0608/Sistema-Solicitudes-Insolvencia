@@ -10,10 +10,11 @@ const sedeSchema = new mongoose.Schema({
 
 const anexoSchema = new mongoose.Schema({
   filename: { type: String },
-  path: { type: String },
+  originalname: { type: String },
   mimetype: { type: String },
   size: { type: Number },
   descripcion: { type: String },
+  dataUrl: { type: String },
 });
 
 const firmaSchema = new mongoose.Schema({

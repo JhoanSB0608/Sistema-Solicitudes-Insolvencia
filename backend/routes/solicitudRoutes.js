@@ -7,7 +7,8 @@ const {
   getSolicitudDocumento, 
   getMisSolicitudes,
   getSolicitudById,
-  updateSolicitud
+  updateSolicitud,
+  getAnexo
 } = require('../controllers/solicitudController.js');
 const { protect } = require('../middleware/authMiddleware.js');
 
@@ -37,5 +38,6 @@ router.route('/:id')
   .put(protect, uploadFields, updateSolicitud);
 
 router.route('/:id/documento').get(protect, getSolicitudDocumento);
+router.route('/:id/anexo/:filename').get(protect, getAnexo);
 
 module.exports = router;

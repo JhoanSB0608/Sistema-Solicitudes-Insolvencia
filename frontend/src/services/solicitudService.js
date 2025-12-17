@@ -33,10 +33,16 @@ export const createSolicitud = async (payload) => {
   }
 };
 
-export const downloadSolicitudDocument = async (solicitudId, format = 'pdf') => {
+export const downloadSolicitudDocument = async (solicitudId, format = 'pdf', anexoFilename = null) => {
   try {
     const config = getConfig({ responseType: 'blob' });
-    const response = await axios.get(`${API_URL}/${solicitudId}/documento?format=${format}`, config);
+    
+    let url = `${API_URL}/${solicitudId}/documento?format=${format}`;
+    if (format === 'anexo' && anexoFilename) {
+      url = `${API_URL}/${solicitudId}/anexo/${anexoFilename}`;
+    }
+
+    const response = await axios.get(url, config);
 
     const contentType = (response.headers['content-type'] || '').toLowerCase();
     if (contentType.includes('application/json')) {
