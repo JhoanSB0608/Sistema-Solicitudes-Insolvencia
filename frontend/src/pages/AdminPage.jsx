@@ -1163,9 +1163,6 @@ const InsolvenciaDetails = ({ solicitud, onUploadSuccess }) => {
 
 const ConciliacionDetails = ({ solicitud, onUploadSuccess }) => {
   const theme = useTheme();
-  console.log("Solicitud object:", solicitud);
-  console.log("Propuesta de Pago:", solicitud.propuestaPago);
-  console.log("Projection Data:", solicitud.projectionData); 
   return (
     <Box sx={{ p: 3 }}>
       <GlassAccordion title="Hechos" icon={FactCheck} defaultExpanded>

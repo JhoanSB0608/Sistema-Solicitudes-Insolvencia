@@ -102,6 +102,48 @@ const getConciliacionDocumento = async (req, res) => {
   }
 };
 
+const getConciliacionAnexo = async (req, res) => {
+  try {
+    const solicitud = await Conciliacion.findById(req.params.id).populate('user');
+
+    if (!solicitud) {
+      return res.status(404).json({ message: 'Solicitud de conciliación no encontrada' });
+    }
+
+    // Security check
+    if (!solicitud.user || (solicitud.user._id.toString() !== req.user._id.toString() && !req.user.isAdmin)) {
+        return res.status(401).json({ message: 'No autorizado para ver este documento' });
+    }
+    
+    const anexo = solicitud.anexos.find(a => a.filename === req.params.filename);
+
+    if (!anexo) {
+        return res.status(404).json({ message: 'Anexo no encontrado' });
+    }
+
+    const filePath = anexo.path;
+    
+    if (fs.existsSync(filePath)) {
+        res.download(filePath, anexo.filename, (err) => {
+            if (err) {
+                console.error('Error al descargar el archivo:', err);
+                if (!res.headersSent) {
+                    res.status(500).json({ message: 'Error en el servidor al descargar el archivo.', error: err.message });
+                }
+            }
+        });
+    } else {
+        return res.status(404).json({ message: 'Archivo de anexo no encontrado en el servidor' });
+    }
+
+  } catch (error) {
+    console.error('Error al obtener el anexo de conciliación:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ message: 'Error en el servidor al obtener el anexo.', error: error.message });
+    }
+  }
+};
+
 const getConciliacionById = async (req, res) => {
   try {
     const conciliacion = await Conciliacion.findById(req.params.id).populate('user', 'name email');
@@ -199,4 +241,4 @@ const updateConciliacion = async (req, res) => {
   }
 };
 
-module.exports = { createConciliacion, getConciliacionDocumento, getConciliacionById, updateConciliacion };
+module.exports = { createConciliacion, getConciliacionDocumento, getConciliacionAnexo, getConciliacionById, updateConciliacion };

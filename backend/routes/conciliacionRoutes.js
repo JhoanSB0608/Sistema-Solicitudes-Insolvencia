@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
-const { createConciliacion, getConciliacionDocumento, getConciliacionById, updateConciliacion } = require('../controllers/conciliacionController.js');
+const { createConciliacion, getConciliacionDocumento, getConciliacionById, updateConciliacion, getConciliacionAnexo } = require('../controllers/conciliacionController.js');
 const { protect } = require('../middleware/authMiddleware.js');
 
 // Multer config for file uploads
@@ -30,5 +30,6 @@ router.route('/:id')
     .put(protect, uploadFields, updateConciliacion);
 
 router.route('/:id/documento').get(protect, getConciliacionDocumento);
+router.route('/:id/anexos/:filename').get(protect, getConciliacionAnexo);
 
 module.exports = router;
