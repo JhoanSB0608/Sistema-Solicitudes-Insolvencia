@@ -566,6 +566,7 @@ const tableRows = detalleData.map(
   }
 
   // ========== 11. SOLICITUD SOBRE LA TARIFA ========== 
+  children.push(createParagraph([new PageBreak()]));
   children.push(createHeading('11. SOLICITUD SOBRE LA TARIFA:'));
   children.push(createParagraph([createTextRun('Atendiendo las tarifas contenidas en el Decreto 2677 de 2012, por las condiciones de insolvencia económica en que me encuentro, con el debido respeto y con fundamento en el Articulo 536 de la Ley 1564 de 2012, le solicito fijar una tarifa que me permita tener acceso a este procedimiento de insolvencia económica de la persona natural no comerciante')], { alignment: AlignmentType.JUSTIFIED, indentation: { left: 720 } }));
 
@@ -622,7 +623,7 @@ const tableRows = detalleData.map(
           margin: {
             top: 1900, 
             right: 800,
-            bottom: 2800,
+            bottom: 2750,
             left: 800,
           },
         },
