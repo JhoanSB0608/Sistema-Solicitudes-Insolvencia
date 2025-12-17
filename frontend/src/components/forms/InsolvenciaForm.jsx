@@ -3998,8 +3998,8 @@ const InsolvenciaForm = ({ onSubmit, resetToken, initialData, isUpdating }) => {
                         onChange={(e) => {
                           const files = Array.from(e.target.files);
                           files.forEach(file => {
-                            if (!getValues('anexos').some(f => f.filename === file.filename)) {
-                              appendAnexo({ filename: file.filename, file });
+                            if (!getValues('anexos').some(f => f.name === file.name)) {
+                              appendAnexo({ filename: file.name, file });
                             }
                           });
                         }}
