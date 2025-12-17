@@ -623,7 +623,7 @@ const tableRows = detalleData.map(
           margin: {
             top: 1900, 
             right: 800,
-            bottom: 2700,
+            bottom: 2720,
             left: 800,
           },
         },
