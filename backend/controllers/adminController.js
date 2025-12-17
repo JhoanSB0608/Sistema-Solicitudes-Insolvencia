@@ -153,12 +153,14 @@ const uploadAnexo = async (req, res) => {
       return res.status(404).json({ message: 'Documento no encontrado.' });
     }
 
+    const dataUrl = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+
     const newAnexo = {
-      filename: req.file.filename,
-      path: req.file.path,
+      filename: req.file.originalname,
       mimetype: req.file.mimetype,
       size: req.file.size,
-      descripcion: req.body.descripcion || req.file.originalname, // Use description from body or default to original name
+      descripcion: req.body.descripcion || req.file.originalname,
+      dataUrl: dataUrl,
     };
 
     document.anexos.push(newAnexo);

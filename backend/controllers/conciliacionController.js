@@ -57,32 +57,28 @@ const createConciliacion = async (req, res) => {
 
     const parsedData = JSON.parse(req.body.solicitudData);
     
-    // Handle firma file by converting to base64 and storing in the document
+    // Handle firma file from memory buffer
     if (req.files && req.files.firma && req.files.firma[0]) {
       const signatureFile = req.files.firma[0];
-      const fileContent = fs.readFileSync(signatureFile.path);
       parsedData.firma = {
         source: 'upload',
         name: signatureFile.originalname,
-        dataUrl: `data:${signatureFile.mimetype};base64,${fileContent.toString('base64')}`,
+        dataUrl: `data:${signatureFile.mimetype};base64,${signatureFile.buffer.toString('base64')}`,
       };
-      fs.unlinkSync(signatureFile.path); // Clean up temp file
     }
     
     const dataToSave = parsedData;
     dataToSave.user = req.user._id;
 
-    // Handle 'anexos' files by converting to base64 and storing in the document
+    // Handle 'anexos' files from memory buffer
     if (req.files && req.files.anexos) {
       const anexoInfoFromClient = parsedData.anexos || [];
       dataToSave.anexos = req.files.anexos.map(file => {
         const matchingInfo = anexoInfoFromClient.find(info => info.name === file.originalname);
-        const fileContent = fs.readFileSync(file.path);
-        const dataUrl = `data:${file.mimetype};base64,${fileContent.toString('base64')}`;
-        fs.unlinkSync(file.path); // Clean up temp file
+        const dataUrl = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
 
         return {
-          filename: file.originalname, // Use originalname for consistency
+          filename: file.originalname,
           mimetype: file.mimetype,
           size: file.size,
           descripcion: matchingInfo ? matchingInfo.descripcion : '',
@@ -212,16 +208,14 @@ const updateConciliacion = async (req, res) => {
     
     const parsedData = JSON.parse(req.body.solicitudData);
 
-    // Signature file handling
+    // Signature file handling from memory buffer
     if (req.files && req.files.firma && req.files.firma[0]) {
       const signatureFile = req.files.firma[0];
-      const fileContent = fs.readFileSync(signatureFile.path);
       conciliacion.firma = {
         source: 'upload',
         name: signatureFile.originalname,
-        dataUrl: `data:${signatureFile.mimetype};base64,${fileContent.toString('base64')}`,
+        dataUrl: `data:${signatureFile.mimetype};base64,${signatureFile.buffer.toString('base64')}`,
       };
-      fs.unlinkSync(signatureFile.path);
     } else if (parsedData.firma) {
       conciliacion.firma = parsedData.firma;
     }
@@ -237,7 +231,7 @@ const updateConciliacion = async (req, res) => {
         }
     });
 
-    // --- Robust Anexos Sync Logic (Store in DB) ---
+    // --- Robust Anexos Sync Logic (Store in DB from Memory) ---
     const newAnexosFromFiles = (req.files && req.files.anexos) || [];
     const anexoDataFromClient = parsedData.anexos || [];
     const clientAnexoFilenames = anexoDataFromClient.map(a => a.name);
@@ -247,7 +241,7 @@ const updateConciliacion = async (req, res) => {
         clientAnexoFilenames.includes(existingAnexo.filename)
     );
 
-    // 2. Update descriptions of existing annexes
+    // 2. Update descriptions
     conciliacion.anexos.forEach(existingAnexo => {
         const anexoFromClient = anexoDataFromClient.find(a => a.name === existingAnexo.filename);
         if (anexoFromClient) {
@@ -255,14 +249,11 @@ const updateConciliacion = async (req, res) => {
         }
     });
 
-    // 3. Add new annexes (as base64)
+    // 3. Add new annexes (from memory buffer)
     newAnexosFromFiles.forEach(newFile => {
         const anexoFromClient = anexoDataFromClient.find(a => a.name === newFile.originalname);
         if (anexoFromClient) {
-            const fileContent = fs.readFileSync(newFile.path);
-            const dataUrl = `data:${newFile.mimetype};base64,${fileContent.toString('base64')}`;
-            fs.unlinkSync(newFile.path); // Clean up temp file
-
+            const dataUrl = `data:${newFile.mimetype};base64,${newFile.buffer.toString('base64')}`;
             conciliacion.anexos.push({
                 filename: newFile.originalname,
                 mimetype: newFile.mimetype,
@@ -272,8 +263,7 @@ const updateConciliacion = async (req, res) => {
             });
         }
     });
-
-    // 4. Mark the array as modified for Mongoose
+    
     conciliacion.markModified('anexos');
     
     const updatedConciliacion = await conciliacion.save();
