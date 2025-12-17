@@ -4014,8 +4014,8 @@ const InsolvenciaForm = ({ onSubmit, resetToken, initialData, isUpdating }) => {
                       Archivos Cargados
                     </Typography>
                     {anexosFields.map((field, index) => (
-                      <GlassCard key={field.id} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Typography variant="body1">{field.name}</Typography>
+                      <GlassCard key={field._id} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography variant="body1">{field.filename}</Typography>
                         <IconButton onClick={() => removeAnexo(index)} color="error">
                           <DeleteIcon />
                         </IconButton>
