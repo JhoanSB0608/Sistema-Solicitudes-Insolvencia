@@ -57,35 +57,41 @@ const createConciliacion = async (req, res) => {
 
     const parsedData = JSON.parse(req.body.solicitudData);
     
-    // If a signature file was uploaded, process it and overwrite the 'firma' field
+    // Handle firma file by converting to base64 and storing in the document
     if (req.files && req.files.firma && req.files.firma[0]) {
       const signatureFile = req.files.firma[0];
+      const fileContent = fs.readFileSync(signatureFile.path);
       parsedData.firma = {
         source: 'upload',
         name: signatureFile.originalname,
-        url: signatureFile.path,
+        dataUrl: `data:${signatureFile.mimetype};base64,${fileContent.toString('base64')}`,
       };
+      fs.unlinkSync(signatureFile.path); // Clean up temp file
     }
     
     const dataToSave = parsedData;
     dataToSave.user = req.user._id;
 
-    // Handle 'anexos' files by merging descriptions with file data
-    const anexoInfoFromClient = parsedData.anexos ? [...parsedData.anexos] : [];
-    let finalAnexos = [];
+    // Handle 'anexos' files by converting to base64 and storing in the document
     if (req.files && req.files.anexos) {
-      finalAnexos = req.files.anexos.map(file => {
+      const anexoInfoFromClient = parsedData.anexos || [];
+      dataToSave.anexos = req.files.anexos.map(file => {
         const matchingInfo = anexoInfoFromClient.find(info => info.name === file.originalname);
+        const fileContent = fs.readFileSync(file.path);
+        const dataUrl = `data:${file.mimetype};base64,${fileContent.toString('base64')}`;
+        fs.unlinkSync(file.path); // Clean up temp file
+
         return {
-          filename: file.filename,
-          path: file.path,
+          filename: file.originalname, // Use originalname for consistency
           mimetype: file.mimetype,
           size: file.size,
           descripcion: matchingInfo ? matchingInfo.descripcion : '',
+          dataUrl: dataUrl,
         };
       });
+    } else {
+      dataToSave.anexos = [];
     }
-    dataToSave.anexos = finalAnexos;
 
     const conciliacion = new Conciliacion(dataToSave);
     const createdConciliacion = await conciliacion.save();
@@ -154,24 +160,18 @@ const getConciliacionAnexo = async (req, res) => {
     
     const anexo = solicitud.anexos.find(a => a.filename === req.params.filename);
 
-    if (!anexo) {
-        return res.status(404).json({ message: 'Anexo no encontrado' });
+    if (!anexo || !anexo.dataUrl) {
+        return res.status(404).json({ message: 'Anexo no encontrado o no contiene datos.' });
     }
 
-    const filePath = path.resolve(__dirname, '..', anexo.path);
-    
-    if (fs.existsSync(filePath)) {
-        res.download(filePath, anexo.filename, (err) => {
-            if (err) {
-                console.error('Error al descargar el archivo:', err);
-                if (!res.headersSent) {
-                    res.status(500).json({ message: 'Error en el servidor al descargar el archivo.', error: err.message });
-                }
-            }
-        });
-    } else {
-        return res.status(404).json({ message: 'Archivo de anexo no encontrado en el servidor' });
-    }
+    // Decode the base64 data URL
+    const parts = anexo.dataUrl.split(';base64,');
+    const mimeType = parts[0].split(':')[1];
+    const fileContents = Buffer.from(parts[1], 'base64');
+
+    res.setHeader('Content-Type', mimeType);
+    res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(anexo.filename)}`);
+    res.send(fileContents);
 
   } catch (error) {
     console.error('Error al obtener el anexo de conciliación:', error);
@@ -215,23 +215,32 @@ const updateConciliacion = async (req, res) => {
     // Signature file handling
     if (req.files && req.files.firma && req.files.firma[0]) {
       const signatureFile = req.files.firma[0];
-      parsedData.firma = {
+      const fileContent = fs.readFileSync(signatureFile.path);
+      conciliacion.firma = {
         source: 'upload',
         name: signatureFile.originalname,
-        url: signatureFile.path,
+        dataUrl: `data:${signatureFile.mimetype};base64,${fileContent.toString('base64')}`,
       };
+      fs.unlinkSync(signatureFile.path);
+    } else if (parsedData.firma) {
+      conciliacion.firma = parsedData.firma;
     }
+    conciliacion.markModified('firma');
 
-    // Separate anexos for manual synchronization
-    const anexoDataFromClient = parsedData.anexos;
-    delete parsedData.anexos;
 
     // Assign all other top-level fields from parsed data
-    Object.assign(conciliacion, parsedData);
+    const fieldsToUpdate = ['sede', 'infoGeneral', 'convocantes', 'convocados', 'hechos', 'pretensiones'];
+    fieldsToUpdate.forEach(field => {
+        if(parsedData[field]) {
+            conciliacion[field] = parsedData[field];
+            conciliacion.markModified(field);
+        }
+    });
 
-    // --- Robust Anexos Sync Logic ---
+    // --- Robust Anexos Sync Logic (Store in DB) ---
     const newAnexosFromFiles = (req.files && req.files.anexos) || [];
-    const clientAnexoFilenames = anexoDataFromClient ? anexoDataFromClient.map(a => a.name) : [];
+    const anexoDataFromClient = parsedData.anexos || [];
+    const clientAnexoFilenames = anexoDataFromClient.map(a => a.name);
 
     // 1. Filter out deleted annexes
     conciliacion.anexos = conciliacion.anexos.filter(existingAnexo => 
@@ -246,18 +255,20 @@ const updateConciliacion = async (req, res) => {
         }
     });
 
-    // 3. Add new annexes
-    const existingFilenames = conciliacion.anexos.map(a => a.filename);
+    // 3. Add new annexes (as base64)
     newAnexosFromFiles.forEach(newFile => {
-        // Find corresponding client data for the new file
         const anexoFromClient = anexoDataFromClient.find(a => a.name === newFile.originalname);
-        if (anexoFromClient && !existingFilenames.includes(newFile.filename)) {
+        if (anexoFromClient) {
+            const fileContent = fs.readFileSync(newFile.path);
+            const dataUrl = `data:${newFile.mimetype};base64,${fileContent.toString('base64')}`;
+            fs.unlinkSync(newFile.path); // Clean up temp file
+
             conciliacion.anexos.push({
-                filename: newFile.filename,
-                path: newFile.path,
+                filename: newFile.originalname,
                 mimetype: newFile.mimetype,
                 size: newFile.size,
                 descripcion: anexoFromClient.descripcion,
+                dataUrl: dataUrl,
             });
         }
     });
