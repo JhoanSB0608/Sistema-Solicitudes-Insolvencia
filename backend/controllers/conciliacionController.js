@@ -60,17 +60,11 @@ const createConciliacion = async (req, res) => {
     // If a signature file was uploaded, process it and overwrite the 'firma' field
     if (req.files && req.files.firma && req.files.firma[0]) {
       const signatureFile = req.files.firma[0];
-      const fileContent = fs.readFileSync(signatureFile.path);
-      const base64Image = `data:${signatureFile.mimetype};base64,${fileContent.toString('base64')}`;
-      
       parsedData.firma = {
         source: 'upload',
-        data: base64Image, // Storing as base64
         name: signatureFile.originalname,
-        url: signatureFile.path, // also storing path for reference, though it will be deleted
+        url: signatureFile.path,
       };
-
-      fs.unlinkSync(signatureFile.path); // Clean up uploaded file from temp storage
     }
     
     const dataToSave = parsedData;
@@ -216,60 +210,16 @@ const updateConciliacion = async (req, res) => {
       return res.status(401).json({ message: 'No autorizado para actualizar esta solicitud' });
     }
     
+    // --- RADICAL DEBUGGING ---
+    // To isolate the ENOENT error, we will only update a single, simple field
+    // and bypass all the complex logic for annexes and signatures.
     const parsedData = JSON.parse(req.body.solicitudData);
-
-    // Signature file handling (Corrected: No longer reads/deletes file)
-    if (req.files && req.files.firma && req.files.firma[0]) {
-      const signatureFile = req.files.firma[0];
-      parsedData.firma = {
-        source: 'upload',
-        name: signatureFile.originalname,
-        url: signatureFile.path,
-      };
-    }
-
-    const anexoDataFromClient = parsedData.anexos;
-    delete parsedData.anexos;
-
-    Object.assign(conciliacion, parsedData);
-
-    const newAnexosFromFiles = (req.files && req.files.anexos) || [];
-    
-    // Get a list of annex filenames from the client
-    const clientAnexoNames = anexoDataFromClient ? anexoDataFromClient.map(a => a.name) : [];
-
-    // Remove annexes from the Mongoose array that are no longer in the client's list
-    conciliacion.anexos.slice().forEach(existingAnexo => {
-        if (!clientAnexoNames.includes(existingAnexo.filename)) {
-            // Mongoose's method for removing a subdocument from an array
-            conciliacion.anexos.id(existingAnexo._id).remove();
-        }
-    });
-
-    // Update existing ones and add new ones
-    if (anexoDataFromClient) {
-        for (const anexoFromClient of anexoDataFromClient) {
-            const existingAnexo = conciliacion.anexos.find(a => a.filename === anexoFromClient.name);
-            const newFile = newAnexosFromFiles.find(f => f.originalname === anexoFromClient.name);
-
-            if (existingAnexo) {
-                // It exists, so just update the description.
-                existingAnexo.descripcion = anexoFromClient.descripcion;
-            } else if (newFile) {
-                // It doesn't exist and it's a new file, so add it.
-                conciliacion.anexos.push({
-                    filename: newFile.filename,
-                    path: newFile.path,
-                    mimetype: newFile.mimetype,
-                    size: newFile.size,
-                    descripcion: anexoFromClient.descripcion,
-                });
-            }
-        }
-    }
+    conciliacion.tipoSolicitud = parsedData.tipoSolicitud + " - (Updated)"; // Simple, non-controversial update
+    conciliacion.markModified('tipoSolicitud');
     
     const updatedConciliacion = await conciliacion.save();
     res.json(updatedConciliacion);
+    // --- END RADICAL DEBUGGING ---
 
   } catch (error) {
     console.error('Error updating conciliation:', error);
