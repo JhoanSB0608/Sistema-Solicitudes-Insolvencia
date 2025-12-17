@@ -210,16 +210,63 @@ const updateConciliacion = async (req, res) => {
       return res.status(401).json({ message: 'No autorizado para actualizar esta solicitud' });
     }
     
-    // --- RADICAL DEBUGGING ---
-    // To isolate the ENOENT error, we will only update a single, simple field
-    // and bypass all the complex logic for annexes and signatures.
     const parsedData = JSON.parse(req.body.solicitudData);
-    conciliacion.tipoSolicitud = parsedData.tipoSolicitud + " - (Updated)"; // Simple, non-controversial update
-    conciliacion.markModified('tipoSolicitud');
+
+    // Signature file handling
+    if (req.files && req.files.firma && req.files.firma[0]) {
+      const signatureFile = req.files.firma[0];
+      parsedData.firma = {
+        source: 'upload',
+        name: signatureFile.originalname,
+        url: signatureFile.path,
+      };
+    }
+
+    // Separate anexos for manual synchronization
+    const anexoDataFromClient = parsedData.anexos;
+    delete parsedData.anexos;
+
+    // Assign all other top-level fields from parsed data
+    Object.assign(conciliacion, parsedData);
+
+    // --- Robust Anexos Sync Logic ---
+    const newAnexosFromFiles = (req.files && req.files.anexos) || [];
+    const clientAnexoFilenames = anexoDataFromClient ? anexoDataFromClient.map(a => a.name) : [];
+
+    // 1. Filter out deleted annexes
+    conciliacion.anexos = conciliacion.anexos.filter(existingAnexo => 
+        clientAnexoFilenames.includes(existingAnexo.filename)
+    );
+
+    // 2. Update descriptions of existing annexes
+    conciliacion.anexos.forEach(existingAnexo => {
+        const anexoFromClient = anexoDataFromClient.find(a => a.name === existingAnexo.filename);
+        if (anexoFromClient) {
+            existingAnexo.descripcion = anexoFromClient.descripcion;
+        }
+    });
+
+    // 3. Add new annexes
+    const existingFilenames = conciliacion.anexos.map(a => a.filename);
+    newAnexosFromFiles.forEach(newFile => {
+        // Find corresponding client data for the new file
+        const anexoFromClient = anexoDataFromClient.find(a => a.name === newFile.originalname);
+        if (anexoFromClient && !existingFilenames.includes(newFile.filename)) {
+            conciliacion.anexos.push({
+                filename: newFile.filename,
+                path: newFile.path,
+                mimetype: newFile.mimetype,
+                size: newFile.size,
+                descripcion: anexoFromClient.descripcion,
+            });
+        }
+    });
+
+    // 4. Mark the array as modified for Mongoose
+    conciliacion.markModified('anexos');
     
     const updatedConciliacion = await conciliacion.save();
     res.json(updatedConciliacion);
-    // --- END RADICAL DEBUGGING ---
 
   } catch (error) {
     console.error('Error updating conciliation:', error);

@@ -95,34 +95,40 @@ const updateSolicitud = async (req, res) => {
 
     Object.assign(solicitud, parsedData);
 
+    // --- Robust Anexos Sync Logic ---
     const newAnexosFromFiles = (req.files && req.files.anexos) || [];
-    
-    const clientAnexoNames = anexoDataFromClient ? anexoDataFromClient.map(a => a.name) : [];
+    const clientAnexoFilenames = anexoDataFromClient ? anexoDataFromClient.map(a => a.name) : [];
 
-    solicitud.anexos.slice().forEach(existingAnexo => {
-        if (!clientAnexoNames.includes(existingAnexo.filename)) {
-            solicitud.anexos.id(existingAnexo._id).remove();
+    // 1. Filter out deleted annexes
+    solicitud.anexos = solicitud.anexos.filter(existingAnexo => 
+        clientAnexoFilenames.includes(existingAnexo.filename)
+    );
+
+    // 2. Update descriptions of existing annexes
+    solicitud.anexos.forEach(existingAnexo => {
+        const anexoFromClient = anexoDataFromClient.find(a => a.name === existingAnexo.filename);
+        if (anexoFromClient) {
+            existingAnexo.descripcion = anexoFromClient.descripcion;
         }
     });
 
-    if (anexoDataFromClient) {
-        for (const anexoFromClient of anexoDataFromClient) {
-            const anexoToUpdate = solicitud.anexos.find(a => a.filename === anexoFromClient.name);
-            const newFile = newAnexosFromFiles.find(f => f.originalname === anexoFromClient.name);
-
-            if (anexoToUpdate) {
-                anexoToUpdate.descripcion = anexoFromClient.descripcion;
-            } else if (newFile) {
-                solicitud.anexos.push({
-                    filename: newFile.filename,
-                    path: newFile.path,
-                    mimetype: newFile.mimetype,
-                    size: newFile.size,
-                    descripcion: anexoFromClient.descripcion,
-                });
-            }
+    // 3. Add new annexes
+    const existingFilenames = solicitud.anexos.map(a => a.filename);
+    newAnexosFromFiles.forEach(newFile => {
+        const anexoFromClient = anexoDataFromClient.find(a => a.name === newFile.originalname);
+        if (anexoFromClient && !existingFilenames.includes(newFile.filename)) {
+            solicitud.anexos.push({
+                filename: newFile.filename,
+                path: newFile.path,
+                mimetype: newFile.mimetype,
+                size: newFile.size,
+                descripcion: anexoFromClient.descripcion,
+            });
         }
-    }
+    });
+
+    // 4. Mark the array as modified for Mongoose
+    solicitud.markModified('anexos');
     
     // Construct nombreCompleto for the deudor
     if (solicitud.deudor) {
@@ -174,18 +180,11 @@ const createSolicitud = async (req, res) => {
     // If a signature file was uploaded, process it and overwrite the 'firma' field
     if (req.files && req.files.firma && req.files.firma[0]) {
       const signatureFile = req.files.firma[0];
-      const fileContent = fs.readFileSync(signatureFile.path);
-      const base64Image = `data:${signatureFile.mimetype};base64,${fileContent.toString('base64')}`;
-      
       parsedData.firma = {
         source: 'upload',
-        data: base64Image,
         name: signatureFile.originalname,
         url: signatureFile.path,
       };
-
-      // Clean up the uploaded file as it's now stored as base64
-      fs.unlinkSync(signatureFile.path);
     }
     
     // Start with the parsed data as the base
