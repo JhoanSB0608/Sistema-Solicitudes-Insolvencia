@@ -80,63 +80,49 @@ const updateSolicitud = async (req, res) => {
     
     const parsedData = JSON.parse(req.body.solicitudData);
 
-    // Signature file handling
+    // Corrected signature file handling
     if (req.files && req.files.firma && req.files.firma[0]) {
       const signatureFile = req.files.firma[0];
-      // Simply store the path, do not read or delete the file.
-      solicitud.firma = {
+      parsedData.firma = {
         source: 'upload',
         name: signatureFile.originalname,
         url: signatureFile.path,
       };
-    } else if (parsedData.firma) {
-      solicitud.firma = parsedData.firma;
     }
 
-    // --- Defensive Update ---
-    const fieldsToUpdate = [
-      'deudor', 'sede', 'causas', 'acreencias', 'bienesMuebles', 
-      'bienesInmuebles', 'noPoseeBienes', 'informacionFinanciera', 
-      'sociedadConyugal', 'propuestaPago', 'projectionData'
-    ];
-    fieldsToUpdate.forEach(field => {
-      if (parsedData[field] !== undefined) {
-        solicitud[field] = parsedData[field];
-        solicitud.markModified(field);
-      }
-    });
-    solicitud.markModified('firma');
+    const anexoDataFromClient = parsedData.anexos;
+    delete parsedData.anexos;
 
-    // --- Anexos Sync Logic ---
-    const anexoDataFromClient = parsedData.anexos || [];
+    Object.assign(solicitud, parsedData);
+
     const newAnexosFromFiles = (req.files && req.files.anexos) || [];
     
-    const clientAnexoFilenames = anexoDataFromClient.map(a => a.name);
+    const clientAnexoNames = anexoDataFromClient ? anexoDataFromClient.map(a => a.name) : [];
 
-    // Remove annexes that are no longer in the client's list
-    solicitud.anexos = solicitud.anexos.filter(existingAnexo => 
-        clientAnexoFilenames.includes(existingAnexo.filename)
-    );
+    solicitud.anexos.slice().forEach(existingAnexo => {
+        if (!clientAnexoNames.includes(existingAnexo.filename)) {
+            solicitud.anexos.id(existingAnexo._id).remove();
+        }
+    });
 
-    // Update existing ones and add new ones
-    for (const anexoFromClient of anexoDataFromClient) {
-        const existingAnexo = solicitud.anexos.find(a => a.filename === anexoFromClient.name);
-        const newFile = newAnexosFromFiles.find(f => f.originalname === anexoFromClient.name);
+    if (anexoDataFromClient) {
+        for (const anexoFromClient of anexoDataFromClient) {
+            const anexoToUpdate = solicitud.anexos.find(a => a.filename === anexoFromClient.name);
+            const newFile = newAnexosFromFiles.find(f => f.originalname === anexoFromClient.name);
 
-        if (existingAnexo) {
-            existingAnexo.descripcion = anexoFromClient.descripcion;
-        } else if (newFile) {
-            solicitud.anexos.push({
-                filename: newFile.filename,
-                path: newFile.path,
-                mimetype: newFile.mimetype,
-                size: newFile.size,
-                descripcion: anexoFromClient.descripcion,
-            });
+            if (anexoToUpdate) {
+                anexoToUpdate.descripcion = anexoFromClient.descripcion;
+            } else if (newFile) {
+                solicitud.anexos.push({
+                    filename: newFile.filename,
+                    path: newFile.path,
+                    mimetype: newFile.mimetype,
+                    size: newFile.size,
+                    descripcion: anexoFromClient.descripcion,
+                });
+            }
         }
     }
-    solicitud.markModified('anexos');
-
     
     // Construct nombreCompleto for the deudor
     if (solicitud.deudor) {
