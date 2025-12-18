@@ -263,14 +263,17 @@ const getSolicitudDocumento = async (req, res) => {
         const filePath = path.resolve(anexo.path);
         
         // Security check: ensure the path is within the uploads directory
-        const uploadsDir = path.resolve('uploads');
+        // Resolve uploadsDir relative to this controller's directory (__dirname)
+        const uploadsDir = path.resolve(__dirname, '../uploads');
         if (!filePath.startsWith(uploadsDir)) {
+          console.warn(`Intento de acceso a archivo fuera del directorio de carga permitido: ${filePath}`);
           return res.status(403).json({ message: 'Acceso a archivo no permitido.' });
         }
 
         res.download(filePath, anexo.filename, (err) => {
           if (err) {
-            console.error('Error al descargar el anexo:', err);
+            console.error(`Error al descargar el anexo "${anexo.filename}" (ID: ${solicitud._id}):`, err);
+            console.error(`Ruta del archivo intentada: ${filePath}, Código de error: ${err.code}`);
             if (!res.headersSent) {
               // ENOENT is a common error if the file is missing from the server
               if (err.code === "ENOENT") {
