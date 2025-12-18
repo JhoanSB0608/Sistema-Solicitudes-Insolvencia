@@ -33,10 +33,15 @@ export const createSolicitud = async (payload) => {
   }
 };
 
-export const downloadSolicitudDocument = async (solicitudId, format = 'pdf') => {
+export const downloadSolicitudDocument = async (solicitudId, format = 'pdf', filename = null) => {
   try {
     const config = getConfig({ responseType: 'blob' });
-    const response = await axios.get(`${API_URL}/${solicitudId}/documento?format=${format}`, config);
+    let url = `${API_URL}/${solicitudId}/documento?format=${format}`;
+    if (format === 'anexo' && filename) {
+      url += `&filename=${encodeURIComponent(filename)}`;
+    }
+
+    const response = await axios.get(url, config);
 
     const contentType = (response.headers['content-type'] || '').toLowerCase();
     if (contentType.includes('application/json')) {
@@ -46,14 +51,19 @@ export const downloadSolicitudDocument = async (solicitudId, format = 'pdf') => 
       throw errObj;
     }
 
-    let filename = `solicitud-${solicitudId}.${format}`;
+    let downloadFilename = `solicitud-${solicitudId}.${format}`;
     const cd = response.headers['content-disposition'] || response.headers['Content-Disposition'];
     if (cd) {
       const match = cd.match(/filename\*=UTF-8''([^;]+)|filename="([^"]+)"|filename=([^;]+)/);
-      if (match) filename = decodeURIComponent(match[1] || match[2] || match[3]);
+      if (match) downloadFilename = decodeURIComponent(match[1] || match[2] || match[3]);
+    }
+    
+    // If a filename was passed for an anexo, use that for saving.
+    if (format === 'anexo' && filename) {
+      downloadFilename = filename;
     }
 
-    saveAs(response.data, filename);
+    saveAs(response.data, downloadFilename);
     return true;
   } catch (error) {
     console.error('Error al descargar el documento', error);
