@@ -1,5 +1,6 @@
 const Solicitud = require('../models/solicitudModel');
 const fs = require('fs');
+const path = require('path');
 const { generateSolicitudPdf } = require('../utils/documentGenerator');
 const { generateSolicitudDocx } = require('../utils/docxGenerator');
 
@@ -245,6 +246,43 @@ const getSolicitudDocumento = async (req, res) => {
       } catch (err) {
         console.error('Error generando DOCX de Insolvencia:', err);
         return res.status(500).json({ message: 'Error generando el documento DOCX', error: err.message, stack: err.stack });
+      }
+    } else if (format === 'anexo') {
+      try {
+        const { filename } = req.query;
+        if (!filename) {
+          return res.status(400).json({ message: 'Nombre de archivo del anexo no especificado.' });
+        }
+
+        const anexo = solicitud.anexos.find(a => a.filename === filename);
+        if (!anexo) {
+          return res.status(404).json({ message: 'Anexo no encontrado.' });
+        }
+
+        // The path in the DB should be relative to the project root, e.g., 'uploads/filename.pdf'
+        const filePath = path.resolve(anexo.path);
+        
+        // Security check: ensure the path is within the uploads directory
+        const uploadsDir = path.resolve('uploads');
+        if (!filePath.startsWith(uploadsDir)) {
+          return res.status(403).json({ message: 'Acceso a archivo no permitido.' });
+        }
+
+        res.download(filePath, anexo.filename, (err) => {
+          if (err) {
+            console.error('Error al descargar el anexo:', err);
+            if (!res.headersSent) {
+              // ENOENT is a common error if the file is missing from the server
+              if (err.code === "ENOENT") {
+                return res.status(404).send({ message: "El archivo del anexo no existe en el servidor." });
+              }
+              res.status(500).send({ message: "No se pudo descargar el archivo." });
+            }
+          }
+        });
+      } catch (err) {
+        console.error('Error procesando la descarga del anexo:', err);
+        return res.status(500).json({ message: 'Error procesando la descarga del anexo', error: err.message });
       }
     } else {
       return res.status(400).json({ message: `Formato de documento no soportado: ${format}` });

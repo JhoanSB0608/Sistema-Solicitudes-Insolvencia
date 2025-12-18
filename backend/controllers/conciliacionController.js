@@ -1,5 +1,6 @@
 const Conciliacion = require('../models/conciliacionModel');
 const fs = require('fs');
+const path = require('path');
 
 const { generateConciliacionPdf } = require('../utils/conciliacionDocumentGenerator');
 const { generateConciliacionDocx } = require('../utils/docxGenerator');
@@ -90,6 +91,41 @@ const getConciliacionDocumento = async (req, res) => {
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
         res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`);
         res.send(buffer);
+    } else if (format === 'anexo') {
+      try {
+        const { filename } = req.query;
+        if (!filename) {
+          return res.status(400).json({ message: 'Nombre de archivo del anexo no especificado.' });
+        }
+
+        const anexo = solicitud.anexos.find(a => a.filename === filename);
+        if (!anexo) {
+          return res.status(404).json({ message: 'Anexo no encontrado.' });
+        }
+
+        const filePath = path.resolve(anexo.path);
+        
+        // Security check: ensure the path is within the uploads directory
+        const uploadsDir = path.resolve('uploads');
+        if (!filePath.startsWith(uploadsDir)) {
+          return res.status(403).json({ message: 'Acceso a archivo no permitido.' });
+        }
+
+        res.download(filePath, anexo.filename, (err) => {
+          if (err) {
+            console.error('Error al descargar el anexo:', err);
+            if (!res.headersSent) {
+              if (err.code === "ENOENT") {
+                return res.status(404).send({ message: "El archivo del anexo no existe en el servidor." });
+              }
+              res.status(500).send({ message: "No se pudo descargar el archivo." });
+            }
+          }
+        });
+      } catch (err) {
+        console.error('Error procesando la descarga del anexo:', err);
+        return res.status(500).json({ message: 'Error procesando la descarga del anexo', error: err.message });
+      }
     } else {
         return res.status(400).json({ message: `Formato de documento no soportado: ${format}` });
     }
