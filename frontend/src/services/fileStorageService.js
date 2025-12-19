@@ -1,5 +1,5 @@
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 /**
  * Requests a signed URL from the backend for uploading a file to GCS,
@@ -9,7 +9,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
  */
 export const uploadFile = async (file) => {
   if (!API_URL) {
-    throw new Error("NEXT_PUBLIC_API_URL is not defined.");
+    throw new Error("REACT_APP_BACKEND_URL is not defined.");
   }
 
   try {
@@ -64,7 +64,7 @@ export const uploadFile = async (file) => {
  */
 export const downloadFile = async (filename) => {
   if (!API_URL) {
-    throw new Error("NEXT_PUBLIC_API_URL is not defined.");
+    throw new Error("REACT_APP_BACKEND_URL is not defined.");
   }
 
   try {
