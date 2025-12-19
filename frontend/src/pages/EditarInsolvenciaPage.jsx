@@ -29,7 +29,9 @@ const EditarInsolvenciaPage = () => {
   });
 
   const handleSubmit = (data) => {
-    update(data);
+    const formData = new FormData();
+    formData.append('solicitudData', JSON.stringify(data));
+    update(formData);
   };
 
   if (isLoading) {

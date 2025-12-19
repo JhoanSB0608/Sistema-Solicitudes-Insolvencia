@@ -337,7 +337,7 @@ const InsolvenciaForm = ({ onSubmit, resetToken, initialData, isUpdating }) => {
           }, 200);
         } else if (source === 'upload' && url) {
           // Assuming the URL is a relative path to the backend
-          const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+          const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
           setSignatureImage(`${backendUrl}${url}`);
         }
       }
