@@ -29,9 +29,8 @@ const EditarInsolvenciaPage = () => {
   });
 
   const handleSubmit = (data) => {
-    const formData = new FormData();
-    formData.append('solicitudData', JSON.stringify(data));
-    update(formData);
+    console.log("[EditarInsolvenciaPage] Data received from form:", data);
+    update(data);
   };
 
   if (isLoading) {

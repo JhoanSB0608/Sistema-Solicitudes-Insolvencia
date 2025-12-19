@@ -29,6 +29,7 @@ const EditarConciliacionPage = () => {
   });
 
   const handleSubmit = (data) => {
+    console.log("[EditarConciliacionPage] Data received from form:", data);
     update(data);
   };
 

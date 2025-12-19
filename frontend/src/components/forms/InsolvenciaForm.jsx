@@ -508,6 +508,7 @@ const InsolvenciaForm = ({ onSubmit, resetToken, initialData, isUpdating }) => {
     };
     
     setIsUploading(false);
+    console.log("[InsolvenciaForm] Data being sent to parent:", dataToSend);
     onSubmit(dataToSend);
   }
 

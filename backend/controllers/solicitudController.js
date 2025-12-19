@@ -23,6 +23,7 @@ const getSolicitudById = async (req, res) => {
 };
 
 const updateSolicitud = async (req, res) => {
+  console.log(`[solicitudController] updateSolicitud ${req.params.id} - received body:`, JSON.stringify(req.body, null, 2));
   try {
     const { id } = req.params;
     const solicitud = await Solicitud.findById(id);
@@ -60,6 +61,7 @@ const updateSolicitud = async (req, res) => {
       ].filter(Boolean).join(' ');
     }
 
+    console.log("[solicitudController] updateSolicitud - object to be saved:", JSON.stringify(solicitud.toObject(), null, 2));
     const updatedSolicitud = await solicitud.save();
     res.json(updatedSolicitud);
 
@@ -85,6 +87,7 @@ const getMisSolicitudes = async (req, res) => {
 };
 
 const createSolicitud = async (req, res) => {
+  console.log("[solicitudController] createSolicitud - received body:", JSON.stringify(req.body, null, 2));
   try {
     // The incoming request body is now the source of truth from the client.
     const dataToSave = req.body;
@@ -106,6 +109,7 @@ const createSolicitud = async (req, res) => {
     }
 
     const solicitud = new Solicitud(dataToSave);
+    console.log("[solicitudController] createSolicitud - object to be saved:", JSON.stringify(solicitud.toObject(), null, 2));
     const createdSolicitud = await solicitud.save();
     res.status(201).json(createdSolicitud);
   } catch (error) {

@@ -460,6 +460,7 @@ const ConciliacionUnificadaForm = ({ onSubmit, initialData, isUpdating }) => {
     // This implicitly handles the case where initialData.firma.url exists from a previous save.
 
     setIsUploading(false); // End uploading indicator
+    console.log("[ConciliacionUnificadaForm] Data being sent to parent:", dataToSend);
     onSubmit(dataToSend); // Pass the processed data object, not FormData
   }
 

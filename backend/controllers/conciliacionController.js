@@ -6,12 +6,14 @@ const { generateConciliacionPdf } = require('../utils/conciliacionDocumentGenera
 const { generateConciliacionDocx } = require('../utils/docxGenerator');
 
 const createConciliacion = async (req, res) => {
+  console.log("[conciliacionController] createConciliacion - received body:", JSON.stringify(req.body, null, 2));
   try {
     const dataToSave = req.body;
     dataToSave.user = req.user._id;
 
     // The 'anexos' and 'firma' fields are already in the correct format from the client.
     const conciliacion = new Conciliacion(dataToSave);
+    console.log("[conciliacionController] createConciliacion - object to be saved:", JSON.stringify(conciliacion.toObject(), null, 2));
     const createdConciliacion = await conciliacion.save();
     res.status(201).json(createdConciliacion);
   } catch (error) {
@@ -115,6 +117,7 @@ const getConciliacionById = async (req, res) => {
 };
 
 const updateConciliacion = async (req, res) => {
+  console.log(`[conciliacionController] updateConciliacion ${req.params.id} - received body:`, JSON.stringify(req.body, null, 2));
   try {
     const conciliacion = await Conciliacion.findById(req.params.id);
 
@@ -137,6 +140,7 @@ const updateConciliacion = async (req, res) => {
     conciliacion.anexos = dataToUpdate.anexos || [];
     conciliacion.firma = dataToUpdate.firma;
     
+    console.log("[conciliacionController] updateConciliacion - object to be saved:", JSON.stringify(conciliacion.toObject(), null, 2));
     const updatedConciliacion = await conciliacion.save();
     res.json(updatedConciliacion);
 
