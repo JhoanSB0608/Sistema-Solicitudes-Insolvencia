@@ -763,6 +763,7 @@ const InvolucradosModal = ({ open, onClose, involucrados, title }) => {
 };
 
 const AnexosSection = ({ anexos, solicitudId, tipoSolicitud, onUploadSuccess }) => {
+  console.log('AnexosSection received anexos:', anexos);
   const theme = useTheme();
   const fileInputRef = React.useRef(null);
   const { mutate: uploadFileToBackend, isLoading } = useMutation({
@@ -780,7 +781,9 @@ const AnexosSection = ({ anexos, solicitudId, tipoSolicitud, onUploadSuccess }) 
       const file = event.target.files[0];
       if (file) {
           try {
+              console.log('AnexosSection: Starting file upload to GCS for:', file.name);
               const { fileUrl, uniqueFilename } = await fileStorageServiceUploadFile(file);
+              console.log('AnexosSection: GCS upload successful. fileUrl:', fileUrl, 'uniqueFilename:', uniqueFilename);
               uploadFileToBackend({ 
                   id: solicitudId, 
                   tipo: tipoSolicitud.startsWith('Solicitud de Insolvencia') ? 'insolvencia' : 'conciliacion', 
@@ -796,13 +799,14 @@ const AnexosSection = ({ anexos, solicitudId, tipoSolicitud, onUploadSuccess }) 
   };
 
   const handleDownload = async (anexo) => {
-    if (!anexo.filename) {
+    console.log('AnexosSection: handleDownload triggered for anexo:', anexo);
+    if (!anexo.name) { // Corrected from anexo.filename to anexo.name
         toast.error("Nombre del archivo no encontrado.");
         return;
     }
     try {
-      await downloadFile(anexo.filename);
-      toast.success(`Iniciando descarga de ${anexo.filename}...`);
+      await downloadFile(anexo.name); // Corrected from anexo.filename to anexo.name
+      toast.success(`Iniciando descarga de ${anexo.name}...`);
     } catch (error) {
       toast.error(`Error al descargar el archivo: ${error.message}`);
     }
@@ -876,7 +880,7 @@ const AnexosSection = ({ anexos, solicitudId, tipoSolicitud, onUploadSuccess }) 
               </Avatar>
             </ListItemIcon>
             <ListItemText 
-              primary={<Typography sx={{ fontWeight: 600 }}>{anexo.filename}</Typography>}
+              primary={<Typography sx={{ fontWeight: 600 }}>{anexo.name}</Typography>}
               secondary={anexo.descripcion || `${(anexo.size / 1024).toFixed(2)} KB`} 
             />
           </ListItem>
@@ -1482,12 +1486,17 @@ const AdminPage = () => {
     refetch: refetchSolicitudes,
   } = useQuery({ 
     queryKey: queryKey, 
-    queryFn: () => getAdminSolicitudes({ 
-      pageIndex: pagination.pageIndex, 
-      pageSize: pagination.pageSize, 
-      filters: JSON.stringify(columnFilters), 
-      sorting: JSON.stringify(sorting) 
-    }),
+    queryFn: async () => {
+      console.log('Fetching admin solicitudes with params:', { pageIndex: pagination.pageIndex, pageSize: pagination.pageSize, filters: columnFilters, sorting });
+      const data = await getAdminSolicitudes({ 
+        pageIndex: pagination.pageIndex, 
+        pageSize: pagination.pageSize, 
+        filters: JSON.stringify(columnFilters), 
+        sorting: JSON.stringify(sorting) 
+      });
+      console.log('Received solicitudes data:', data);
+      return data;
+    },
     enabled: tabIndex === 1,
     keepPreviousData: true,
     staleTime: 10000,

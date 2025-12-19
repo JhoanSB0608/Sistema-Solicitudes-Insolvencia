@@ -277,6 +277,7 @@ const ConciliacionUnificadaForm = ({ onSubmit, initialData, isUpdating }) => {
   const [signatureImage, setSignatureImage] = useState(null);
 
   useEffect(() => {
+    console.log('[ConciliacionUnificadaForm] InitialData received:', initialData);
     if (initialData) {
       const formattedData = {
         ...initialData,
@@ -295,6 +296,7 @@ const ConciliacionUnificadaForm = ({ onSubmit, initialData, isUpdating }) => {
           file: a.url ? undefined : null // If URL exists, no file object needed for display/re-upload
         }))
       };
+      console.log('[ConciliacionUnificadaForm] Formatted data for reset:', formattedData);
       reset(formattedData);
 
       // Handle signature
@@ -361,11 +363,13 @@ const ConciliacionUnificadaForm = ({ onSubmit, initialData, isUpdating }) => {
       const file = e.target.files[0];
       if (!file) return;
 
+      console.log(`[ConciliacionUnificadaForm] handleAnexoChange for index ${index}, file:`, file.name);
       setUploadingAnexos(prev => ({ ...prev, [index]: true }));
       try {
-        const gcsUrl = await uploadFile(file);
-        setValue(`anexos.${index}.name`, file.name, { shouldValidate: true });
-        setValue(`anexos.${index}.url`, gcsUrl, { shouldValidate: true });
+        const { fileUrl, uniqueFilename } = await uploadFile(file);
+        console.log(`[ConciliacionUnificadaForm] GCS Upload successful for index ${index}. URL: ${fileUrl}, Filename: ${uniqueFilename}`);
+        setValue(`anexos.${index}.name`, uniqueFilename, { shouldValidate: true });
+        setValue(`anexos.${index}.url`, fileUrl, { shouldValidate: true });
         setValue(`anexos.${index}.file`, null); // Clear the file object
       } catch (error) {
         console.error("Error uploading anexo:", error);
@@ -460,7 +464,7 @@ const ConciliacionUnificadaForm = ({ onSubmit, initialData, isUpdating }) => {
     // This implicitly handles the case where initialData.firma.url exists from a previous save.
 
     setIsUploading(false); // End uploading indicator
-    console.log("[ConciliacionUnificadaForm] Data being sent to parent:", dataToSend);
+    console.log("[ConciliacionUnificadaForm] Final data being sent to parent onSubmit:", dataToSend);
     onSubmit(dataToSend); // Pass the processed data object, not FormData
   }
 

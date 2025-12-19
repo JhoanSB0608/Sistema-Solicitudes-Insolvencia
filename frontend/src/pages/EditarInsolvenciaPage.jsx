@@ -12,19 +12,28 @@ const EditarInsolvenciaPage = () => {
 
   const { data: solicitud, isLoading, isError, error } = useQuery({
     queryKey: ['solicitud', id],
-    queryFn: () => getSolicitudById(id),
+    queryFn: async () => {
+      console.log(`[EditarInsolvenciaPage] Fetching solicitud with ID: ${id}`);
+      const data = await getSolicitudById(id);
+      console.log('[EditarInsolvenciaPage] Received solicitud data:', data);
+      return data;
+    },
     enabled: !!id,
   });
 
   const { mutate: update, isLoading: isUpdating } = useMutation({
-    mutationFn: (solicitudData) => updateSolicitud(id, solicitudData),
+    mutationFn: (solicitudData) => {
+      console.log('[EditarInsolvenciaPage] Updating solicitud with data:', solicitudData);
+      return updateSolicitud(id, solicitudData);
+    },
     onSuccess: () => {
+      console.log('[EditarInsolvenciaPage] Solicitud updated successfully.');
       queryClient.invalidateQueries(['solicitudes']);
       queryClient.invalidateQueries(['solicitud', id]);
       navigate('/admin');
     },
     onError: (error) => {
-      console.error('Error actualizando la solicitud:', error);
+      console.error('[EditarInsolvenciaPage] Error actualizando la solicitud:', error);
     },
   });
 

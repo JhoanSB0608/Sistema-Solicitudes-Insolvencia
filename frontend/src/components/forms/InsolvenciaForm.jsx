@@ -301,11 +301,13 @@ const InsolvenciaForm = ({ onSubmit, resetToken, initialData, isUpdating }) => {
     const file = e.target.files[0];
     if (!file) return;
 
+    console.log(`[InsolvenciaForm] handleAnexoChange for index ${index}, file:`, file.name);
     setUploadingAnexos(prev => ({ ...prev, [index]: true }));
     try {
-      const gcsUrl = await uploadFile(file);
-      setValue(`anexos.${index}.name`, file.name, { shouldValidate: true });
-      setValue(`anexos.${index}.url`, gcsUrl, { shouldValidate: true });
+      const { fileUrl, uniqueFilename } = await uploadFile(file);
+      console.log(`[InsolvenciaForm] GCS Upload successful for index ${index}. URL: ${fileUrl}, Filename: ${uniqueFilename}`);
+      setValue(`anexos.${index}.name`, uniqueFilename, { shouldValidate: true });
+      setValue(`anexos.${index}.url`, fileUrl, { shouldValidate: true });
       setValue(`anexos.${index}.file`, null); // Clear the file object
     } catch (error) {
       console.error("Error uploading anexo:", error);
@@ -316,6 +318,7 @@ const InsolvenciaForm = ({ onSubmit, resetToken, initialData, isUpdating }) => {
   };
 
   useEffect(() => {
+    console.log('[InsolvenciaForm] InitialData received:', initialData);
     if (initialData) {
       const formattedData = {
         ...initialData,
@@ -340,6 +343,7 @@ const InsolvenciaForm = ({ onSubmit, resetToken, initialData, isUpdating }) => {
           fechaInicioPago: formatDateForInput(initialData.propuestaPago?.fechaInicioPago),
         }
       };
+      console.log('[InsolvenciaForm] Formatted data for reset:', formattedData);
       reset(formattedData);
 
       // Set signature state when updating
@@ -508,7 +512,7 @@ const InsolvenciaForm = ({ onSubmit, resetToken, initialData, isUpdating }) => {
     };
     
     setIsUploading(false);
-    console.log("[InsolvenciaForm] Data being sent to parent:", dataToSend);
+    console.log("[InsolvenciaForm] Final data being sent to parent onSubmit:", dataToSend);
     onSubmit(dataToSend);
   }
 

@@ -12,19 +12,28 @@ const EditarConciliacionPage = () => {
 
   const { data: solicitud, isLoading, isError, error } = useQuery({
     queryKey: ['conciliacion', id],
-    queryFn: () => getConciliacionById(id),
+    queryFn: async () => {
+      console.log(`[EditarConciliacionPage] Fetching conciliacion with ID: ${id}`);
+      const data = await getConciliacionById(id);
+      console.log('[EditarConciliacionPage] Received conciliacion data:', data);
+      return data;
+    },
     enabled: !!id,
   });
 
   const { mutate: update, isLoading: isUpdating } = useMutation({
-    mutationFn: (solicitudData) => updateConciliacion(id, solicitudData),
+    mutationFn: (solicitudData) => {
+      console.log('[EditarConciliacionPage] Updating conciliacion with data:', solicitudData);
+      return updateConciliacion(id, solicitudData);
+    },
     onSuccess: () => {
+      console.log('[EditarConciliacionPage] Conciliacion updated successfully.');
       queryClient.invalidateQueries(['solicitudes']); // This should be updated to a new query key if it exists
       queryClient.invalidateQueries(['conciliacion', id]);
       navigate('/admin');
     },
     onError: (error) => {
-      console.error('Error actualizando la solicitud de conciliación:', error);
+      console.error('[EditarConciliacionPage] Error actualizando la solicitud de conciliación:', error);
     },
   });
 
