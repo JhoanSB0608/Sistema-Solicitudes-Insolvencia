@@ -147,20 +147,12 @@ const NuevaSolicitudPage = () => {
       setSuccess('');
       setCreatedSolicitudId(null);
 
-      let formData;
-      if (data instanceof FormData) {
-        formData = data;
-      } else {
-        formData = new FormData();
-        formData.append('solicitudData', JSON.stringify(data));
-      }
-
       let createdSolicitud;
       if (tipoSeleccionado === 'Solicitud de Conciliación Unificada') {
-        createdSolicitud = await createConciliacion(formData);
+        createdSolicitud = await createConciliacion(data);
       } else {
-        formData.append('tipoSolicitud', tipoSeleccionado);
-        createdSolicitud = await createSolicitud(formData);
+        const dataWithTipo = { ...data, tipoSolicitud: tipoSeleccionado };
+        createdSolicitud = await createSolicitud(dataWithTipo);
       }
       
       showSuccess('¡Éxito! La solicitud ha sido guardada correctamente.');

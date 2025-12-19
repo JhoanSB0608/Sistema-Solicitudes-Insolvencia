@@ -784,16 +784,13 @@ const AnexosSection = ({ anexos, solicitudId, tipoSolicitud, onUploadSuccess }) 
       }
   };
 
-  const handleDownload = async (anexo) => {
-    const toastId = toast.loading(`Descargando ${anexo.filename}...`);
-    try {
-        const service = tipoSolicitud.startsWith('Solicitud de Insolvencia') ? downloadSolicitudDocument : downloadConciliacionDocument;
-        await service(solicitudId, 'anexo', anexo.filename);
-        toast.update(toastId, { render: "Descarga completada!", type: "success", isLoading: false, autoClose: 3000 });
-    } catch (error) {
-        toast.update(toastId, { render: "Error en la descarga", type: "error", isLoading: false, autoClose: 3000 });
-        handleAxiosError(error);
+  const handleDownload = (anexo) => {
+    if (!anexo.url) {
+        toast.error("URL del anexo no encontrada.");
+        return;
     }
+    window.open(anexo.url, '_blank');
+    toast.success(`Iniciando descarga de ${anexo.filename}...`);
   }
 
   return (

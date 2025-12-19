@@ -29,6 +29,7 @@ import {
 } from '@mui/icons-material';
 import SignatureCanvas from 'react-signature-canvas';
 import LocationSelector from './LocationSelector';
+import { uploadFile } from '../../services/fileStorageService'; // Import uploadFile
 
 // --- Reusable Glassmorphism Components ---
 const GlassCard = ({ children, sx = {}, hover = true, ...props }) => (
@@ -254,6 +255,7 @@ const ConciliacionUnificadaForm = ({ onSubmit, initialData, isUpdating }) => {
   const [tabValue, setTabValue] = useState(0);
   const [validationError, setValidationError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false); // New state for managing file uploads
   const [isConfirmModalOpen, setConfirmModalOpen] = useState(false);
   const [savedSections, setSavedSections] = useState({
       sede: false,
@@ -288,7 +290,8 @@ const ConciliacionUnificadaForm = ({ onSubmit, initialData, isUpdating }) => {
         anexos: initialData.anexos?.map(a => ({
           ...a,
           name: a.filename, // Map filename to name for the form field
-          file: null // Existing files are not re-uploaded by default
+          // Assuming initialData.anexos can already contain 'url' from previous save
+          file: a.url ? undefined : null // If URL exists, no file object needed for display/re-upload
         }))
       };
       reset(formattedData);
@@ -306,6 +309,8 @@ const ConciliacionUnificadaForm = ({ onSubmit, initialData, isUpdating }) => {
         } else if (source === 'upload' && url) {
           const backendUrl = process.env.REACT_APP_BACKEND_URL || 'https://api.systemlex.com.co';
           setSignatureImage(`${backendUrl}${url}`);
+          // Set the URL in form data as if it was uploaded
+          setValue('firma.url', url);
         }
       }
 
@@ -407,39 +412,56 @@ const ConciliacionUnificadaForm = ({ onSubmit, initialData, isUpdating }) => {
     setValidationError('El formulario tiene errores. Por favor, revise todas las pestañas y corrija los campos marcados en rojo.');
   };
 
-  const customOnSubmit = (data) => {
-    const formData = new FormData();
-    if (data.anexos && data.anexos.length > 0) {
-      data.anexos.forEach(anexo => {
-        if (anexo.file) {
-          formData.append('anexos', anexo.file);
+  const customOnSubmit = async (data) => { // Make it async
+    setIsUploading(true); // Start uploading indicator
+
+    const dataToSend = { ...data };
+
+    // Process Anexos
+    if (dataToSend.anexos && dataToSend.anexos.length > 0) {
+        const uploadedAnexos = await Promise.all(dataToSend.anexos.map(async (anexo) => {
+            if (anexo.file instanceof File) { // Check if it's a new File object
+                try {
+                    const gcsUrl = await uploadFile(anexo.file);
+                    return { name: anexo.name, descripcion: anexo.descripcion, url: gcsUrl };
+                } catch (error) {
+                    console.error("Error uploading anexo:", anexo.name, error);
+                    // Handle error appropriately, e.g., show a toast notification
+                    return { ...anexo, error: "Upload failed" }; // Mark as failed
+                }
+            }
+            // If it's not a new File object, assume it's an existing anexo potentially with a URL
+            return anexo;
+        }));
+        dataToSend.anexos = uploadedAnexos.filter(anexo => !anexo.error); // Filter out failed uploads
+        // Optionally, handle if some uploads failed, e.g., show a global error message
+    }
+
+    // Process Signature File
+    if (signatureSource === 'upload' && dataToSend.firma?.file instanceof File) {
+        try {
+            const gcsUrl = await uploadFile(dataToSend.firma.file);
+            dataToSend.firma = {
+                source: 'upload',
+                name: dataToSend.firma.file.name,
+                url: gcsUrl,
+            };
+        } catch (error) {
+            console.error("Error uploading signature:", error);
+            // Handle error
+            dataToSend.firma = { ...dataToSend.firma, error: "Upload failed" };
         }
-      });
-    }
-
-    if (signatureSource === 'upload' && data.firma?.file) {
-      formData.append('firma', data.firma.file);
-    }
-
-    const dataToSend = {
-      ...data,
-      anexos: (data.anexos || []).map(a => ({ name: a.name, descripcion: a.descripcion })),
-    };
-
-    if (signatureSource === 'draw' && sigCanvas.current && !sigCanvas.current.isEmpty()) {
-      dataToSend.firma = {
-        source: 'draw',
-        data: sigCanvas.current.getTrimmedCanvas().toDataURL('image/png')
-      };
-    } else if (signatureSource === 'upload' && data.firma?.file) {
+    } else if (signatureSource === 'draw' && sigCanvas.current && !sigCanvas.current.isEmpty()) {
         dataToSend.firma = {
-          source: 'upload',
-          name: data.firma.file.name,
+            source: 'draw',
+            data: sigCanvas.current.getTrimmedCanvas().toDataURL('image/png')
         };
     }
+    // If signatureSource is 'upload' but no new file is selected, and initialData had a URL, keep it.
+    // This implicitly handles the case where initialData.firma.url exists from a previous save.
 
-    formData.append('solicitudData', JSON.stringify(dataToSend));
-    onSubmit(formData);
+    setIsUploading(false); // End uploading indicator
+    onSubmit(dataToSend); // Pass the processed data object, not FormData
   }
 
   const allSectionsSaved = Object.values(savedSections).every(Boolean);
@@ -792,7 +814,10 @@ const ConciliacionUnificadaForm = ({ onSubmit, initialData, isUpdating }) => {
                                     <Controller
                                         name={`anexos.${index}.file`}
                                         control={control}
-                                        rules={{ required: 'Debe seleccionar un archivo' }}
+                                        rules={{ 
+                                            // Only require file if no URL exists (i.e., new upload)
+                                            required: field.url ? false : 'Debe seleccionar un archivo' 
+                                        }}
                                         render={({ field: { onChange, onBlur, name, ref }, fieldState }) => (
                                             <>
                                                 <Button variant="outlined" component="label" startIcon={<UploadFileIcon />} color={fieldState.error ? 'error' : 'primary'}>
@@ -807,6 +832,8 @@ const ConciliacionUnificadaForm = ({ onSubmit, initialData, isUpdating }) => {
                                                             const file = e.target.files[0];
                                                             if (file) {
                                                                 setValue(`anexos.${index}.name`, file.name);
+                                                                // Clear any existing URL if a new file is selected
+                                                                setValue(`anexos.${index}.url`, undefined); 
                                                             }
                                                             onChange(file || null);
                                                         }}
@@ -814,7 +841,7 @@ const ConciliacionUnificadaForm = ({ onSubmit, initialData, isUpdating }) => {
                                                 </Button>
                                                 <Box flexGrow={1}>
                                                     <Typography variant="body2" noWrap sx={{ color: fieldState.error ? 'error.main' : 'inherit' }}>
-                                                        {watch(`anexos.${index}.name`) || 'Ningún archivo seleccionado'}
+                                                        {watch(`anexos.${index}.name`) || watch(`anexos.${index}.url`) || 'Ningún archivo seleccionado'}
                                                     </Typography>
                                                     {fieldState.error && <FormHelperText error>{fieldState.error.message}</FormHelperText>}
                                                 </Box>
@@ -852,6 +879,7 @@ const ConciliacionUnificadaForm = ({ onSubmit, initialData, isUpdating }) => {
                   setValue('firma.source', newSource);
                   setValue('firma.data', null);
                   setValue('firma.file', null);
+                  setValue('firma.url', null); // Clear URL on source change
                   if (sigCanvas.current) sigCanvas.current.clear();
                   setSignatureImage(null);
                 }}>
@@ -925,7 +953,11 @@ const ConciliacionUnificadaForm = ({ onSubmit, initialData, isUpdating }) => {
                     name="firma.file" 
                     control={control} 
                     rules={{
-                      validate: value => signatureSource !== 'upload' || value !== null || 'Debe seleccionar una imagen de firma.'
+                      validate: (value) => {
+                          // Only require file if no URL exists (i.e., new upload)
+                          const currentUrl = watch('firma.url');
+                          return signatureSource !== 'upload' || value instanceof File || currentUrl ? true : 'Debe seleccionar una imagen de firma.';
+                      }
                     }}
                     render={({ fieldState }) => fieldState.error && <FormHelperText error>{fieldState.error.message}</FormHelperText>} 
                   />
@@ -969,7 +1001,7 @@ const ConciliacionUnificadaForm = ({ onSubmit, initialData, isUpdating }) => {
                     onClick={() => setConfirmModalOpen(true)}
                     variant="contained"
                     size="large"
-                    disabled={isSaving}
+                    disabled={isSaving || isUploading} // Disable if uploading
                     startIcon={<CreateIcon />}
                     sx={{
                       py: 2,
@@ -987,7 +1019,7 @@ const ConciliacionUnificadaForm = ({ onSubmit, initialData, isUpdating }) => {
                       },
                     }}
                   >
-                    Generar Solicitud Unificada
+                    {isUploading ? 'Subiendo Archivos...' : 'Generar Solicitud Unificada'}
                   </Button>
                 </Stack>
               </Box>

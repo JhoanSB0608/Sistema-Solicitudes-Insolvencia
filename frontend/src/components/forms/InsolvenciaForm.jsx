@@ -38,6 +38,7 @@ import { useQuery } from '@tanstack/react-query';
 import SignatureCanvas from 'react-signature-canvas';
 import LocationSelector from './LocationSelector';
 import { getAcreedores } from '../../services/acreedorService';
+import { uploadFile } from '../../services/fileStorageService';
 
 // Glassmorphism Card Component
 const GlassCard = ({ children, sx = {}, hover = true, ...props }) => {
@@ -267,6 +268,7 @@ const InsolvenciaForm = ({ onSubmit, resetToken, initialData, isUpdating }) => {
     firma: false,
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [isConfirmModalOpen, setConfirmModalOpen] = useState(false);
   const sigCanvas = React.useRef({});
 
@@ -445,7 +447,8 @@ const InsolvenciaForm = ({ onSubmit, resetToken, initialData, isUpdating }) => {
     setValidationError('El formulario tiene errores. Por favor, revise todas las pestañas y corrija los campos marcados en rojo.');
   };
 
-  const customOnSubmit = (data) => {
+  const customOnSubmit = async (data) => {
+    setIsUploading(true);
     const correctedData = { ...data };
 
     // Manually correct the fields for 'sede' if they are objects
@@ -456,47 +459,54 @@ const InsolvenciaForm = ({ onSubmit, resetToken, initialData, isUpdating }) => {
       correctedData.sede.sedeCentro = correctedData.sede.sedeCentro.value;
     }
 
-    const formData = new FormData();
+    // Process Anexos
+    if (correctedData.anexos && correctedData.anexos.length > 0) {
+        const uploadedAnexos = await Promise.all(correctedData.anexos.map(async (anexo) => {
+            if (anexo.file instanceof File) {
+                try {
+                    const gcsUrl = await uploadFile(anexo.file);
+                    return { name: anexo.name, descripcion: anexo.descripcion, url: gcsUrl };
+                } catch (error) {
+                    console.error("Error uploading anexo:", anexo.name, error);
+                    return { ...anexo, error: "Upload failed" };
+                }
+            }
+            return anexo;
+        }));
+        correctedData.anexos = uploadedAnexos.filter(anexo => !anexo.error);
+    }
 
-    // Append files from the original data object
-    if (data.anexos && data.anexos.length > 0) {
-      data.anexos.forEach(anexo => {
-        if (anexo.file) {
-          formData.append('anexos', anexo.file);
+    // Process Signature File
+    if (signatureSource === 'upload' && correctedData.firma?.file instanceof File) {
+        try {
+            const gcsUrl = await uploadFile(correctedData.firma.file);
+            correctedData.firma = {
+                source: 'upload',
+                name: correctedData.firma.file.name,
+                url: gcsUrl,
+            };
+        } catch (error) {
+            console.error("Error uploading signature:", error);
+            correctedData.firma = { ...correctedData.firma, error: "Upload failed" };
         }
-      });
+    } else if (signatureSource === 'draw' && sigCanvas.current && !sigCanvas.current.isEmpty()) {
+        correctedData.firma = {
+            source: 'draw',
+            data: sigCanvas.current.getTrimmedCanvas().toDataURL('image/png')
+        };
     }
 
-    if (signatureSource === 'upload' && data.firma?.file) {
-      formData.append('firma', data.firma.file);
-    }
-
-    // Use the corrected data to build the final payload
     const dataToSend = {
       ...correctedData,
-      anexos: (correctedData.anexos || []).map(a => ({ name: a.name })),
       acreencias: (correctedData.acreencias || []).map(a => {
         const acreedorData = acreedoresData?.rows?.find(ac => ac._id === a.acreedor);
         return { ...a, acreedor: acreedorData };
       }),
       projectionData,
     };
-
-    if (signatureSource === 'draw' && sigCanvas.current && !sigCanvas.current.isEmpty()) {
-      dataToSend.firma = {
-        source: 'draw',
-        data: sigCanvas.current.getTrimmedCanvas().toDataURL('image/png')
-      };
-    } else if (signatureSource === 'upload' && data.firma?.file) {
-        dataToSend.firma = {
-          source: 'upload',
-          name: data.firma.file.name,
-        };
-    }
-
-    formData.append('solicitudData', JSON.stringify(dataToSend));
-
-    onSubmit(formData);
+    
+    setIsUploading(false);
+    onSubmit(dataToSend);
   }
 
   // Watchers
@@ -591,6 +601,8 @@ const InsolvenciaForm = ({ onSubmit, resetToken, initialData, isUpdating }) => {
         bienes: false,
         financiera: false,
         propuesta: false,
+        anexos: false,
+        firma: false,
       });
     }
   }, [resetToken, reset]);
@@ -3962,92 +3974,69 @@ const InsolvenciaForm = ({ onSubmit, resetToken, initialData, isUpdating }) => {
           </GlassCard>
         </TabPanel>
 
-        {/* Tab 8: Anexos */}
         <TabPanel value={tabValue} index={7}>
-          <GlassCard>
-            <Box sx={{ p: 3 }}>
-              <Stack spacing={3}>
-                <Stack direction="row" spacing={2} alignItems="center">
-                  <Avatar sx={{ bgcolor: alpha(tabsConfig[7].color, 0.1), color: tabsConfig[7].color }}>
-                    <AttachFileIcon />
-                  </Avatar>
-                  <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                    Anexos
-                  </Typography>
-                </Stack>
-
-                <GlassCard hover={false} sx={{ p: 3, border: `1px dashed ${theme.palette.divider}` }}>
-                  <Stack spacing={2} alignItems="center">
-                    <Typography variant="h6">Cargar Anexos</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Seleccione los archivos que desea adjuntar.
-                    </Typography>
-                    <Button
-                      variant="contained"
-                      component="label"
-                      startIcon={<UploadFileIcon />}
-                      sx={{
-                        background: `linear-gradient(135deg, ${tabsConfig[7].color}, ${alpha(tabsConfig[7].color, 0.7)})`,
-                      }}
-                    >
-                      Seleccionar Archivos
-                      <input
-                        type="file"
-                        hidden
-                        multiple
-                        onChange={(e) => {
-                          const files = Array.from(e.target.files);
-                          files.forEach(file => {
-                            if (!getValues('anexos').some(f => f.name === file.name)) {
-                              appendAnexo({ filename: file.name, file });
-                            }
-                          });
-                        }}
-                      />
-                    </Button>
-                  </Stack>
-                </GlassCard>
-
-                {anexosFields.length > 0 && (
-                  <Stack spacing={2}>
-                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                      Archivos Cargados
-                    </Typography>
+            <GlassCard sx={{ p: 3 }}>
+                <Stack spacing={2}>
+                    <Typography variant="h6">Pruebas y Anexos</Typography>
                     {anexosFields.map((field, index) => (
-                      <GlassCard key={field._id} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Typography variant="body1">{field.filename}</Typography>
-                        <IconButton onClick={() => removeAnexo(index)} color="error">
-                          <DeleteIcon />
-                        </IconButton>
-                      </GlassCard>
+                        <GlassCard key={field.id} sx={{ p: 2, mt: 2 }}>
+                            <Stack spacing={2}>
+                                <Stack direction="row" spacing={2} alignItems="center">
+                                    <Controller
+                                        name={`anexos.${index}.file`}
+                                        control={control}
+                                        rules={{ 
+                                            // Only require file if no URL exists (i.e., new upload)
+                                            required: field.url ? false : 'Debe seleccionar un archivo' 
+                                        }}
+                                        render={({ field: { onChange, onBlur, name, ref }, fieldState }) => (
+                                            <>
+                                                <Button variant="outlined" component="label" startIcon={<UploadFileIcon />} color={fieldState.error ? 'error' : 'primary'}>
+                                                    Seleccionar Archivo
+                                                    <input
+                                                        type="file"
+                                                        hidden
+                                                        name={name}
+                                                        ref={ref}
+                                                        onBlur={onBlur}
+                                                        onChange={(e) => {
+                                                            const file = e.target.files[0];
+                                                            if (file) {
+                                                                setValue(`anexos.${index}.name`, file.name);
+                                                                // Clear any existing URL if a new file is selected
+                                                                setValue(`anexos.${index}.url`, undefined); 
+                                                            }
+                                                            onChange(file || null);
+                                                        }}
+                                                    />
+                                                </Button>
+                                                <Box flexGrow={1}>
+                                                    <Typography variant="body2" noWrap sx={{ color: fieldState.error ? 'error.main' : 'inherit' }}>
+                                                        {watch(`anexos.${index}.name`) || watch(`anexos.${index}.url`) || 'Ningún archivo seleccionado'}
+                                                    </Typography>
+                                                    {fieldState.error && <FormHelperText error>{fieldState.error.message}</FormHelperText>}
+                                                </Box>
+                                            </>
+                                        )}
+                                    />
+                                    <IconButton onClick={() => removeAnexo(index)}><DeleteIcon /></IconButton>
+                                </Stack>
+                                <GlassTextField
+                                    {...register(`anexos.${index}.descripcion`, { required: 'La descripción es requerida' })}
+                                    label="Descripción del Anexo"
+                                    fullWidth
+                                    error={!!errors.anexos?.[index]?.descripcion}
+                                    helperText={errors.anexos?.[index]?.descripcion?.message}
+                                />
+                            </Stack>
+                        </GlassCard>
                     ))}
-                  </Stack>
-                )}
-
-                <Button
-                  variant="contained"
-                  onClick={() => handleSaveSection('anexos', 8)}
-                  disabled={isSaving}
-                  startIcon={isSaving ? null : <SaveIcon />}
-                  sx={{
-                    mt: 2,
-                    py: 1.5,
-                    px: 4,
-                    borderRadius: '12px',
-                    fontWeight: 600,
-                    textTransform: 'none',
-                    background: `linear-gradient(135deg, ${tabsConfig[7].color}, ${alpha(tabsConfig[7].color, 0.7)})`,
-                    '&:hover': {
-                      background: `linear-gradient(135deg, ${alpha(tabsConfig[7].color, 0.9)}, ${alpha(tabsConfig[7].color, 0.6)})`,
-                      transform: 'translateY(-2px)',
-                    },
-                  }}
-                >
-                  {isSaving ? 'Guardando...' : 'Guardar y Continuar'}
-                </Button>
-              </Stack>
-            </Box>
-          </GlassCard>
+                    <Button variant="outlined" onClick={() => appendAnexo({ name: '', file: null, descripcion: '' })} startIcon={<AddIcon />}>Añadir Anexo</Button>
+                    <Button variant="contained" onClick={() => handleSaveSection('anexos', 8)} disabled={isSaving} startIcon={<SaveIcon />} sx={{ mt: 2 }}>
+                      {isSaving ? 'Guardando...' : 'Guardar y Continuar'}
+                    </Button>
+                </Stack>
+            </GlassCard>
         </TabPanel>
 
         {/* Tab 9: Firma */}
@@ -4160,7 +4149,7 @@ const InsolvenciaForm = ({ onSubmit, resetToken, initialData, isUpdating }) => {
                     onClick={() => setConfirmModalOpen(true)}
                     variant="contained"
                     size="large"
-                    disabled={isUpdating}
+                    disabled={isUploading || isUpdating}
                     startIcon={<SendIcon />}
                     sx={{
                       py: 2,
@@ -4178,7 +4167,7 @@ const InsolvenciaForm = ({ onSubmit, resetToken, initialData, isUpdating }) => {
                       },
                     }}
                   >
-                    {isUpdating ? 'Actualizando...' : (initialData ? 'Actualizar Solicitud' : 'Generar Solicitud')}
+                    {isUploading ? 'Subiendo Archivos...' : (isUpdating ? 'Actualizando...' : (initialData ? 'Actualizar Solicitud' : 'Generar Solicitud'))}
                   </Button>
                 </Stack>
               </Box>
@@ -4225,13 +4214,13 @@ const InsolvenciaForm = ({ onSubmit, resetToken, initialData, isUpdating }) => {
         <DialogActions sx={{ p: '16px 24px' }}>
           <Button onClick={() => setConfirmModalOpen(false)} sx={{ borderRadius: '12px' }}>Cancelar</Button>
           <Button 
-            onClick={() => { setConfirmModalOpen(false); handleSubmit(customOnSubmit)(); }} 
+            onClick={() => { setConfirmModalOpen(false); handleSubmit(customOnSubmit, onInvalid)(); }} 
             autoFocus 
             variant="contained" 
             sx={{ borderRadius: '12px' }}
-            disabled={isUpdating}
+            disabled={isUploading || isUpdating}
           >
-            {isUpdating ? 'Actualizando...' : (initialData ? 'Confirmar Actualización' : 'Confirmar')}
+            {isUploading ? 'Subiendo...' : (isUpdating ? 'Actualizando...' : (initialData ? 'Confirmar Actualización' : 'Confirmar'))}
           </Button>
         </DialogActions>
       </Dialog>
