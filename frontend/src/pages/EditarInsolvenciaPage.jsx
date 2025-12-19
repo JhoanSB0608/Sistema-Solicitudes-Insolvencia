@@ -15,7 +15,6 @@ const EditarInsolvenciaPage = () => {
     queryFn: async () => {
       console.log(`[EditarInsolvenciaPage] Fetching solicitud with ID: ${id}`);
       const data = await getSolicitudById(id);
-      console.log('[EditarInsolvenciaPage] Received solicitud data:', data);
       return data;
     },
     enabled: !!id,

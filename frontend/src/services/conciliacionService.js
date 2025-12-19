@@ -23,7 +23,6 @@ const getConfig = (options = {}) => {
 };
 
 export const createConciliacion = async (payload) => {
-  console.log("[conciliacionService] creating with payload:", payload);
   try {
     const config = getConfig({ body: payload });
     const response = await axios.post(API_URL, payload, config);
@@ -76,7 +75,6 @@ export const getConciliacionById = async (solicitudId) => {
 };
 
 export const updateConciliacion = async (solicitudId, payload) => {
-  console.log(`[conciliacionService] updating ${solicitudId} with payload:`, payload);
   try {
     const config = getConfig({ body: payload });
     const response = await axios.put(`${API_URL}/${solicitudId}`, payload, config);

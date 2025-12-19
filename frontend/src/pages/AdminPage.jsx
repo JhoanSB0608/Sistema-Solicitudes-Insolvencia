@@ -763,7 +763,6 @@ const InvolucradosModal = ({ open, onClose, involucrados, title }) => {
 };
 
 const AnexosSection = ({ anexos, solicitudId, tipoSolicitud, onUploadSuccess }) => {
-  console.log('AnexosSection received anexos:', anexos);
   const theme = useTheme();
   const fileInputRef = React.useRef(null);
   const [isDescriptionModalOpen, setIsDescriptionModalOpen] = useState(false);
@@ -1199,9 +1198,6 @@ const InsolvenciaDetails = ({ solicitud, onUploadSuccess }) => {
 
 const ConciliacionDetails = ({ solicitud, onUploadSuccess }) => {
   const theme = useTheme();
-  console.log("Solicitud object:", solicitud);
-  console.log("Propuesta de Pago:", solicitud.propuestaPago);
-  console.log("Projection Data:", solicitud.projectionData); 
   return (
     <Box sx={{ p: 3 }}>
       <GlassAccordion title="Hechos" icon={FactCheck} defaultExpanded>
@@ -1552,14 +1548,12 @@ const AdminPage = () => {
   } = useQuery({ 
     queryKey: queryKey, 
     queryFn: async () => {
-      console.log('Fetching admin solicitudes with params:', { pageIndex: pagination.pageIndex, pageSize: pagination.pageSize, filters: columnFilters, sorting });
       const data = await getAdminSolicitudes({ 
         pageIndex: pagination.pageIndex, 
         pageSize: pagination.pageSize, 
         filters: JSON.stringify(columnFilters), 
         sorting: JSON.stringify(sorting) 
       });
-      console.log('Received solicitudes data:', data);
       return data;
     },
     enabled: tabIndex === 1,

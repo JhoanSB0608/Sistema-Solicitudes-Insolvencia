@@ -17,7 +17,6 @@ const getConfig = (options = {}) => {
 };
 
 export const createSolicitud = async (payload) => {
-  console.log("[solicitudService] creating with payload:", payload);
   try {
     const config = getConfig();
     // If payload is FormData, we must remove the Content-Type header
@@ -85,7 +84,6 @@ export const getSolicitudById = async (solicitudId) => {
 };
 
 export const updateSolicitud = async (solicitudId, payload) => {
-  console.log(`[solicitudService] updating ${solicitudId} with payload:`, payload);
   try {
     const config = getConfig();
     if (payload instanceof FormData) {

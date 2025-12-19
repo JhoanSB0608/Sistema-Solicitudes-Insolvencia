@@ -62,9 +62,6 @@ const getAcreedorById = async (req, res) => {
 // @route   POST /api/acreedores
 // @access  Private
 const createAcreedor = async (req, res) => {
-  // Log para depuración
-  console.log('BODY RECIBIDO EN CREATE ACREEDOR:', req.body);
-
   const { nombre, tipoDoc, nitCc, direccion, email, telefono, pais, departamento, ciudad } = req.body;
 
   if (!nombre || !tipoDoc || !nitCc || !direccion || !email || !telefono) {
