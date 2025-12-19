@@ -6,7 +6,7 @@ import {
   TextField, Button, Typography, Box, Paper, Grid, Tabs, Tab, Checkbox, 
   FormControlLabel, FormControl, InputLabel, Select, MenuItem, FormHelperText,
   alpha, useTheme, Stack, Avatar, IconButton, Chip, LinearProgress, Collapse,
-  Alert, Badge, RadioGroup, Radio, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle
+  Alert, Badge, RadioGroup, Radio, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, CircularProgress
 } from '@mui/material';
 import {
   LocationCity as LocationCityIcon,
@@ -233,7 +233,7 @@ const formatDateForInput = (dateString) => {
 
 const ConciliacionUnificadaForm = ({ onSubmit, initialData, isUpdating }) => {
   const theme = useTheme();
-  const { register, control, handleSubmit, watch, setValue, trigger, formState: { errors }, reset } = useForm({
+  const { register, control, handleSubmit, watch, setValue, trigger, formState: { errors }, reset, setError } = useForm({
     defaultValues: {
       sede: {},
       infoGeneral: { asuntoJuridicoDefinible: false, cuantiaIndeterminada: false, cuantiaDetallada: false },

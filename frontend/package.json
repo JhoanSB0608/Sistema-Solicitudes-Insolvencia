@@ -60,5 +60,8 @@
   "overrides": {
     "nth-check": "2.1.1",
     "postcss": "8.4.38"
+  },
+  "devDependencies": {
+    "baseline-browser-mapping": "^2.9.11"
   }
 }
