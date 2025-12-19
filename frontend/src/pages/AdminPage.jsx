@@ -766,8 +766,11 @@ const AnexosSection = ({ anexos, solicitudId, tipoSolicitud, onUploadSuccess }) 
   console.log('AnexosSection received anexos:', anexos);
   const theme = useTheme();
   const fileInputRef = React.useRef(null);
-  const { mutate: uploadFileToBackend, isLoading } = useMutation({
-    mutationFn: (data) => uploadAnexo(data.id, data.tipo, data.filename, data.fileUrl),
+  const [isDescriptionModalOpen, setIsDescriptionModalOpen] = useState(false);
+  const [currentFileToUpload, setCurrentFileToUpload] = useState(null);
+
+  const { mutate: uploadFileToBackend, isLoading: isUploadingToBackend } = useMutation({
+    mutationFn: (data) => uploadAnexo(data.id, data.tipo, data.filename, data.fileUrl, data.description),
     onSuccess: () => {
         toast.success("Archivo subido con éxito");
         onUploadSuccess();
@@ -777,25 +780,36 @@ const AnexosSection = ({ anexos, solicitudId, tipoSolicitud, onUploadSuccess }) 
     }
   });
 
-  const handleFileChange = async (event) => {
+  const handleFileSelect = (event) => {
       const file = event.target.files[0];
       if (file) {
-          try {
-              console.log('AnexosSection: Starting file upload to GCS for:', file.name);
-              const { fileUrl, uniqueFilename } = await fileStorageServiceUploadFile(file);
-              console.log('AnexosSection: GCS upload successful. fileUrl:', fileUrl, 'uniqueFilename:', uniqueFilename);
-              uploadFileToBackend({ 
-                  id: solicitudId, 
-                  tipo: tipoSolicitud.startsWith('Solicitud de Insolvencia') ? 'insolvencia' : 'conciliacion', 
-                  filename: uniqueFilename,
-                  fileUrl: fileUrl,
-                  // Optionally, you can add a description here if you have an input for it
-                  // description: "Some description" 
-              });
-          } catch (error) {
-              handleAxiosError(error, "Error al subir archivo a Google Cloud Storage.");
-          }
+          setCurrentFileToUpload(file);
+          setIsDescriptionModalOpen(true);
       }
+      // Reset the input value so the same file can be selected again
+      event.target.value = null;
+  };
+
+  const handleDescriptionConfirm = async (description) => {
+    setIsDescriptionModalOpen(false);
+    if (!currentFileToUpload) return;
+
+    try {
+        console.log('AnexosSection: Starting file upload to GCS for:', currentFileToUpload.name, 'with description:', description);
+        const { fileUrl, uniqueFilename } = await fileStorageServiceUploadFile(currentFileToUpload);
+        console.log('AnexosSection: GCS upload successful. fileUrl:', fileUrl, 'uniqueFilename:', uniqueFilename);
+        uploadFileToBackend({ 
+            id: solicitudId, 
+            tipo: tipoSolicitud.startsWith('Solicitud de Insolvencia') ? 'insolvencia' : 'conciliacion', 
+            filename: uniqueFilename,
+            fileUrl: fileUrl,
+            description: description, // Pass the description
+        });
+    } catch (error) {
+        handleAxiosError(error, "Error al subir archivo a Google Cloud Storage.");
+    } finally {
+        setCurrentFileToUpload(null);
+    }
   };
 
   const handleDownload = async (anexo) => {
@@ -817,14 +831,14 @@ const AnexosSection = ({ anexos, solicitudId, tipoSolicitud, onUploadSuccess }) 
       <input
         type="file"
         ref={fileInputRef}
-        onChange={handleFileChange}
+        onChange={handleFileSelect}
         style={{ display: 'none' }}
       />
       <Button
         startIcon={<CloudUploadIcon />}
         variant="contained"
         onClick={() => fileInputRef.current.click()}
-        disabled={isLoading}
+        disabled={isUploadingToBackend}
         sx={{ 
           mb: 3,
           borderRadius: 3,
@@ -840,7 +854,7 @@ const AnexosSection = ({ anexos, solicitudId, tipoSolicitud, onUploadSuccess }) 
           transition: 'all 0.3s ease',
         }}
       >
-        {isLoading ? 'Subiendo...' : 'Subir Documento'}
+        {isUploadingToBackend ? 'Subiendo...' : 'Subir Documento'}
       </Button>
       <List>
         {anexos?.map((anexo, index) => (
@@ -886,6 +900,12 @@ const AnexosSection = ({ anexos, solicitudId, tipoSolicitud, onUploadSuccess }) 
           </ListItem>
         ))}
       </List>
+      <DescriptionModal
+        open={isDescriptionModalOpen}
+        onClose={() => setIsDescriptionModalOpen(false)}
+        onConfirm={handleDescriptionConfirm}
+        defaultValue={currentFileToUpload?.name || ''} // Optional: pre-fill with filename
+      />
     </Box>
   );
 };
@@ -1414,6 +1434,51 @@ function TabPanel(props) {
     </div>
   );
 }
+
+const DescriptionModal = ({ open, onClose, onConfirm, defaultValue = '' }) => {
+  const [description, setDescription] = useState(defaultValue);
+
+  const handleConfirm = () => {
+    onConfirm(description);
+    setDescription(''); // Reset description after confirming
+  };
+
+  const handleClose = () => {
+    onClose();
+    setDescription(''); // Reset description on close
+  };
+
+  return (
+    <GlassModal open={open} onClose={handleClose} title="Añadir Descripción al Anexo">
+      <Stack spacing={2}>
+        <Typography>Por favor, ingrese una breve descripción para el documento que está a punto de subir.</Typography>
+        <TextField
+          autoFocus
+          margin="dense"
+          label="Descripción"
+          type="text"
+          fullWidth
+          variant="outlined"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          onKeyPress={(e) => {
+            if (e.key === 'Enter') {
+              handleConfirm();
+            }
+          }}
+        />
+        <Stack direction="row" justifyContent="flex-end" spacing={1} sx={{ pt: 2 }}>
+          <Button onClick={handleClose} color="inherit">
+            Cancelar
+          </Button>
+          <Button onClick={handleConfirm} variant="contained" color="primary">
+            Confirmar
+          </Button>
+        </Stack>
+      </Stack>
+    </GlassModal>
+  );
+};
 
 // --- Main Component ---
 const AdminPage = () => {

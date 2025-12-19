@@ -231,6 +231,89 @@ const formatDateForInput = (dateString) => {
 };
 
 
+// Reusable Description Modal component
+const DescriptionModal = ({ open, onClose, onConfirm, defaultValue = '' }) => {
+  const theme = useTheme();
+  const [description, setDescription] = useState(defaultValue);
+
+  const handleConfirm = () => {
+    onConfirm(description);
+    setDescription(''); // Reset description after confirming
+  };
+
+  const handleClose = () => {
+    onClose();
+    setDescription(''); // Reset description on close
+  };
+
+  return (
+    <Dialog 
+      open={open} 
+      onClose={handleClose} 
+      maxWidth="sm" 
+      fullWidth 
+      PaperProps={{
+        sx: {
+          background: `linear-gradient(145deg, ${alpha(theme.palette.background.paper, 0.85)} 0%, ${alpha(theme.palette.background.paper, 0.7)} 100%)`,
+          backdropFilter: 'blur(40px) saturate(180%)',
+          border: `1px solid ${alpha(theme.palette.primary.main, 0.15)}`,
+          borderRadius: 4,
+          boxShadow: `0 8px 32px ${alpha(theme.palette.common.black, 0.37)}`,
+          overflow: 'hidden',
+        }
+      }}
+      BackdropProps={{
+        sx: {
+          backdropFilter: 'blur(8px)',
+          backgroundColor: alpha(theme.palette.common.black, 0.5),
+        }
+      }}
+    >
+      <DialogTitle 
+        sx={{ 
+          borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+          background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.08)} 0%, ${alpha(theme.palette.secondary.main, 0.08)} 100%)`,
+          py: 3,
+        }}
+      >
+        <Stack direction="row" alignItems="center" justifyContent="space-between">
+          <Typography variant="h5" sx={{ fontWeight: 700 }}>
+            Añadir Descripción al Anexo
+          </Typography>
+          <IconButton onClick={handleClose}>
+            <CloseIcon />
+          </IconButton>
+        </Stack>
+      </DialogTitle>
+      <DialogContent sx={{ py: 3 }}>
+        <TextField
+          autoFocus
+          margin="dense"
+          label="Descripción"
+          type="text"
+          fullWidth
+          variant="outlined"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          onKeyPress={(e) => {
+            if (e.key === 'Enter') {
+              handleConfirm();
+            }
+          }}
+        />
+      </DialogContent>
+      <DialogActions sx={{ p: 3, borderTop: `1px solid ${alpha(theme.palette.divider, 0.1)}` }}>
+        <Button onClick={handleClose} color="inherit">
+          Cancelar
+        </Button>
+        <Button onClick={handleConfirm} variant="contained" color="primary">
+          Confirmar
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
 const ConciliacionUnificadaForm = ({ onSubmit, initialData, isUpdating }) => {
   const theme = useTheme();
   const { register, control, handleSubmit, watch, setValue, trigger, formState: { errors }, reset, setError } = useForm({
@@ -276,6 +359,11 @@ const ConciliacionUnificadaForm = ({ onSubmit, initialData, isUpdating }) => {
   const [signatureSource, setSignatureSource] = useState('draw');
   const [signatureImage, setSignatureImage] = useState(null);
 
+  // State for Description Modal
+  const [isDescriptionModalOpen, setIsDescriptionModalOpen] = useState(false);
+  const [currentFileToProcess, setCurrentFileToProcess] = useState(null);
+  const [currentAnexoIndex, setCurrentAnexoIndex] = useState(null);
+
   useEffect(() => {
     console.log('[ConciliacionUnificadaForm] InitialData received:', initialData);
     if (initialData) {
@@ -291,10 +379,10 @@ const ConciliacionUnificadaForm = ({ onSubmit, initialData, isUpdating }) => {
         })),
         anexos: initialData.anexos?.map(a => ({
           ...a,
-          name: a.filename, // Map filename to name for the form field
-          // Assuming initialData.anexos can already contain 'url' from previous save
-          file: a.url ? undefined : null // If URL exists, no file object needed for display/re-upload
-        }))
+          name: a.name, // Use 'name' directly from the initialData
+          url: a.url,   // Use 'url' directly from the initialData
+          file: undefined, // Ensure no File object is present for existing anexos
+        })),
       };
       console.log('[ConciliacionUnificadaForm] Formatted data for reset:', formattedData);
       reset(formattedData);
@@ -359,28 +447,44 @@ const ConciliacionUnificadaForm = ({ onSubmit, initialData, isUpdating }) => {
         }
     };
 
-    const handleAnexoChange = async (e, index) => {
+    const handleAnexoChange = (e, index) => {
       const file = e.target.files[0];
       if (!file) return;
 
-      console.log(`[ConciliacionUnificadaForm] handleAnexoChange for index ${index}, file:`, file.name);
-      setUploadingAnexos(prev => ({ ...prev, [index]: true }));
-      try {
-        const { fileUrl, uniqueFilename } = await uploadFile(file);
-        console.log(`[ConciliacionUnificadaForm] GCS Upload successful for index ${index}. URL: ${fileUrl}, Filename: ${uniqueFilename}`);
-        setValue(`anexos.${index}.name`, uniqueFilename, { shouldValidate: true });
-        setValue(`anexos.${index}.url`, fileUrl, { shouldValidate: true });
-        setValue(`anexos.${index}.file`, null); // Clear the file object
-      } catch (error) {
-        console.error("Error uploading anexo:", error);
-        setError(`anexos.${index}.file`, { type: 'manual', message: 'Error al subir el archivo' });
-      } finally {
-        setUploadingAnexos(prev => ({ ...prev, [index]: false }));
-      }
+      setCurrentFileToProcess(file);
+      setCurrentAnexoIndex(index);
+      setIsDescriptionModalOpen(true);
+      
+      // Clear the input field so the same file can be selected again
+      e.target.value = null;
     };
 
+    const handleDescriptionConfirm = async (description) => {
+      if (!currentFileToProcess || currentAnexoIndex === null) return;
+      
+      setIsDescriptionModalOpen(false);
+      setUploadingAnexos(prev => ({ ...prev, [currentAnexoIndex]: true }));
 
-  useEffect(() => {
+      try {
+        console.log(`[ConciliacionUnificadaForm] GCS Upload for index ${currentAnexoIndex}, file:`, currentFileToProcess.name, 'Description:', description);
+        const { fileUrl, uniqueFilename } = await uploadFile(currentFileToProcess);
+        console.log(`[ConciliacionUnificadaForm] GCS Upload successful for index ${currentAnexoIndex}. URL: ${fileUrl}, Filename: ${uniqueFilename}`);
+        
+        setValue(`anexos.${currentAnexoIndex}.name`, uniqueFilename, { shouldValidate: true });
+        setValue(`anexos.${currentAnexoIndex}.url`, fileUrl, { shouldValidate: true });
+        setValue(`anexos.${currentAnexoIndex}.descripcion`, description); // Set the description
+        setValue(`anexos.${currentAnexoIndex}.file`, undefined); // Clear the file object
+
+      } catch (error) {
+        console.error("Error uploading anexo:", error);
+        setError(`anexos.${currentAnexoIndex}.url`, { type: 'manual', message: 'Error al subir el archivo' });
+      } finally {
+        setUploadingAnexos(prev => ({ ...prev, [currentAnexoIndex]: false }));
+        setCurrentFileToProcess(null);
+        setCurrentAnexoIndex(null);
+      }
+    };
+    useEffect(() => {
     if (watchCuantiaDetallada) {
       setValue('infoGeneral.cuantiaIndeterminada', false);
     }
@@ -1038,6 +1142,12 @@ const ConciliacionUnificadaForm = ({ onSubmit, initialData, isUpdating }) => {
                 </Button>
             </DialogActions>
         </Dialog>
+        <DescriptionModal
+          open={isDescriptionModalOpen}
+          onClose={() => setIsDescriptionModalOpen(false)}
+          onConfirm={handleDescriptionConfirm}
+          defaultValue={currentFileToProcess?.name || ''} // Optional: pre-fill with filename
+        />
     </Box>
   );
 };

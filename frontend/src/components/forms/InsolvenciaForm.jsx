@@ -194,6 +194,89 @@ const formatDateForInput = (dateString) => {
   }
 };
 
+// Reusable Description Modal component
+const DescriptionModal = ({ open, onClose, onConfirm, defaultValue = '' }) => {
+  const theme = useTheme();
+  const [description, setDescription] = useState(defaultValue);
+
+  const handleConfirm = () => {
+    onConfirm(description);
+    setDescription(''); // Reset description after confirming
+  };
+
+  const handleClose = () => {
+    onClose();
+    setDescription(''); // Reset description on close
+  };
+
+  return (
+    <Dialog 
+      open={open} 
+      onClose={handleClose} 
+      maxWidth="sm" 
+      fullWidth 
+      PaperProps={{
+        sx: {
+          background: `linear-gradient(145deg, ${alpha(theme.palette.background.paper, 0.85)} 0%, ${alpha(theme.palette.background.paper, 0.7)} 100%)`,
+          backdropFilter: 'blur(40px) saturate(180%)',
+          border: `1px solid ${alpha(theme.palette.primary.main, 0.15)}`,
+          borderRadius: 4,
+          boxShadow: `0 8px 32px ${alpha(theme.palette.common.black, 0.37)}`,
+          overflow: 'hidden',
+        }
+      }}
+      BackdropProps={{
+        sx: {
+          backdropFilter: 'blur(8px)',
+          backgroundColor: alpha(theme.palette.common.black, 0.5),
+        }
+      }}
+    >
+      <DialogTitle 
+        sx={{ 
+          borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+          background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.08)} 0%, ${alpha(theme.palette.secondary.main, 0.08)} 100%)`,
+          py: 3,
+        }}
+      >
+        <Stack direction="row" alignItems="center" justifyContent="space-between">
+          <Typography variant="h5" sx={{ fontWeight: 700 }}>
+            Añadir Descripción al Anexo
+          </Typography>
+          <IconButton onClick={handleClose}>
+            <CloseIcon />
+          </IconButton>
+        </Stack>
+      </DialogTitle>
+      <DialogContent sx={{ py: 3 }}>
+        <TextField
+          autoFocus
+          margin="dense"
+          label="Descripción"
+          type="text"
+          fullWidth
+          variant="outlined"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          onKeyPress={(e) => {
+            if (e.key === 'Enter') {
+              handleConfirm();
+            }
+          }}
+        />
+      </DialogContent>
+      <DialogActions sx={{ p: 3, borderTop: `1px solid ${alpha(theme.palette.divider, 0.1)}` }}>
+        <Button onClick={handleClose} color="inherit">
+          Cancelar
+        </Button>
+        <Button onClick={handleConfirm} variant="contained" color="primary">
+          Confirmar
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
 const InsolvenciaForm = ({ onSubmit, resetToken, initialData, isUpdating }) => {
   const theme = useTheme();
   const selectSx = {
@@ -277,6 +360,11 @@ const InsolvenciaForm = ({ onSubmit, resetToken, initialData, isUpdating }) => {
   const watchedFirmaSource = watch('firma.source');
   const [signatureSource, setSignatureSource] = useState('draw');
   const [signatureImage, setSignatureImage] = useState(null);
+  
+  // State for Description Modal
+  const [isDescriptionModalOpen, setIsDescriptionModalOpen] = useState(false);
+  const [currentFileToProcess, setCurrentFileToProcess] = useState(null);
+  const [currentAnexoIndex, setCurrentAnexoIndex] = useState(null);
 
   // Keep signatureSource state in sync with the form value
   useEffect(() => {
@@ -297,23 +385,41 @@ const InsolvenciaForm = ({ onSubmit, resetToken, initialData, isUpdating }) => {
     }
   };
 
-  const handleAnexoChange = async (e, index) => {
+  const handleAnexoChange = (e, index) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    console.log(`[InsolvenciaForm] handleAnexoChange for index ${index}, file:`, file.name);
-    setUploadingAnexos(prev => ({ ...prev, [index]: true }));
+    setCurrentFileToProcess(file);
+    setCurrentAnexoIndex(index);
+    setIsDescriptionModalOpen(true);
+    
+    // Clear the input field so the same file can be selected again
+    e.target.value = null;
+  };
+
+  const handleDescriptionConfirm = async (description) => {
+    if (!currentFileToProcess || currentAnexoIndex === null) return;
+    
+    setIsDescriptionModalOpen(false);
+    setUploadingAnexos(prev => ({ ...prev, [currentAnexoIndex]: true }));
+
     try {
-      const { fileUrl, uniqueFilename } = await uploadFile(file);
-      console.log(`[InsolvenciaForm] GCS Upload successful for index ${index}. URL: ${fileUrl}, Filename: ${uniqueFilename}`);
-      setValue(`anexos.${index}.name`, uniqueFilename, { shouldValidate: true });
-      setValue(`anexos.${index}.url`, fileUrl, { shouldValidate: true });
-      setValue(`anexos.${index}.file`, null); // Clear the file object
+      console.log(`[InsolvenciaForm] GCS Upload for index ${currentAnexoIndex}, file:`, currentFileToProcess.name, 'Description:', description);
+      const { fileUrl, uniqueFilename } = await uploadFile(currentFileToProcess);
+      console.log(`[InsolvenciaForm] GCS Upload successful for index ${currentAnexoIndex}. URL: ${fileUrl}, Filename: ${uniqueFilename}`);
+      
+      setValue(`anexos.${currentAnexoIndex}.name`, uniqueFilename, { shouldValidate: true });
+      setValue(`anexos.${currentAnexoIndex}.url`, fileUrl, { shouldValidate: true });
+      setValue(`anexos.${currentAnexoIndex}.descripcion`, description); // Set the description
+      setValue(`anexos.${currentAnexoIndex}.file`, undefined); // Clear the file object
+
     } catch (error) {
       console.error("Error uploading anexo:", error);
-      setError(`anexos.${index}.file`, { type: 'manual', message: 'Error al subir el archivo' });
+      setError(`anexos.${currentAnexoIndex}.url`, { type: 'manual', message: 'Error al subir el archivo' });
     } finally {
-      setUploadingAnexos(prev => ({ ...prev, [index]: false }));
+      setUploadingAnexos(prev => ({ ...prev, [currentAnexoIndex]: false }));
+      setCurrentFileToProcess(null);
+      setCurrentAnexoIndex(null);
     }
   };
 
@@ -341,7 +447,13 @@ const InsolvenciaForm = ({ onSubmit, resetToken, initialData, isUpdating }) => {
         propuestaPago: {
           ...initialData.propuestaPago,
           fechaInicioPago: formatDateForInput(initialData.propuestaPago?.fechaInicioPago),
-        }
+        },
+        anexos: initialData.anexos?.map(a => ({
+          ...a,
+          name: a.name,
+          url: a.url,
+          file: undefined,
+        })),
       };
       console.log('[InsolvenciaForm] Formatted data for reset:', formattedData);
       reset(formattedData);
@@ -485,11 +597,11 @@ const InsolvenciaForm = ({ onSubmit, resetToken, initialData, isUpdating }) => {
     // Process Signature File
     if (signatureSource === 'upload' && correctedData.firma?.file instanceof File) {
         try {
-            const gcsUrl = await uploadFile(correctedData.firma.file);
+            const { fileUrl, uniqueFilename } = await uploadFile(correctedData.firma.file);
             correctedData.firma = {
                 source: 'upload',
-                name: correctedData.firma.file.name,
-                url: gcsUrl,
+                name: uniqueFilename, // Store uniqueFilename as name
+                url: fileUrl,
             };
         } catch (error) {
             console.error("Error uploading signature:", error);
@@ -4173,57 +4285,62 @@ const InsolvenciaForm = ({ onSubmit, resetToken, initialData, isUpdating }) => {
         )}
       </form>
 
-      <Dialog
-        open={isConfirmModalOpen}
-        onClose={() => setConfirmModalOpen(false)}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
-        sx={{ 
-          '& .MuiDialog-paper': {
-            borderRadius: '16px', 
-            border: '1px solid rgba(255, 255, 255, 0.2)', 
-            background: 'rgba(255,255,255,0.8)', 
-            backdropFilter: 'blur(10px)'
-          }
-        }}
-      >
-        <DialogTitle id="alert-dialog-title" sx={{ fontWeight: 700 }}>
-          {"⚠️ Atención: Verificación de Datos Requerida ⚠️"}
-        </DialogTitle>
-        <DialogContent>
-          <DialogContentText id="alert-dialog-description" component="div">
-            <Typography variant="body1" gutterBottom>
-              Antes de continuar, te recordamos que cada selección y dato diligenciado en los formularios y pestañas (Créditos Principales y Créditos Postergados) afectan directamente la proyección que se plasmará en el documento.
-            </Typography>
-            <Typography variant="body1" gutterBottom>Por favor, asegúrate de:</Typography>
-            <Box component="ul" sx={{ pl: 2 }}>
-              <li><Typography variant="body2">Revisar que la información ingresada corresponda correctamente a las condiciones del crédito que deseas proyectar.</Typography></li>
-              <li><Typography variant="body2">Confirmar que los montos, plazos, tasas y condiciones reflejan correctamente lo acordado o planificado.</Typography></li>
-              <li><Typography variant="body2">Haber completado todos los campos obligatorios (categoría, capital, fecha de inicio, forma de pago, plazo, intereses, etc.).</Typography></li>
-            </Box>
-            <Typography variant="body1" sx={{ mt: 2, fontWeight: 500 }}>
-            ➡️ Al continuar, confirmás que la proyección generada corresponde a la información que diligencias y que verificaste todos los campos y formularios.
-            </Typography>
-            <Typography variant="body2" sx={{ mt: 1 }}>
-            Si necesitas modificar algo, hazlo antes de proceder para evitar errores en la proyección que se plasmará en el documento.
-            </Typography>
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions sx={{ p: '16px 24px' }}>
-          <Button onClick={() => setConfirmModalOpen(false)} sx={{ borderRadius: '12px' }}>Cancelar</Button>
-          <Button 
-            onClick={() => { setConfirmModalOpen(false); handleSubmit(customOnSubmit, onInvalid)(); }} 
-            autoFocus 
-            variant="contained" 
-            sx={{ borderRadius: '12px' }}
-            disabled={isUploading || isUpdating}
-          >
-            {isUploading ? 'Subiendo...' : (isUpdating ? 'Actualizando...' : (initialData ? 'Confirmar Actualización' : 'Confirmar'))}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
-  );
-};
-
+              <Dialog
+                open={isConfirmModalOpen}
+                onClose={() => setConfirmModalOpen(false)}
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+                sx={{ 
+                  '& .MuiDialog-paper': {
+                    borderRadius: '16px', 
+                    border: '1px solid rgba(255, 255, 255, 0.2)', 
+                    background: 'rgba(255,255,255,0.8)', 
+                    backdropFilter: 'blur(10px)'
+                  }
+                }}
+              >
+                <DialogTitle id="alert-dialog-title" sx={{ fontWeight: 700 }}>
+                  {"⚠️ Atención: Verificación de Datos Requerida ⚠️"}
+                </DialogTitle>
+                <DialogContent>
+                  <DialogContentText id="alert-dialog-description" component="div">
+                    <Typography variant="body1" gutterBottom>
+                      Antes de continuar, te recordamos que cada selección y dato diligenciado en los formularios y pestañas (Créditos Principales y Créditos Postergados) afectan directamente la proyección que se plasmará en el documento.
+                    </Typography>
+                    <Typography variant="body1" gutterBottom>Por favor, asegúrate de:</Typography>
+                    <Box component="ul" sx={{ pl: 2 }}>
+                      <li><Typography variant="body2">Revisar que la información ingresada corresponda correctamente a las condiciones del crédito que deseas proyectar.</Typography></li>
+                      <li><Typography variant="body2">Confirmar que los montos, plazos, tasas y condiciones reflejan correctamente lo acordado o planificado.</Typography></li>
+                      <li><Typography variant="body2">Haber completado todos los campos obligatorios (categoría, capital, fecha de inicio, forma de pago, plazo, intereses, etc.).</Typography></li>
+                    </Box>
+                    <Typography variant="body1" sx={{ mt: 2, fontWeight: 500 }}>
+                    ➡️ Al continuar, confirmás que la proyección generada corresponde a la información que diligencias y que verificaste todos los campos y formularios.
+                    </Typography>
+                    <Typography variant="body2" sx={{ mt: 1 }}>
+                    Si necesitas modificar algo, hazlo antes de proceder para evitar errores en la proyección que se plasmará en el documento.
+                    </Typography>
+                  </DialogContentText>
+                </DialogContent>
+                <DialogActions sx={{ p: '16px 24px' }}>
+                  <Button onClick={() => setConfirmModalOpen(false)} sx={{ borderRadius: '12px' }}>Cancelar</Button>
+                  <Button 
+                    onClick={() => { setConfirmModalOpen(false); handleSubmit(customOnSubmit, onInvalid)(); }} 
+                    autoFocus 
+                    variant="contained" 
+                    sx={{ borderRadius: '12px' }}
+                    disabled={isUploading || isUpdating}
+                  >
+                    {isUploading ? 'Subiendo...' : (isUpdating ? 'Actualizando...' : (initialData ? 'Confirmar Actualización' : 'Confirmar'))}
+                  </Button>
+                </DialogActions>
+              </Dialog>
+              <DescriptionModal
+                open={isDescriptionModalOpen}
+                onClose={() => setIsDescriptionModalOpen(false)}
+                onConfirm={handleDescriptionConfirm}
+                defaultValue={currentFileToProcess?.name || ''} // Optional: pre-fill with filename
+              />
+          </Box>
+        );
+      };
 export default InsolvenciaForm;
