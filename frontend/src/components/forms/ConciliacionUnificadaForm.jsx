@@ -256,6 +256,7 @@ const ConciliacionUnificadaForm = ({ onSubmit, initialData, isUpdating }) => {
   const [validationError, setValidationError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false); // New state for managing file uploads
+  const [uploadingAnexos, setUploadingAnexos] = useState({});
   const [isConfirmModalOpen, setConfirmModalOpen] = useState(false);
   const [savedSections, setSavedSections] = useState({
       sede: false,
@@ -356,6 +357,24 @@ const ConciliacionUnificadaForm = ({ onSubmit, initialData, isUpdating }) => {
         }
     };
 
+    const handleAnexoChange = async (e, index) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      setUploadingAnexos(prev => ({ ...prev, [index]: true }));
+      try {
+        const gcsUrl = await uploadFile(file);
+        setValue(`anexos.${index}.name`, file.name, { shouldValidate: true });
+        setValue(`anexos.${index}.url`, gcsUrl, { shouldValidate: true });
+        setValue(`anexos.${index}.file`, null); // Clear the file object
+      } catch (error) {
+        console.error("Error uploading anexo:", error);
+        setError(`anexos.${index}.file`, { type: 'manual', message: 'Error al subir el archivo' });
+      } finally {
+        setUploadingAnexos(prev => ({ ...prev, [index]: false }));
+      }
+    };
+
 
   useEffect(() => {
     if (watchCuantiaDetallada) {
@@ -416,26 +435,6 @@ const ConciliacionUnificadaForm = ({ onSubmit, initialData, isUpdating }) => {
     setIsUploading(true); // Start uploading indicator
 
     const dataToSend = { ...data };
-
-    // Process Anexos
-    if (dataToSend.anexos && dataToSend.anexos.length > 0) {
-        const uploadedAnexos = await Promise.all(dataToSend.anexos.map(async (anexo) => {
-            if (anexo.file instanceof File) { // Check if it's a new File object
-                try {
-                    const gcsUrl = await uploadFile(anexo.file);
-                    return { name: anexo.name, descripcion: anexo.descripcion, url: gcsUrl };
-                } catch (error) {
-                    console.error("Error uploading anexo:", anexo.name, error);
-                    // Handle error appropriately, e.g., show a toast notification
-                    return { ...anexo, error: "Upload failed" }; // Mark as failed
-                }
-            }
-            // If it's not a new File object, assume it's an existing anexo potentially with a URL
-            return anexo;
-        }));
-        dataToSend.anexos = uploadedAnexos.filter(anexo => !anexo.error); // Filter out failed uploads
-        // Optionally, handle if some uploads failed, e.g., show a global error message
-    }
 
     // Process Signature File
     if (signatureSource === 'upload' && dataToSend.firma?.file instanceof File) {
@@ -807,60 +806,54 @@ const ConciliacionUnificadaForm = ({ onSubmit, initialData, isUpdating }) => {
             <GlassCard sx={{ p: 3 }}>
                 <Stack spacing={2}>
                     <Typography variant="h6">Pruebas y Anexos</Typography>
-                    {anexosFields.map((field, index) => (
-                        <GlassCard key={field.id} sx={{ p: 2, mt: 2 }}>
-                            <Stack spacing={2}>
-                                <Stack direction="row" spacing={2} alignItems="center">
-                                    <Controller
-                                        name={`anexos.${index}.file`}
-                                        control={control}
-                                        rules={{ 
-                                            // Only require file if no URL exists (i.e., new upload)
-                                            required: field.url ? false : 'Debe seleccionar un archivo' 
-                                        }}
-                                        render={({ field: { onChange, onBlur, name, ref }, fieldState }) => (
-                                            <>
-                                                <Button variant="outlined" component="label" startIcon={<UploadFileIcon />} color={fieldState.error ? 'error' : 'primary'}>
-                                                    Seleccionar Archivo
-                                                    <input
-                                                        type="file"
-                                                        hidden
-                                                        name={name}
-                                                        ref={ref}
-                                                        onBlur={onBlur}
-                                                        onChange={(e) => {
-                                                            const file = e.target.files[0];
-                                                            if (file) {
-                                                                setValue(`anexos.${index}.name`, file.name);
-                                                                // Clear any existing URL if a new file is selected
-                                                                setValue(`anexos.${index}.url`, undefined); 
-                                                            }
-                                                            onChange(file || null);
-                                                        }}
-                                                    />
-                                                </Button>
-                                                <Box flexGrow={1}>
-                                                    <Typography variant="body2" noWrap sx={{ color: fieldState.error ? 'error.main' : 'inherit' }}>
-                                                        {watch(`anexos.${index}.name`) || watch(`anexos.${index}.url`) || 'Ningún archivo seleccionado'}
-                                                    </Typography>
-                                                    {fieldState.error && <FormHelperText error>{fieldState.error.message}</FormHelperText>}
-                                                </Box>
-                                            </>
-                                        )}
+                    {anexosFields.map((field, index) => {
+                        const isUploadingAnexo = uploadingAnexos[index];
+                        const anexoUrl = watch(`anexos.${index}.url`);
+                        return (
+                            <GlassCard key={field.id} sx={{ p: 2, mt: 2 }}>
+                                <Stack spacing={2}>
+                                    <Stack direction="row" spacing={2} alignItems="center">
+                                        <Controller
+                                            name={`anexos.${index}.file`}
+                                            control={control}
+                                            rules={{
+                                                validate: () => anexoUrl || 'Debe seleccionar y subir un archivo.'
+                                            }}
+                                            render={({ field: { onBlur, name, ref }, fieldState }) => (
+                                                <>
+                                                    <Button
+                                                        variant="outlined"
+                                                        component="label"
+                                                        disabled={isUploadingAnexo}
+                                                        startIcon={isUploadingAnexo ? <CircularProgress size={20} /> : (anexoUrl ? <CheckCircleIcon /> : <UploadFileIcon />)}
+                                                        color={anexoUrl ? 'success' : (fieldState.error ? 'error' : 'primary')}
+                                                    >
+                                                        {isUploadingAnexo ? 'Subiendo...' : (anexoUrl ? 'Subido' : 'Seleccionar Archivo')}
+                                                        <input type="file" hidden name={name} ref={ref} onBlur={onBlur} onChange={(e) => handleAnexoChange(e, index)} />
+                                                    </Button>
+                                                    <Box flexGrow={1}>
+                                                        <Typography variant="body2" noWrap sx={{ color: fieldState.error ? 'error.main' : 'inherit' }}>
+                                                            {watch(`anexos.${index}.name`) || 'Ningún archivo seleccionado'}
+                                                        </Typography>
+                                                        {fieldState.error && <FormHelperText error>{fieldState.error.message}</FormHelperText>}
+                                                    </Box>
+                                                </>
+                                            )}
+                                        />
+                                        <IconButton onClick={() => removeAnexo(index)} disabled={isUploadingAnexo}><DeleteIcon /></IconButton>
+                                    </Stack>
+                                    <GlassTextField
+                                        {...register(`anexos.${index}.descripcion`, { required: 'La descripción es requerida' })}
+                                        label="Descripción del Anexo"
+                                        fullWidth
+                                        error={!!errors.anexos?.[index]?.descripcion}
+                                        helperText={errors.anexos?.[index]?.descripcion?.message}
                                     />
-                                    <IconButton onClick={() => removeAnexo(index)}><DeleteIcon /></IconButton>
                                 </Stack>
-                                <GlassTextField
-                                    {...register(`anexos.${index}.descripcion`, { required: 'La descripción es requerida' })}
-                                    label="Descripción del Anexo"
-                                    fullWidth
-                                    error={!!errors.anexos?.[index]?.descripcion}
-                                    helperText={errors.anexos?.[index]?.descripcion?.message}
-                                />
-                            </Stack>
-                        </GlassCard>
-                    ))}
-                    <Button variant="outlined" onClick={() => appendAnexo({ name: '', file: null, descripcion: '' })} startIcon={<AddIcon />}>Añadir Anexo</Button>
+                            </GlassCard>
+                        );
+                    })}
+                    <Button variant="outlined" onClick={() => appendAnexo({ name: '', file: null, descripcion: '', url: '' })} startIcon={<AddIcon />}>Añadir Anexo</Button>
                     <Button variant="contained" onClick={() => handleSaveSection('anexos', 7)} disabled={isSaving} startIcon={<SaveIcon />} sx={{ mt: 2 }}>
                       {isSaving ? 'Guardando...' : 'Guardar y Continuar'}
                     </Button>

@@ -9,10 +9,8 @@ const sedeSchema = new mongoose.Schema({
 });
 
 const anexoSchema = new mongoose.Schema({
-  filename: { type: String },
-  path: { type: String },
-  mimetype: { type: String },
-  size: { type: Number },
+  name: { type: String, required: true },
+  url: { type: String, required: true },
   descripcion: { type: String },
 });
 

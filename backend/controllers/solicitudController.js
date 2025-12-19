@@ -36,68 +36,21 @@ const updateSolicitud = async (req, res) => {
       return res.status(401).json({ message: 'No autorizado para actualizar esta solicitud' });
     }
     
-    const parsedData = JSON.parse(req.body.solicitudData);
+    // The incoming request body is now the source of truth, containing all data including GCS urls for anexos.
+    const dataToUpdate = req.body;
 
-    // If a new signature file was uploaded, process it and overwrite the 'firma' field in parsedData
-    if (req.files && req.files.firma && req.files.firma[0]) {
-      const signatureFile = req.files.firma[0];
-      const fileContent = fs.readFileSync(signatureFile.path);
-      const base64Image = `data:${signatureFile.mimetype};base64,${fileContent.toString('base64')}`;
-      
-      parsedData.firma = {
-        source: 'upload',
-        data: base64Image,
-        name: signatureFile.originalname,
-        url: signatureFile.path,
-      };
-      
-      // Clean up the uploaded file as it's now stored as base64
-      fs.unlinkSync(signatureFile.path);
-    }
-
-    const anexoDataFromClient = parsedData.anexos;
-    delete parsedData.anexos;
-
-    Object.assign(solicitud, parsedData);
-
-    const newAnexosFromFiles = (req.files && req.files.anexos) || [];
+    // Directly assign the data from the request body to the Mongoose document.
+    // Mongoose is smart enough to handle the nested schemas.
+    solicitud.set(dataToUpdate);
     
-    // Step 1: Identify which annexes to keep based on client data
-    const clientAnexoNames = anexoDataFromClient ? anexoDataFromClient.map(a => a.name) : [];
-
-    // Step 2: Remove annexes that are no longer in the client's list.
-    // We use .slice() to create a copy for safe iteration while modifying the original array.
-    solicitud.anexos.slice().forEach(existingAnexo => {
-        if (!clientAnexoNames.includes(existingAnexo.filename)) {
-            solicitud.anexos.id(existingAnexo._id).remove();
-        }
-    });
-
-    // Step 3: Iterate client data to update existing or add new annexes.
-    if (anexoDataFromClient) {
-        for (const anexoFromClient of anexoDataFromClient) {
-            // Find if the anexo already exists in the (now potentially smaller) Mongoose array
-            const anexoToUpdate = solicitud.anexos.find(a => a.filename === anexoFromClient.name);
-            const newFile = newAnexosFromFiles.find(f => f.originalname === anexoFromClient.name);
-
-            if (anexoToUpdate) {
-                // It exists in the DB and we're keeping it. Just update its description.
-                anexoToUpdate.descripcion = anexoFromClient.descripcion;
-            } else if (newFile) {
-                // It's not in the DB, and it's a new file. Add it.
-                solicitud.anexos.push({
-                    filename: newFile.filename,
-                    path: newFile.path,
-                    mimetype: newFile.mimetype,
-                    size: newFile.size,
-                    descripcion: anexoFromClient.descripcion,
-                });
-            }
-        }
-    }
-
+    // The 'anexos' array from the client contains the full, correct state of all annexes.
+    // By assigning it directly, Mongoose will handle the update.
+    solicitud.anexos = dataToUpdate.anexos || [];
     
-    // Construct nombreCompleto for the deudor
+    // The 'firma' object is also handled directly.
+    solicitud.firma = dataToUpdate.firma;
+
+    // Construct nombreCompleto for the deudor just in case it changed
     if (solicitud.deudor) {
       solicitud.deudor.nombreCompleto = [
         solicitud.deudor.primerNombre,
@@ -133,60 +86,14 @@ const getMisSolicitudes = async (req, res) => {
 
 const createSolicitud = async (req, res) => {
   try {
+    // The incoming request body is now the source of truth from the client.
+    const dataToSave = req.body;
 
-    if (!req.body.solicitudData) {
-      return res.status(400).json({
-        message: 'Missing solicitudData in request body.',
-        receivedBody: req.body,
-        receivedFiles: req.files,
-      });
-    }
-
-    const parsedData = JSON.parse(req.body.solicitudData);
-    
-    // If a signature file was uploaded, process it and overwrite the 'firma' field
-    if (req.files && req.files.firma && req.files.firma[0]) {
-      const signatureFile = req.files.firma[0];
-      const fileContent = fs.readFileSync(signatureFile.path);
-      const base64Image = `data:${signatureFile.mimetype};base64,${fileContent.toString('base64')}`;
-      
-      parsedData.firma = {
-        source: 'upload',
-        data: base64Image,
-        name: signatureFile.originalname,
-        url: signatureFile.path,
-      };
-
-      // Clean up the uploaded file as it's now stored as base64
-      fs.unlinkSync(signatureFile.path);
-    }
-    
-    // Start with the parsed data as the base
-    const dataToSave = parsedData;
-
-    // Add properties that are not in the parsedData
+    // Assign the user from the authenticated session
     dataToSave.user = req.user._id;
-    if (req.body.tipoSolicitud) {
-      dataToSave.tipoSolicitud = req.body.tipoSolicitud;
-    }
 
-    // Handle 'anexos' files
-    if (req.files && req.files.anexos) {
-      const anexoInfoFromClient = parsedData.anexos || [];
-      dataToSave.anexos = req.files.anexos.map(file => {
-        const matchingInfo = anexoInfoFromClient.find(info => info.name === file.originalname);
-        return {
-          filename: file.filename,
-          path: file.path,
-          mimetype: file.mimetype,
-          size: file.size,
-          descripcion: matchingInfo ? matchingInfo.descripcion : '',
-        };
-      });
-    } else {
-      // If no files are attached, ensure 'anexos' is not the placeholder from the client
-      dataToSave.anexos = [];
-    }
+    // The 'anexos' and 'firma' fields are already in the correct format from the frontend,
+    // including GCS URLs. No special server-side file handling is needed.
 
     // Construct nombreCompleto for the deudor
     if (dataToSave.deudor) {
