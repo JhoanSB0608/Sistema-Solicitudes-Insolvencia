@@ -808,28 +808,25 @@ const ConciliacionUnificadaForm = ({ onSubmit, initialData, isUpdating }) => {
                     <Typography variant="h6">Pruebas y Anexos</Typography>
                     {anexosFields.map((field, index) => {
                         const isUploadingAnexo = uploadingAnexos[index];
-                        const anexoUrl = watch(`anexos.${index}.url`);
                         return (
                             <GlassCard key={field.id} sx={{ p: 2, mt: 2 }}>
                                 <Stack spacing={2}>
                                     <Stack direction="row" spacing={2} alignItems="center">
                                         <Controller
-                                            name={`anexos.${index}.file`}
+                                            name={`anexos.${index}.url`}
                                             control={control}
-                                            rules={{
-                                                validate: () => anexoUrl || 'Debe seleccionar y subir un archivo.'
-                                            }}
-                                            render={({ field: { onBlur, name, ref }, fieldState }) => (
+                                            rules={{ required: 'Debe seleccionar y subir un archivo.' }}
+                                            render={({ field: controllerField, fieldState }) => (
                                                 <>
                                                     <Button
                                                         variant="outlined"
                                                         component="label"
                                                         disabled={isUploadingAnexo}
-                                                        startIcon={isUploadingAnexo ? <CircularProgress size={20} /> : (anexoUrl ? <CheckCircleIcon /> : <UploadFileIcon />)}
-                                                        color={anexoUrl ? 'success' : (fieldState.error ? 'error' : 'primary')}
+                                                        startIcon={isUploadingAnexo ? <CircularProgress size={20} /> : (controllerField.value ? <CheckCircleIcon /> : <UploadFileIcon />)}
+                                                        color={controllerField.value ? 'success' : (fieldState.error ? 'error' : 'primary')}
                                                     >
-                                                        {isUploadingAnexo ? 'Subiendo...' : (anexoUrl ? 'Subido' : 'Seleccionar Archivo')}
-                                                        <input type="file" hidden name={name} ref={ref} onBlur={onBlur} onChange={(e) => handleAnexoChange(e, index)} />
+                                                        {isUploadingAnexo ? 'Subiendo...' : (controllerField.value ? 'Subido' : 'Seleccionar Archivo')}
+                                                        <input type="file" hidden onChange={(e) => handleAnexoChange(e, index)} onBlur={controllerField.onBlur} />
                                                     </Button>
                                                     <Box flexGrow={1}>
                                                         <Typography variant="body2" noWrap sx={{ color: fieldState.error ? 'error.main' : 'inherit' }}>
