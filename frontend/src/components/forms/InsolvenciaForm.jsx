@@ -4134,6 +4134,7 @@ const InsolvenciaForm = ({ onSubmit, resetToken, initialData, isUpdating }) => {
                                         {...register(`anexos.${index}.descripcion`, { required: 'La descripción es requerida' })}
                                         label="Descripción del Anexo"
                                         fullWidth
+                                        InputLabelProps={{ shrink: true }}
                                         error={!!errors.anexos?.[index]?.descripcion}
                                         helperText={errors.anexos?.[index]?.descripcion?.message}
                                     />
