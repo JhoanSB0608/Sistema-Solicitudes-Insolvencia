@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getAdminStats, getAdminSolicitudes, uploadAnexo } from '../services/adminService';
 import { downloadSolicitudDocument } from '../services/solicitudService';
 import { downloadConciliacionDocument } from '../services/conciliacionService';
+import { downloadFile, uploadFile as fileStorageServiceUploadFile } from '../services/fileStorageService';
 import { toast } from 'react-toastify';
 import { handleAxiosError } from '../utils/alert';
 import {
@@ -764,8 +765,8 @@ const InvolucradosModal = ({ open, onClose, involucrados, title }) => {
 const AnexosSection = ({ anexos, solicitudId, tipoSolicitud, onUploadSuccess }) => {
   const theme = useTheme();
   const fileInputRef = React.useRef(null);
-  const { mutate: uploadFile, isLoading } = useMutation({
-    mutationFn: uploadAnexo,
+  const { mutate: uploadFileToBackend, isLoading } = useMutation({
+    mutationFn: (data) => uploadAnexo(data.id, data.tipo, data.filename, data.fileUrl),
     onSuccess: () => {
         toast.success("Archivo subido con éxito");
         onUploadSuccess();
@@ -775,22 +776,36 @@ const AnexosSection = ({ anexos, solicitudId, tipoSolicitud, onUploadSuccess }) 
     }
   });
 
-  const handleFileChange = (event) => {
+  const handleFileChange = async (event) => {
       const file = event.target.files[0];
       if (file) {
-          const formData = new FormData();
-          formData.append('anexo', file);
-          uploadFile({ id: solicitudId, tipo: tipoSolicitud.startsWith('Solicitud de Insolvencia') ? 'insolvencia' : 'conciliacion', formData });
+          try {
+              const { fileUrl, uniqueFilename } = await fileStorageServiceUploadFile(file);
+              uploadFileToBackend({ 
+                  id: solicitudId, 
+                  tipo: tipoSolicitud.startsWith('Solicitud de Insolvencia') ? 'insolvencia' : 'conciliacion', 
+                  filename: uniqueFilename,
+                  fileUrl: fileUrl,
+                  // Optionally, you can add a description here if you have an input for it
+                  // description: "Some description" 
+              });
+          } catch (error) {
+              handleAxiosError(error, "Error al subir archivo a Google Cloud Storage.");
+          }
       }
   };
 
-  const handleDownload = (anexo) => {
-    if (!anexo.url) {
-        toast.error("URL del anexo no encontrada.");
+  const handleDownload = async (anexo) => {
+    if (!anexo.filename) {
+        toast.error("Nombre del archivo no encontrado.");
         return;
     }
-    window.open(anexo.url, '_blank');
-    toast.success(`Iniciando descarga de ${anexo.filename}...`);
+    try {
+      await downloadFile(anexo.filename);
+      toast.success(`Iniciando descarga de ${anexo.filename}...`);
+    } catch (error) {
+      toast.error(`Error al descargar el archivo: ${error.message}`);
+    }
   }
 
   return (

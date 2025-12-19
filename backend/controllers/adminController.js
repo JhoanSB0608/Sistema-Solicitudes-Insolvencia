@@ -139,11 +139,10 @@ const getSolicitudes = async (req, res) => {
 const uploadAnexo = async (req, res) => {
   try {
     const { tipo, id } = req.params;
-    const { descripcion } = req.body;
-    const file = req.file;
+    const { filename, fileUrl, descripcion } = req.body; // Expect filename and fileUrl directly
 
-    if (!file) {
-      return res.status(400).json({ message: 'No se ha subido ningún archivo.' });
+    if (!filename || !fileUrl) {
+      return res.status(400).json({ message: 'El nombre del archivo y la URL son requeridos.' });
     }
 
     let DocumentModel;
@@ -162,10 +161,8 @@ const uploadAnexo = async (req, res) => {
     }
 
     const newAnexo = {
-      filename: file.filename,
-      path: file.path,
-      mimetype: file.mimetype,
-      size: file.size,
+      name: filename, // Store the GCS object name
+      url: fileUrl,   // Store the GCS public URL
       descripcion: descripcion || '',
     };
 

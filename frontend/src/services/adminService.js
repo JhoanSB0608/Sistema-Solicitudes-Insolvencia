@@ -37,9 +37,9 @@ export const getAdminSolicitudes = async ({ pageIndex, pageSize, filters, sortin
 };
 
 // Subir un anexo a una solicitud existente
-export const uploadAnexo = async ({ id, tipo, formData }) => {
-  // tipo puede ser 'insolvencia' o 'conciliacion'
-  const config = getConfig(false); // false para no setear Content-Type, axios lo hace por nosotros con FormData
-  const { data } = await axios.post(`${API_URL}/upload-anexo/${tipo}/${id}`, formData, config);
+export const uploadAnexo = async (id, tipo, filename, fileUrl, descripcion = '') => {
+  const payload = { filename, fileUrl, descripcion };
+  const config = getConfig(); // JSON content type
+  const { data } = await axios.post(`${API_URL}/upload-anexo/${tipo}/${id}`, payload, config);
   return data;
 };
