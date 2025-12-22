@@ -129,7 +129,7 @@ const AnimatedMetricCard = ({ title, value, subtitle, icon: IconComponent, color
 const InteractiveChartContainer = ({ title, subtitle, children, color, icon: IconComponent, actions }) => {
     const theme = useTheme();
     return (
-      <GlassCard sx={{ height: '100%', position: 'relative', overflow: 'hidden' }}>
+      <GlassCard sx={{ position: 'relative', overflow: 'hidden' }}>
         <Box
           sx={{
             position: 'absolute',
@@ -147,7 +147,7 @@ const InteractiveChartContainer = ({ title, subtitle, children, color, icon: Ico
             zIndex: 0,
           }}
         />
-        <CardContent sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column', position: 'relative', zIndex: 1 }}>
+        <CardContent sx={{ p: 3, position: 'relative', zIndex: 1 }}>
           <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 3 }}>
             <Stack direction="row" alignItems="center" spacing={2}>
               <Avatar sx={{ bgcolor: alpha(color, 0.1), color: color, width: 40, height: 40 }}>
@@ -170,7 +170,7 @@ const InteractiveChartContainer = ({ title, subtitle, children, color, icon: Ico
               </Stack>
             )}
           </Stack>
-          <Box sx={{ flex: 1, minHeight: 0 }}>
+          <Box>
             {children}
           </Box>
         </CardContent>
@@ -409,7 +409,7 @@ const EnhancedPieChart = ({ data }) => {
     };
 
     return (
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height={350}>
             <PieChart>
                  <defs>
                     {COLORS.map((color, index) => (
@@ -488,7 +488,7 @@ const EnhancedAreaChart = ({ data }) => {
     };
 
     return (
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height={350}>
             <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                 <defs>
                     <linearGradient id="solicitudesAreaGradient" x1="0" y1="0" x2="0" y2="1">
