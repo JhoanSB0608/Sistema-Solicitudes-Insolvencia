@@ -20,6 +20,7 @@ import { createArchiverEntry, getArchiverEntryById } from '../services/archiverS
 import { showSuccess, handleAxiosError } from '../utils/alert';
 import { toast } from 'react-toastify';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 
 // Glassmorphism Card Component (reused)
 const GlassCard = React.forwardRef(({ children, sx = {}, hover = true, ...props }, ref) => {
@@ -94,6 +95,7 @@ const tiposDeSolicitud = [
 const ArchiverPage = () => {
   const theme = useTheme();
   const queryClient = useQueryClient();
+  const navigate = useNavigate(); // Get navigate function
   const [tipoSeleccionado, setTipoSeleccionado] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -285,7 +287,7 @@ const ArchiverPage = () => {
                   variant="contained"
                   startIcon={<FolderOpenIcon />}
                   sx={{ mt: 2 }}
-                  onClick={() => toast.info("Funcionalidad 'Ver entradas archivadas' no implementada aún.")}
+                  onClick={() => navigate('/archiver')} // Navigate to /archiver
                 >
                   Ver mis archivos
                 </Button>
