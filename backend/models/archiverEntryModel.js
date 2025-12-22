@@ -33,7 +33,7 @@ const archiverDeudorSchema = new mongoose.Schema({
 
 const archiverInsolvenciaSchema = new mongoose.Schema({
   deudor: { type: archiverDeudorSchema, required: true },
-  anexos: [anexoSchema],
+  anexos: { type: [anexoSchema], default: [] }, // Add default: []
 }, { _id: false }); // Do not create _id for subdocument
 
 // ====================
@@ -53,7 +53,7 @@ const archiverConvocadoSchema = new mongoose.Schema({
 const archiverConciliacionSchema = new mongoose.Schema({
   convocante: { type: archiverConvocanteSchema, required: true },
   convocado: { type: archiverConvocadoSchema, required: true },
-  anexos: [anexoSchema],
+  anexos: { type: [anexoSchema], default: [] }, // Add default: []
 }, { _id: false }); // Do not create _id for subdocument
 
 // ====================
