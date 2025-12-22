@@ -446,7 +446,7 @@ const EnhancedPieChart = ({ data }) => {
                 <RechartsTooltip content={<CustomTooltip />} />
                 <Legend 
                     iconType="circle"
-                    formatter={(value) => <span style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', display: 'inline-block', maxWidth: '100px', verticalAlign: 'middle' }}>{value}</span>}
+                    formatter={(value) => <span style={{ overflow: 'hidden', whiteSpace: 'nowrap', display: 'inline-block', maxWidth: '100px', verticalAlign: 'middle' }}>{value}</span>}
                 />
             </PieChart>
         </ResponsiveContainer>
