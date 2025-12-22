@@ -19,6 +19,7 @@ import SessionTimeoutModal from './components/common/SessionTimeoutModal';
 import EditarInsolvenciaPage from './pages/EditarInsolvenciaPage';
 import EditarConciliacionPage from './pages/EditarConciliacionPage';
 import ArchiverPage from './pages/ArchiverPage'; // New import
+import ArchivedRequestsListPage from './pages/ArchivedRequestsListPage';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -156,7 +157,8 @@ const AuthProvider = ({ children }) => {
           <Route path="/admin" element={<PrivateRoute><AdminPage /></PrivateRoute>} />
           <Route path="/admin/editar-solicitud/:id" element={<PrivateRoute><EditarInsolvenciaPage /></PrivateRoute>} />
           <Route path="/admin/editar-conciliacion/:id" element={<PrivateRoute><EditarConciliacionPage /></PrivateRoute>} />
-          <Route path="/archiver" element={<PrivateRoute><ArchiverPage /></PrivateRoute>} />
+          <Route path="/archiver-create" element={<PrivateRoute><ArchiverPage /></PrivateRoute>} />
+          <Route path="/archiver" element={<PrivateRoute><ArchivedRequestsListPage /></PrivateRoute>} />
         </Routes>
       </Container>
     </AuthContext.Provider>
