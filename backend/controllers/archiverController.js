@@ -88,7 +88,30 @@ const uploadArchiverAnexo = async (req, res) => {
     }
 
     const newAnexo = { name, url, descripcion: descripcion || '', size };
-    entry.anexos.push(newAnexo);
+
+    // Determine which anexos array to push to based on tipoSolicitud
+    if (entry.tipoSolicitud === 'Solicitud de Insolvencia Económica') {
+      // Ensure insolvenciaData and its anexos array exist
+      if (!entry.insolvenciaData) {
+        entry.insolvenciaData = {}; // Initialize if undefined
+      }
+      if (!entry.insolvenciaData.anexos) {
+        entry.insolvenciaData.anexos = []; // Initialize if undefined (though schema default should handle this)
+      }
+      entry.insolvenciaData.anexos.push(newAnexo);
+    } else if (entry.tipoSolicitud === 'Solicitud de Conciliación Unificada') {
+      // Ensure conciliacionData and its anexos array exist
+      if (!entry.conciliacionData) {
+        entry.conciliacionData = {}; // Initialize if undefined
+      }
+      if (!entry.conciliacionData.anexos) {
+        entry.conciliacionData.anexos = []; // Initialize if undefined
+      }
+      entry.conciliacionData.anexos.push(newAnexo);
+    } else {
+      return res.status(400).json({ message: 'Unknown tipoSolicitud for this entry.' });
+    }
+
     await entry.save();
 
     res.status(200).json(entry);
