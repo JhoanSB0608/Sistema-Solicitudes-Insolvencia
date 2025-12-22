@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getArchiverEntries } from '../services/archiverService';
-import { downloadFile } from '../services/fileStorageService';
+import { getArchiverEntries, getArchiverEntryById } from '../services/archiverService';
 import {
   useReactTable,
   getCoreRowModel,
@@ -20,7 +19,7 @@ import { Link } from 'react-router-dom';
 import { useDebounce } from '../hooks/useDebounce';
 import {
   Archive as ArchiveIcon, Refresh, Add, Search, FilterList, Description as DescriptionIcon,
-  ArrowUpward, ArrowDownward, CloudDownload as CloudDownloadIcon,
+  ArrowUpward, ArrowDownward,
   Close as CloseIcon, Person as PersonIcon, Business as BusinessIcon,
   Email as EmailIcon, Phone as PhoneIcon, LocationOn as LocationOnIcon
 } from '@mui/icons-material';
@@ -85,7 +84,7 @@ const GlassModal = ({ open, onClose, title, children, maxWidth = "md" }) => {
       </DialogTitle>
       <DialogContent 
         sx={{ 
-          py: 3,
+          py: 3, // Adjusted padding for UI/UX
           background: `linear-gradient(to bottom, ${alpha(theme.palette.background.default, 0.3)} 0%, transparent 100%)`,
         }}
       >
@@ -142,15 +141,16 @@ const DetailItem = ({ label, value, icon: Icon }) => {
 
 const PersonInfoModal = ({ open, onClose, data, title }) => {
   if (!data) return null;
+  const theme = useTheme(); // Use theme for styling
   return (
     <GlassModal open={open} onClose={onClose} title={title} maxWidth="md">
-      <Stack spacing={3}>
+      <Stack spacing={3} sx={{ p: 1 }}> {/* Adjusted padding */}
         <Box 
           sx={{ 
             p: 3, 
             borderRadius: 3,
-            background: `linear-gradient(135deg, ${alpha('#1976d2', 0.1)} 0%, ${alpha('#9c27b0', 0.1)} 100%)`,
-            border: `1px solid ${alpha('#1976d2', 0.2)}`,
+            background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)} 0%, ${alpha(theme.palette.secondary.main, 0.1)} 100%)`, // Use theme colors
+            border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
           }}
         >
           <Stack direction="row" alignItems="center" spacing={2}>
@@ -158,7 +158,7 @@ const PersonInfoModal = ({ open, onClose, data, title }) => {
               sx={{ 
                 width: 64, 
                 height: 64, 
-                bgcolor: alpha('#1976d2', 0.2),
+                bgcolor: alpha(theme.palette.primary.main, 0.2),
                 fontSize: '1.5rem',
                 fontWeight: 800,
               }}
@@ -172,7 +172,7 @@ const PersonInfoModal = ({ open, onClose, data, title }) => {
               <Chip 
                 label={`${data.tipoIdentificacion} - ${data.numeroIdentificacion}`}
                 size="small"
-                sx={{ mt: 1 }}
+                sx={{ mt: 1, bgcolor: alpha(theme.palette.info.main, 0.1), color: theme.palette.info.main }}
               />
             </Box>
           </Stack>
@@ -191,14 +191,53 @@ const PersonInfoModal = ({ open, onClose, data, title }) => {
   );
 };
 
-const AnexosViewerAndUploaderModal = ({ open, onClose, anexos, archiverEntryId, onUploadSuccess }) => {
+const AnexosViewerAndUploaderModal = ({ open, onClose, archiverEntryId, onUploadSuccess }) => {
+  const theme = useTheme();
+  const { data: entryData, isLoading, isError, refetch } = useQuery({
+    queryKey: ['archiverEntry', archiverEntryId],
+    queryFn: () => getArchiverEntryById(archiverEntryId),
+    enabled: !!archiverEntryId && open, // Only fetch when modal is open and id is available
+    staleTime: 0, // Always refetch when opened
+    onSuccess: (data) => {
+        // Ensure that anexos is initialized
+        if (data.tipoSolicitud === 'Solicitud de Insolvencia Económica' && !data.insolvenciaData.anexos) {
+            data.insolvenciaData.anexos = [];
+        } else if (data.tipoSolicitud === 'Solicitud de Conciliación Unificada' && !data.conciliacionData.anexos) {
+            data.conciliacionData.anexos = [];
+        }
+    }
+  });
+
+  const annexes = useMemo(() => {
+    if (entryData?.tipoSolicitud === 'Solicitud de Insolvencia Económica') {
+      return entryData.insolvenciaData?.anexos || [];
+    } else if (entryData?.tipoSolicitud === 'Solicitud de Conciliación Unificada') {
+      return entryData.conciliacionData?.anexos || [];
+    }
+    return [];
+  }, [entryData]);
+
+  const handleModalUploadSuccess = () => {
+    refetch(); // Refetch this specific entry's data
+    onUploadSuccess(); // Also notify parent to refetch main list
+  };
+
   return (
     <GlassModal open={open} onClose={onClose} title="Gestionar Anexos" maxWidth="md">
-      <ArchiverAnexosSection 
-        anexos={anexos} 
-        archiverEntryId={archiverEntryId} 
-        onUploadSuccess={onUploadSuccess} 
-      />
+      {isLoading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+          <CircularProgress />
+          <Typography variant="body2" color="text.secondary" sx={{ ml: 2 }}>Cargando anexos...</Typography>
+        </Box>
+      ) : isError ? (
+        <Alert severity="error">Error al cargar anexos.</Alert>
+      ) : (
+        <ArchiverAnexosSection 
+          anexos={annexes} 
+          archiverEntryId={archiverEntryId} 
+          onUploadSuccess={handleModalUploadSuccess} 
+        />
+      )}
     </GlassModal>
   );
 };
@@ -380,8 +419,8 @@ const ArchivedRequestsListPage = () => {
         return (
           <Tooltip title={`${count} Anexo(s)`}>
             <IconButton 
-              onClick={() => setAnexosModalState({ open: true, anexos: annexes, archiverEntryId: entry._id })}
-              disabled={count === 0 && !entry._id} // Disable if no annexes and cannot upload
+              onClick={() => setAnexosModalState({ open: true, archiverEntryId: entry._id })}
+              disabled={!entry._id} // Disable if no entry ID (shouldn't happen for existing entries)
             >
               <Badge badgeContent={count} color="primary" showZero>
                 <DescriptionIcon />
@@ -823,8 +862,7 @@ const ArchivedRequestsListPage = () => {
       />
       <AnexosViewerAndUploaderModal
         open={anexosModalState.open}
-        onClose={() => setAnexosModalState({ open: false, anexos: [], archiverEntryId: null })}
-        anexos={anexosModalState.anexos}
+        onClose={() => setAnexosModalState({ open: false, archiverEntryId: null })}
         archiverEntryId={anexosModalState.archiverEntryId}
         onUploadSuccess={refetch}
       />
