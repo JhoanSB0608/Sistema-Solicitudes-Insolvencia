@@ -139,6 +139,7 @@ const ArchiverPage = () => {
       showSuccess('¡Éxito! La entrada del archivador ha sido guardada correctamente.');
       setCreatedArchiverEntryId(createdEntry._id);
       setSuccess('¡Éxito! La entrada del archivador ha sido guardada correctamente.');
+      queryClient.invalidateQueries(['archivedEntries']); // Invalidate archived entries list
     } catch (err) {
       handleAxiosError(err, 'No se pudo guardar la entrada del archivador. Intente de nuevo.');
       setError(err.message || 'No se pudo guardar la entrada del archivador. Intente de nuevo.');
@@ -147,6 +148,7 @@ const ArchiverPage = () => {
 
   const handleAnexoUploadSuccess = () => {
     setArchiverEntryRefreshKey(prev => prev + 1); // Trigger refetch of the entry
+    queryClient.invalidateQueries(['archivedEntries']); // Invalidate archived entries list
   };
 
 
