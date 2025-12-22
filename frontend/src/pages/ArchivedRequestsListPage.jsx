@@ -30,7 +30,7 @@ import GlassCard from '../components/common/GlassCard';
 import { ArchiverAnexosSection } from '../components/common/ArchiverAnexosSection';
 
 
-// --- Modal Components ---
+// --- Modal Components (moved outside main component) ---
 const GlassModal = ({ open, onClose, title, children, maxWidth = "md" }) => {
   const theme = useTheme();
   return (
@@ -140,8 +140,8 @@ const DetailItem = ({ label, value, icon: Icon }) => {
 };
 
 const PersonInfoModal = ({ open, onClose, data, title }) => {
+  const theme = useTheme(); // Move useTheme to the top level
   if (!data) return null;
-  const theme = useTheme(); // Use theme for styling
   return (
     <GlassModal open={open} onClose={onClose} title={title} maxWidth="md">
       <Stack spacing={3} sx={{ p: 1 }}> {/* Adjusted padding */}
@@ -192,7 +192,7 @@ const PersonInfoModal = ({ open, onClose, data, title }) => {
 };
 
 const AnexosViewerAndUploaderModal = ({ open, onClose, archiverEntryId, onUploadSuccess }) => {
-  const theme = useTheme();
+  const theme = useTheme(); // Move useTheme to the top level
   const { data: entryData, isLoading, isError, refetch } = useQuery({
     queryKey: ['archiverEntry', archiverEntryId],
     queryFn: () => getArchiverEntryById(archiverEntryId),
@@ -242,7 +242,6 @@ const AnexosViewerAndUploaderModal = ({ open, onClose, archiverEntryId, onUpload
   );
 };
 
-
 // --- Main Component ---
 const ArchivedRequestsListPage = () => {
   const theme = useTheme();
@@ -259,7 +258,7 @@ const ArchivedRequestsListPage = () => {
 
   // State for Modals
   const [personInfoModalState, setPersonInfoModalState] = useState({ open: false, data: null, title: null });
-  const [anexosModalState, setAnexosModalState] = useState({ open: false, anexos: [], archiverEntryId: null });
+  const [anexosModalState, setAnexosModalState] = useState({ open: false, archiverEntryId: null });
 
   // Data fetching
   const { data, isLoading, isError, error, refetch } = useQuery({
