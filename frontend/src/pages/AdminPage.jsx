@@ -23,7 +23,7 @@ import {
 } from '@mui/material';
 import {
   PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, 
-  Legend, ResponsiveContainer, Area, AreaChart, LineChart, Line
+  Legend, ResponsiveContainer, Area, AreaChart, LineChart, Line, Sector, Brush
 } from 'recharts';
 import { useDebounce } from '../hooks/useDebounce';
 import {
@@ -127,38 +127,55 @@ const AnimatedMetricCard = ({ title, value, subtitle, icon: IconComponent, color
 };
 
 const InteractiveChartContainer = ({ title, subtitle, children, color, icon: IconComponent, actions }) => {
-  const theme = useTheme();
-  return (
-    <GlassCard sx={{ height: '100%' }}>
-      <CardContent sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
-        <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 3 }}>
-          <Stack direction="row" alignItems="center" spacing={2}>
-            <Avatar sx={{ bgcolor: alpha(color, 0.1), color: color, width: 40, height: 40 }}>
-              <IconComponent />
-            </Avatar>
-            <Box>
-              <Typography variant="h6" sx={{ fontWeight: 700, color: theme.palette.text.primary }}>
-                {title}
-              </Typography>
-              {subtitle && (
-                <Typography variant="body2" color="text.secondary">
-                  {subtitle}
+    const theme = useTheme();
+    return (
+      <GlassCard sx={{ height: '100%', position: 'relative', overflow: 'hidden' }}>
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '-50%',
+            left: '-50%',
+            width: '200%',
+            height: '200%',
+            background: `radial-gradient(circle, ${alpha(color, 0.15)} 0%, transparent 40%)`,
+            animation: 'glow 5s ease-in-out infinite',
+            '@keyframes glow': {
+              '0%': { transform: 'scale(0.8)', opacity: 0.8 },
+              '50%': { transform: 'scale(1)', opacity: 1 },
+              '100%': { transform: 'scale(0.8)', opacity: 0.8 },
+            },
+            zIndex: 0,
+          }}
+        />
+        <CardContent sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column', position: 'relative', zIndex: 1 }}>
+          <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 3 }}>
+            <Stack direction="row" alignItems="center" spacing={2}>
+              <Avatar sx={{ bgcolor: alpha(color, 0.1), color: color, width: 40, height: 40 }}>
+                <IconComponent />
+              </Avatar>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 700, color: theme.palette.text.primary }}>
+                  {title}
                 </Typography>
-              )}
-            </Box>
-          </Stack>
-          {actions && (
-            <Stack direction="row" spacing={1}>
-              {actions}
+                {subtitle && (
+                  <Typography variant="body2" color="text.secondary">
+                    {subtitle}
+                  </Typography>
+                )}
+              </Box>
             </Stack>
-          )}
-        </Stack>
-        <Box sx={{ flex: 1, minHeight: 0 }}>
-          {children}
-        </Box>
-      </CardContent>
-    </GlassCard>
-  );
+            {actions && (
+              <Stack direction="row" spacing={1}>
+                {actions}
+              </Stack>
+            )}
+          </Stack>
+          <Box sx={{ flex: 1, minHeight: 0 }}>
+            {children}
+          </Box>
+        </CardContent>
+      </GlassCard>
+    );
 };
 
 const CyclingTypeCard = ({ types, color, icon: IconComponent, index }) => {
@@ -257,6 +274,7 @@ const CyclingTypeCard = ({ types, color, icon: IconComponent, index }) => {
   );
 };
 
+
 const EnhancedDashboard = ({ stats }) => {
   const theme = useTheme();
 
@@ -301,7 +319,7 @@ const EnhancedDashboard = ({ stats }) => {
           <InteractiveChartContainer 
             title="Tendencias Temporales" 
             subtitle="Evolución mensual de solicitudes"
-            color={theme.palette.error.main}
+            color={theme.palette.primary.main}
             icon={Timeline}
           >
             <EnhancedAreaChart data={stats.solicitudesPorMes} />
@@ -324,163 +342,193 @@ const EnhancedDashboard = ({ stats }) => {
 };
 
 const EnhancedPieChart = ({ data }) => {
-  const theme = useTheme();
-  const COLORS = [
-    theme.palette.primary.main, 
-    theme.palette.secondary.main, 
-    theme.palette.success.main, 
-    theme.palette.warning.main, 
-    theme.palette.info.main,
-    theme.palette.error.main
-  ];
+    const theme = useTheme();
+    const [activeIndex, setActiveIndex] = useState(null);
 
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      return (
-        <Paper 
-          sx={{ 
-            p: 2, 
-            background: `linear-gradient(145deg, ${alpha(theme.palette.background.paper, 0.95)} 0%, ${alpha(theme.palette.background.paper, 0.8)} 100%)`,
-            backdropFilter: 'blur(10px)',
-            border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
-            borderRadius: 2,
-            boxShadow: theme.shadows[8]
-          }}
-        >
-          <Typography variant="subtitle2" sx={{ fontWeight: 600,  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {payload[0].name}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {payload[0].value} solicitudes
-          </Typography>
-        </Paper>
-      );
-    }
-    return null;
-  };
+    const COLORS = [
+        theme.palette.primary.main, 
+        theme.palette.secondary.main, 
+        theme.palette.success.main, 
+        theme.palette.warning.main, 
+        theme.palette.info.main,
+        theme.palette.error.main
+    ];
 
-  return (
-    <ResponsiveContainer width="100%" height="100%">
-      <PieChart>
-        <defs>
-          {COLORS.map((color, index) => (
-            <linearGradient key={index} id={`gradient-${index}`} x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor={color} stopOpacity={0.8}/>
-              <stop offset="100%" stopColor={color} stopOpacity={0.6}/>
-            </linearGradient>
-          ))}
-        </defs>
-        <Pie 
-          data={data} 
-          dataKey="count" 
-          nameKey="_id" 
-          cx="50%" 
-          cy="50%" 
-          outerRadius="80%"
-          innerRadius="50%"
-          paddingAngle={2}
-          animationBegin={0}
-          animationDuration={1200}
-        >
-          {data.map((entry, index) => (
-            <Cell 
-              key={`cell-${index}`} 
-              fill={`url(#gradient-${index % COLORS.length})`}
-              stroke={COLORS[index % COLORS.length]}
-              strokeWidth={2}
-            />
-          ))}
-        </Pie>
-        <RechartsTooltip content={<CustomTooltip />} />
-        <Legend 
-          iconType="circle"
-          formatter={(value) => <span style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', display: 'inline-block', maxWidth: '100px', verticalAlign: 'middle' }}>{value}</span>}
-        />
-      </PieChart>
-    </ResponsiveContainer>
-  );
+    const onPieEnter = (_, index) => {
+        setActiveIndex(index);
+    };
+
+    const onPieLeave = () => {
+        setActiveIndex(null);
+    };
+    
+    const total = data.reduce((sum, entry) => sum + entry.count, 0);
+
+    const CustomTooltip = ({ active, payload }) => {
+        if (active && payload && payload.length) {
+            const percent = ((payload[0].value / total) * 100).toFixed(2);
+            return (
+                <Paper 
+                    sx={{ 
+                        p: 2, 
+                        background: `linear-gradient(145deg, ${alpha(theme.palette.background.paper, 0.95)} 0%, ${alpha(theme.palette.background.paper, 0.8)} 100%)`,
+                        backdropFilter: 'blur(10px)',
+                        border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                        borderRadius: 2,
+                        boxShadow: theme.shadows[8]
+                    }}
+                >
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                        {payload[0].name}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                        {payload[0].value} solicitudes ({percent}%)
+                    </Typography>
+                </Paper>
+            );
+        }
+        return null;
+    };
+    
+    const renderActiveShape = (props) => {
+        const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props;
+        return (
+            <g>
+                <Sector
+                    cx={cx}
+                    cy={cy}
+                    innerRadius={innerRadius}
+                    outerRadius={outerRadius + 8}
+                    startAngle={startAngle}
+                    endAngle={endAngle}
+                    fill={fill}
+                    style={{ filter: `drop-shadow(0 4px 8px ${alpha(fill, 0.5)})` }}
+                />
+            </g>
+        );
+    };
+
+    return (
+        <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+                 <defs>
+                    {COLORS.map((color, index) => (
+                        <linearGradient key={index} id={`gradient-${index}`} x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stopColor={color} stopOpacity={0.9}/>
+                            <stop offset="100%" stopColor={color} stopOpacity={0.6}/>
+                        </linearGradient>
+                    ))}
+                </defs>
+                <Pie 
+                    data={data} 
+                    dataKey="count" 
+                    nameKey="_id" 
+                    cx="50%" 
+                    cy="50%" 
+                    innerRadius="60%"
+                    outerRadius="80%"
+                    paddingAngle={5}
+                    activeIndex={activeIndex}
+                    activeShape={renderActiveShape}
+                    onMouseEnter={onPieEnter}
+                    onMouseLeave={onPieLeave}
+                >
+                    {data.map((entry, index) => (
+                        <Cell 
+                            key={`cell-${index}`} 
+                            fill={`url(#gradient-${index % COLORS.length})`}
+                            stroke={theme.palette.background.paper}
+                            strokeWidth={2}
+                        />
+                    ))}
+                </Pie>
+                <RechartsTooltip content={<CustomTooltip />} />
+                <Legend 
+                    iconType="circle"
+                    formatter={(value) => <span style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', display: 'inline-block', maxWidth: '100px', verticalAlign: 'middle' }}>{value}</span>}
+                />
+            </PieChart>
+        </ResponsiveContainer>
+    );
 };
 
 const EnhancedAreaChart = ({ data }) => {
-  const theme = useTheme();
-  const chartData = data.map(item => ({ 
-    name: `${item._id.month}/${item._id.year}`, 
-    Solicitudes: item.count,
-    Mes: item._id.month,
-    Año: item._id.year
-  }));
+    const theme = useTheme();
+    const chartData = data.map(item => ({ 
+        name: `${item._id.month}/${item._id.year}`, 
+        Solicitudes: item.count,
+    }));
 
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      return (
-        <Paper 
-          sx={{ 
-            p: 2, 
-            background: `linear-gradient(145deg, ${alpha(theme.palette.background.paper, 0.95)} 0%, ${alpha(theme.palette.background.paper, 0.8)} 100%)`,
-            backdropFilter: 'blur(10px)',
-            border: `1px solid ${alpha(theme.palette.error.main, 0.2)}`,
-            borderRadius: 2,
-            boxShadow: theme.shadows[8]
-          }}
-        >
-          <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
-            {label}
-          </Typography>
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <Box sx={{ 
-              width: 12, 
-              height: 12, 
-              borderRadius: '50%', 
-              bgcolor: theme.palette.error.main 
-            }} />
-            <Typography variant="body2">
-              {payload[0].value} solicitudes
-            </Typography>
-          </Stack>
-        </Paper>
-      );
-    }
-    return null;
-  };
+    const CustomTooltip = ({ active, payload, label }) => {
+        if (active && payload && payload.length) {
+            return (
+                <Paper 
+                    sx={{ 
+                        p: 2, 
+                        background: `linear-gradient(145deg, ${alpha(theme.palette.background.paper, 0.95)} 0%, ${alpha(theme.palette.background.paper, 0.8)} 100%)`,
+                        backdropFilter: 'blur(10px)',
+                        border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                        borderRadius: 2,
+                        boxShadow: theme.shadows[8]
+                    }}
+                >
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+                        {label}
+                    </Typography>
+                    <Stack direction="row" alignItems="center" spacing={1}>
+                        <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: theme.palette.primary.main }} />
+                        <Typography variant="body2">
+                            {payload[0].value} solicitudes
+                        </Typography>
+                    </Stack>
+                </Paper>
+            );
+        }
+        return null;
+    };
 
-  return (
-    <ResponsiveContainer width="100%" height="100%">
-      <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-        <defs>
-          <linearGradient id="solicitudesAreaGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor={theme.palette.error.main} stopOpacity={0.3}/>
-            <stop offset="95%" stopColor={theme.palette.error.main} stopOpacity={0.0}/>
-          </linearGradient>
-          <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
-            <feDropShadow dx="0" dy="4" stdDeviation="8" floodColor={alpha(theme.palette.error.main, 0.3)}/>
-          </filter>
-        </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke={alpha(theme.palette.divider, 0.3)} vertical={false} />
-        <XAxis 
-          dataKey="name" 
-          tickLine={false} 
-          axisLine={false}
-          tick={{ fontSize: 12, fontWeight: 500 }}
-        />
-        <YAxis 
-          tickLine={false} 
-          axisLine={false}
-          tick={{ fontSize: 12, fontWeight: 500 }}
-        />
-        <RechartsTooltip content={<CustomTooltip />} />
-        <Area 
-          type="monotone" 
-          dataKey="Solicitudes" 
-          stroke={theme.palette.error.main}
-          strokeWidth={3}
-          fill="url(#solicitudesAreaGradient)"
-          // filter="url(#shadow)"
-          animationDuration={1500}
-          animationBegin={200}
-        />
-      </AreaChart>
-    </ResponsiveContainer>
-  );
+    return (
+        <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                <defs>
+                    <linearGradient id="solicitudesAreaGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor={theme.palette.primary.main} stopOpacity={0.4}/>
+                        <stop offset="95%" stopColor={theme.palette.primary.main} stopOpacity={0}/>
+                    </linearGradient>
+                    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+                        <feDropShadow dx="0" dy="5" stdDeviation="10" floodColor={alpha(theme.palette.primary.main, 0.3)}/>
+                    </filter>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke={alpha(theme.palette.divider, 0.1)} vertical={false} />
+                <XAxis 
+                    dataKey="name" 
+                    tickLine={false} 
+                    axisLine={false}
+                    tick={{ fontSize: 12, fontWeight: 500, fill: theme.palette.text.secondary }}
+                    padding={{ left: 20, right: 20 }}
+                />
+                <YAxis 
+                    tickLine={false} 
+                    axisLine={false}
+                    tick={{ fontSize: 12, fontWeight: 500, fill: theme.palette.text.secondary }}
+                    tickFormatter={(value) => new Intl.NumberFormat('es-CO', { notation: 'compact', compactDisplay: 'short' }).format(value)}
+                    allowDecimals={false}
+                    width={40}
+                />
+                <RechartsTooltip content={<CustomTooltip />} cursor={{ stroke: theme.palette.primary.main, strokeWidth: 1, strokeDasharray: '3 3' }} />
+                <Area 
+                    type="monotone" 
+                    dataKey="Solicitudes" 
+                    stroke={theme.palette.primary.main}
+                    strokeWidth={3}
+                    fill="url(#solicitudesAreaGradient)"
+                    filter="url(#shadow)"
+                    animationDuration={1500}
+                />
+                <Brush dataKey="name" height={30} stroke={theme.palette.primary.main} fill={alpha(theme.palette.background.paper, 0.5)} tickFormatter={() => ''} />
+            </AreaChart>
+        </ResponsiveContainer>
+    );
 };
 
 const GlassModal = ({ open, onClose, title, children, maxWidth = "md" }) => {
