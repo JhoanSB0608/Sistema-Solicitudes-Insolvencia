@@ -156,10 +156,10 @@ const Header = () => {
                 }}
               >
                 <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
-                  Nueva Solicitud
-                </Box>
+                                    Nueva Solicitud
+                                  </Box>
                                 </Button>
-              
+                  
                                 <Button 
                                   color="inherit" 
                                   component={Link} 
@@ -191,7 +191,7 @@ const Header = () => {
                                     Archivador
                                   </Box>
                                 </Button>
-              
+                  
                                 {user.isAdmin && (                <Button 
                   color="inherit" 
                   component={Link} 
