@@ -158,10 +158,41 @@ const Header = () => {
                 <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
                   Nueva Solicitud
                 </Box>
-              </Button>
-
-              {user.isAdmin && (
-                <Button 
+                                </Button>
+              
+                                <Button 
+                                  color="inherit" 
+                                  component={Link} 
+                                  to="/archiver"
+                                  sx={{
+                                    borderRadius: '12px',
+                                    padding: { xs: '6px 8px', sm: '8px 16px' },
+                                    margin: '0 2px',
+                                    fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                                    fontWeight: 500,
+                                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                    backdropFilter: 'blur(10px)',
+                                    WebkitBackdropFilter: 'blur(10px)',
+                                    background: 'rgba(255, 159, 0, 0.1)',
+                                    border: '1px solid rgba(255, 159, 0, 0.2)',
+                                    '&:hover': {
+                                      background: 'rgba(255, 159, 0, 0.2)',
+                                      transform: 'translateY(-2px)',
+                                      boxShadow: '0 4px 20px rgba(255, 159, 0, 0.3)',
+                                    },
+                                    '&::before': {
+                                      content: '"🗄️"',
+                                      marginRight: { xs: 0, sm: '8px' },
+                                      fontSize: { xs: '12px', sm: '14px' },
+                                    },
+                                  }}
+                                >
+                                  <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                                    Archivador
+                                  </Box>
+                                </Button>
+              
+                                {user.isAdmin && (                <Button 
                   color="inherit" 
                   component={Link} 
                   to="/admin"

@@ -803,6 +803,7 @@ const AnexosSection = ({ anexos, solicitudId, tipoSolicitud, onUploadSuccess }) 
             filename: uniqueFilename,
             fileUrl: fileUrl,
             description: description, // Pass the description
+            size: currentFileToUpload.size, // Pass the file size
         });
     } catch (error) {
         handleAxiosError(error, "Error al subir archivo a Google Cloud Storage.");

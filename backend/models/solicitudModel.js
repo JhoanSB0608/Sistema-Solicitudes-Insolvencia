@@ -225,6 +225,7 @@ const anexoSchema = new mongoose.Schema({
   name: { type: String, required: true },
   url: { type: String, required: true },
   descripcion: { type: String },
+  size: { type: Number }, // Added size field
 });
 
 const firmaSchema = new mongoose.Schema({

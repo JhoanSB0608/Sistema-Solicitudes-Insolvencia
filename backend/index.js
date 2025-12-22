@@ -16,6 +16,7 @@ const conciliacionRoutes = require("./routes/conciliacionRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const userRoutes = require("./routes/userRoutes");
 const authRoutes = require("./routes/authRoutes");
+const archiverRoutes = require("./routes/archiverRoutes");
 const path = require("path");
 
 // Passport config
@@ -89,6 +90,7 @@ app.use("/api/conciliaciones", conciliacionRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/archiver", archiverRoutes);
 
 //
 // =============================

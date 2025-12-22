@@ -37,8 +37,8 @@ export const getAdminSolicitudes = async ({ pageIndex, pageSize, filters, sortin
 };
 
 // Subir un anexo a una solicitud existente
-export const uploadAnexo = async (id, tipo, filename, fileUrl, descripcion = '') => {
-  const payload = { filename, fileUrl, descripcion };
+export const uploadAnexo = async (id, tipo, filename, fileUrl, descripcion = '', size) => {
+  const payload = { filename, fileUrl, descripcion, size };
   const config = getConfig(); // JSON content type
   const { data } = await axios.post(`${API_URL}/upload-anexo/${tipo}/${id}`, payload, config);
   return data;
