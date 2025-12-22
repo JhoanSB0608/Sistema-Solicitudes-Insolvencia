@@ -392,6 +392,7 @@ const EnhancedPieChart = ({ data }) => {
     
     const renderActiveShape = (props) => {
         const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props;
+        const color = COLORS[activeIndex % COLORS.length];
         return (
             <g>
                 <Sector
@@ -402,7 +403,7 @@ const EnhancedPieChart = ({ data }) => {
                     startAngle={startAngle}
                     endAngle={endAngle}
                     fill={fill}
-                    style={{ filter: `drop-shadow(0 4px 8px ${alpha(fill, 0.5)})` }}
+                    style={{ filter: `drop-shadow(0 4px 8px ${alpha(color, 0.5)})` }}
                 />
             </g>
         );
