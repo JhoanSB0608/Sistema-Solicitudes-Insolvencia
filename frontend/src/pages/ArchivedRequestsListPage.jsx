@@ -13,19 +13,198 @@ import {
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button,
   Typography, Box, TextField, Stack, CircularProgress, Alert, IconButton, TablePagination,
   Card, CardContent, Avatar, Container, Tooltip, Chip, Fade, Grow, Slide, Grid,
-  InputAdornment, useTheme, alpha
+  InputAdornment, useTheme, alpha,
+  Dialog, DialogTitle, DialogContent, DialogActions, List, ListItem, ListItemText, ListItemIcon, Badge
 } from '@mui/material';
 import { Link } from 'react-router-dom';
 import { useDebounce } from '../hooks/useDebounce';
 import {
   Archive as ArchiveIcon, Refresh, Add, Search, FilterList, Description as DescriptionIcon,
-  ArrowUpward, ArrowDownward, CloudDownload as CloudDownloadIcon
+  ArrowUpward, ArrowDownward, CloudDownload as CloudDownloadIcon,
+  Close as CloseIcon, Person as PersonIcon, Business as BusinessIcon,
+  Email as EmailIcon, Phone as PhoneIcon, LocationOn as LocationOnIcon
 } from '@mui/icons-material';
 import { toast } from 'react-toastify';
 import { handleAxiosError } from '../utils/alert';
 
 import GlassCard from '../components/common/GlassCard';
+import { ArchiverAnexosSection } from '../components/common/ArchiverAnexosSection';
 
+
+// --- Modal Components ---
+const GlassModal = ({ open, onClose, title, children, maxWidth = "md" }) => {
+  const theme = useTheme();
+  return (
+    <Dialog 
+      open={open} 
+      onClose={onClose} 
+      maxWidth={maxWidth} 
+      fullWidth 
+      PaperProps={{
+        sx: {
+          background: `linear-gradient(145deg, ${alpha(theme.palette.background.paper, 0.85)} 0%, ${alpha(theme.palette.background.paper, 0.7)} 100%)`,
+          backdropFilter: 'blur(40px) saturate(180%)',
+          border: `1px solid ${alpha(theme.palette.primary.main, 0.15)}`,
+          borderRadius: 4,
+          boxShadow: `0 8px 32px ${alpha(theme.palette.common.black, 0.37)}`,
+          overflow: 'hidden',
+        }
+      }}
+      BackdropProps={{
+        sx: {
+          backdropFilter: 'blur(8px)',
+          backgroundColor: alpha(theme.palette.common.black, 0.5),
+        }
+      }}
+    >
+      <DialogTitle 
+        sx={{ 
+          borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+          background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.08)} 0%, ${alpha(theme.palette.secondary.main, 0.08)} 100%)`,
+          py: 3,
+        }}
+      >
+        <Stack direction="row" alignItems="center" justifyContent="space-between">
+          <Typography variant="h5" sx={{ fontWeight: 700 }}>
+            {title}
+          </Typography>
+          <IconButton 
+            onClick={onClose}
+            sx={{
+              bgcolor: alpha(theme.palette.error.main, 0.1),
+              '&:hover': {
+                bgcolor: alpha(theme.palette.error.main, 0.2),
+                transform: 'rotate(90deg)',
+              },
+              transition: 'all 0.3s ease',
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </Stack>
+      </DialogTitle>
+      <DialogContent 
+        sx={{ 
+          py: 3,
+          background: `linear-gradient(to bottom, ${alpha(theme.palette.background.default, 0.3)} 0%, transparent 100%)`,
+        }}
+      >
+        {children}
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+const DetailItem = ({ label, value, icon: Icon }) => {
+  const theme = useTheme();
+  return (
+    <Grid item xs={12} sm={6}>
+      <Box 
+        sx={{ 
+          p: 2, 
+          borderRadius: 2,
+          background: `linear-gradient(135deg, ${alpha(theme.palette.background.paper, 0.4)} 0%, ${alpha(theme.palette.background.paper, 0.1)} 100%)`,
+          border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+          transition: 'all 0.3s ease',
+          '&:hover': {
+            transform: 'translateY(-2px)',
+            boxShadow: `0 4px 16px ${alpha(theme.palette.primary.main, 0.15)}`,
+            border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
+          }
+        }}
+      >
+        <Stack direction="row" spacing={1.5} alignItems="center">
+          {Icon && (
+            <Avatar 
+              sx={{ 
+                width: 32, 
+                height: 32, 
+                bgcolor: alpha(theme.palette.primary.main, 0.1),
+                color: theme.palette.primary.main
+              }}
+            >
+              <Icon sx={{ fontSize: 18 }} />
+            </Avatar>
+          )}
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              {label}
+            </Typography>
+            <Typography variant="body1" sx={{ fontWeight: 700, mt: 0.5 }}>
+              {value || 'N/A'}
+            </Typography>
+          </Box>
+        </Stack>
+      </Box>
+    </Grid>
+  );
+};
+
+const PersonInfoModal = ({ open, onClose, data, title }) => {
+  if (!data) return null;
+  return (
+    <GlassModal open={open} onClose={onClose} title={title} maxWidth="md">
+      <Stack spacing={3}>
+        <Box 
+          sx={{ 
+            p: 3, 
+            borderRadius: 3,
+            background: `linear-gradient(135deg, ${alpha('#1976d2', 0.1)} 0%, ${alpha('#9c27b0', 0.1)} 100%)`,
+            border: `1px solid ${alpha('#1976d2', 0.2)}`,
+          }}
+        >
+          <Stack direction="row" alignItems="center" spacing={2}>
+            <Avatar 
+              sx={{ 
+                width: 64, 
+                height: 64, 
+                bgcolor: alpha('#1976d2', 0.2),
+                fontSize: '1.5rem',
+                fontWeight: 800,
+              }}
+            >
+              {data.nombreCompleto?.charAt(0) || 'P'}
+            </Avatar>
+            <Box>
+              <Typography variant="h5" sx={{ fontWeight: 800 }}>
+                {data.nombreCompleto}
+              </Typography>
+              <Chip 
+                label={`${data.tipoIdentificacion} - ${data.numeroIdentificacion}`}
+                size="small"
+                sx={{ mt: 1 }}
+              />
+            </Box>
+          </Stack>
+        </Box>
+
+        <Grid container spacing={2}>
+          <DetailItem label="Email" value={data.email} icon={EmailIcon} />
+          <DetailItem label="Teléfono" value={data.telefono} icon={PhoneIcon} />
+          <DetailItem label="Dirección" value={data.domicilio} icon={LocationOnIcon} />
+          <DetailItem label="Ciudad" value={data.ciudad} icon={LocationOnIcon} />
+          <DetailItem label="Departamento" value={data.departamento} icon={LocationOnIcon} />
+          <DetailItem label="País" value={data.pais} icon={LocationOnIcon} />
+        </Grid>
+      </Stack>
+    </GlassModal>
+  );
+};
+
+const AnexosViewerAndUploaderModal = ({ open, onClose, anexos, archiverEntryId, onUploadSuccess }) => {
+  return (
+    <GlassModal open={open} onClose={onClose} title="Gestionar Anexos" maxWidth="md">
+      <ArchiverAnexosSection 
+        anexos={anexos} 
+        archiverEntryId={archiverEntryId} 
+        onUploadSuccess={onUploadSuccess} 
+      />
+    </GlassModal>
+  );
+};
+
+
+// --- Main Component ---
 const ArchivedRequestsListPage = () => {
   const theme = useTheme();
 
@@ -38,6 +217,10 @@ const ArchivedRequestsListPage = () => {
   });
   const [localFilters, setLocalFilters] = useState({ tipoSolicitud: '', entityName: '' });
   const debouncedLocalFilters = useDebounce(localFilters, 500);
+
+  // State for Modals
+  const [personInfoModalState, setPersonInfoModalState] = useState({ open: false, data: null, title: null });
+  const [anexosModalState, setAnexosModalState] = useState({ open: false, anexos: [], archiverEntryId: null });
 
   // Data fetching
   const { data, isLoading, isError, error, refetch } = useQuery({
@@ -75,14 +258,16 @@ const ArchivedRequestsListPage = () => {
         if (id === 'tipoSolicitud') {
           valA = a.tipoSolicitud;
           valB = b.tipoSolicitud;
-        } else if (id === 'entityName') {
-          valA = a.tipoSolicitud === 'Solicitud de Insolvencia Económica'
-            ? a.insolvenciaData?.deudor?.nombreCompleto
-            : a.conciliacionData?.convocante?.nombreCompleto;
-          valB = b.tipoSolicitud === 'Solicitud de Insolvencia Económica'
-            ? b.insolvenciaData?.deudor?.nombreCompleto
-            : b.conciliacionData?.convocante?.nombreCompleto;
-        } else if (id === 'anexosCount') {
+        } else if (id === 'deudor') {
+            valA = a.insolvenciaData?.deudor?.nombreCompleto;
+            valB = b.insolvenciaData?.deudor?.nombreCompleto;
+        } else if (id === 'convocante') {
+            valA = a.conciliacionData?.convocante?.nombreCompleto;
+            valB = b.conciliacionData?.convocante?.nombreCompleto;
+        } else if (id === 'convocado') {
+            valA = a.conciliacionData?.convocado?.nombreCompleto;
+            valB = b.conciliacionData?.convocado?.nombreCompleto;
+        } else if (id === 'anexos') {
           valA = (a.insolvenciaData?.anexos?.length || a.conciliacionData?.anexos?.length) || 0;
           valB = (b.insolvenciaData?.anexos?.length || b.conciliacionData?.anexos?.length) || 0;
         } else if (id === 'createdAt') {
@@ -107,7 +292,7 @@ const ArchivedRequestsListPage = () => {
     return processedData;
   }, [data, debouncedLocalFilters, sorting]);
 
-  // Table configuration
+  // Table columns definition
   const columns = useMemo(() => [
     { 
       accessorKey: 'tipoSolicitud', 
@@ -118,23 +303,63 @@ const ArchivedRequestsListPage = () => {
       }
     },
     { 
-      accessorKey: 'entityName', 
-      header: 'Deudor / Convocante',
+      accessorKey: 'deudor', 
+      header: 'Deudor',
       cell: ({ row }) => {
         const entry = row.original;
-        const name = entry.tipoSolicitud === 'Solicitud de Insolvencia Económica'
-          ? entry.insolvenciaData?.deudor?.nombreCompleto
-          : entry.conciliacionData?.convocante?.nombreCompleto;
-        return (
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <Avatar sx={{ width: 32, height: 32, bgcolor: alpha(theme.palette.primary.main, 0.1) }}>
-              {(name || 'N')[0]}
-            </Avatar>
-            <Typography variant="body2" sx={{ fontWeight: 600 }}>
-              {name || 'N/A'}
-            </Typography>
-          </Stack>
-        );
+        if (entry.tipoSolicitud === 'Solicitud de Insolvencia Económica' && entry.insolvenciaData?.deudor) {
+            const deudor = entry.insolvenciaData.deudor;
+            return (
+                <Button 
+                    variant="text" 
+                    onClick={() => setPersonInfoModalState({ open: true, data: deudor, title: 'Información del Deudor' })}
+                    sx={{ textTransform: 'none', fontWeight: 600 }}
+                >
+                    {deudor.nombreCompleto}
+                </Button>
+            );
+        }
+        return null;
+      }
+    },
+    { 
+      accessorKey: 'convocante', 
+      header: 'Convocante',
+      cell: ({ row }) => {
+        const entry = row.original;
+        if (entry.tipoSolicitud === 'Solicitud de Conciliación Unificada' && entry.conciliacionData?.convocante) {
+            const convocante = entry.conciliacionData.convocante;
+            return (
+                <Button 
+                    variant="text" 
+                    onClick={() => setPersonInfoModalState({ open: true, data: convocante, title: 'Información del Convocante' })}
+                    sx={{ textTransform: 'none', fontWeight: 600 }}
+                >
+                    {convocante.nombreCompleto}
+                </Button>
+            );
+        }
+        return null;
+      }
+    },
+    { 
+      accessorKey: 'convocado', 
+      header: 'Convocado',
+      cell: ({ row }) => {
+        const entry = row.original;
+        if (entry.tipoSolicitud === 'Solicitud de Conciliación Unificada' && entry.conciliacionData?.convocado) {
+            const convocado = entry.conciliacionData.convocado;
+            return (
+                <Button 
+                    variant="text" 
+                    onClick={() => setPersonInfoModalState({ open: true, data: convocado, title: 'Información del Convocado' })}
+                    sx={{ textTransform: 'none', fontWeight: 600 }}
+                >
+                    {convocado.nombreCompleto}
+                </Button>
+            );
+        }
+        return null;
       }
     },
     {
@@ -143,64 +368,29 @@ const ArchivedRequestsListPage = () => {
       cell: ({ getValue }) => new Date(getValue()).toLocaleDateString()
     },
     {
-      accessorKey: 'anexosCount',
+      accessorKey: 'anexos',
       header: 'Anexos',
-      cell: ({ row }) => {
-        const entry = row.original;
-        const count = entry.tipoSolicitud === 'Solicitud de Insolvencia Económica'
-          ? entry.insolvenciaData?.anexos?.length
-          : entry.conciliacionData?.anexos?.length;
-        return (
-          <Chip
-            label={`${count || 0}`}
-            size="small"
-            icon={<DescriptionIcon />}
-            sx={{ bgcolor: alpha(theme.palette.success.main, 0.1), color: theme.palette.success.main, fontWeight: 600 }}
-          />
-        );
-      }
-    },
-    {
-      id: 'actions',
-      header: 'Acciones',
       cell: ({ row }) => {
         const entry = row.original;
         const annexes = entry.tipoSolicitud === 'Solicitud de Insolvencia Económica'
           ? entry.insolvenciaData?.anexos
           : entry.conciliacionData?.anexos;
-
-        const handleDownloadAnexo = async (anexo) => {
-          const toastId = toast.loading(`Descargando ${anexo.name}, por favor espere...`);
-          try {
-            await downloadFile(anexo.name);
-            toast.update(toastId, {
-              render: "¡Descarga Completada!",
-              type: "success",
-              isLoading: false,
-              autoClose: 5000
-            });
-          } catch (err) {
-            toast.dismiss(toastId);
-            handleAxiosError(err, 'Error al descargar el anexo.');
-          }
-        };
+        const count = annexes?.length || 0;
 
         return (
-          <Stack direction="row" spacing={1} justifyContent="flex-end">
-            {annexes && annexes.length > 0 && (
-              annexes.map((anexo, idx) => (
-                <Tooltip key={idx} title={`Descargar ${anexo.name}`}>
-                  <IconButton onClick={() => handleDownloadAnexo(anexo)}>
-                    <CloudDownloadIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-              ))
-            )}
-            {/* Add more actions if needed, e.g., view entry details */}
-          </Stack>
+          <Tooltip title={`${count} Anexo(s)`}>
+            <IconButton 
+              onClick={() => setAnexosModalState({ open: true, anexos: annexes, archiverEntryId: entry._id })}
+              disabled={count === 0 && !entry._id} // Disable if no annexes and cannot upload
+            >
+              <Badge badgeContent={count} color="primary" showZero>
+                <DescriptionIcon />
+              </Badge>
+            </IconButton>
+          </Tooltip>
         );
       }
-    }
+    },
   ], [theme]);
 
   const table = useReactTable({
@@ -623,6 +813,21 @@ const ArchivedRequestsListPage = () => {
           </Grow>
         </Stack>
       </Container>
+      
+      {/* Modals */}
+      <PersonInfoModal 
+        open={personInfoModalState.open}
+        onClose={() => setPersonInfoModalState({ open: false, data: null, title: null })}
+        data={personInfoModalState.data}
+        title={personInfoModalState.title}
+      />
+      <AnexosViewerAndUploaderModal
+        open={anexosModalState.open}
+        onClose={() => setAnexosModalState({ open: false, anexos: [], archiverEntryId: null })}
+        anexos={anexosModalState.anexos}
+        archiverEntryId={anexosModalState.archiverEntryId}
+        onUploadSuccess={refetch}
+      />
     </Box>
   );
 };
